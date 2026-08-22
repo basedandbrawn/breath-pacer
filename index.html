@@ -152,10 +152,17 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   <div class="top"><span class="eyebrow">Lift</span><button class="btn ghost" style="width:auto;padding:10px 16px" data-go="mode">Back</button></div>
   <div class="scroll">
     <div class="card">
-      <div class="row"><span class="lbl">Mode</span>
-        <div class="seg" id="seg-hold">
-          <button data-hold="0">Reps</button><button data-hold="1">Hold</button>
-        </div></div>
+      <div class="row stack">
+        <div class="seg" id="seg-preset">
+          <button data-preset="compound">Compound</button>
+          <button data-preset="isolation">Isolation</button>
+          <button data-preset="hold">Hold</button>
+        </div>
+        <div id="preset-sub" style="text-align:center;font-size:12px;letter-spacing:.22em;color:var(--mute);padding-bottom:6px"></div>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="row" id="row-reps"><span class="lbl">Reps</span>
         <div class="step"><button data-s="reps:-1">−</button><span class="v" id="v-reps">10</span><button data-s="reps:1">+</button></div></div>
       <div class="row hid" id="row-hsec"><span class="lbl">Seconds</span>
@@ -164,29 +171,25 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
         <div class="step"><button data-s="sets:-1">−</button><span class="v" id="v-sets">4</span><button data-s="sets:1">+</button></div></div>
     </div>
 
-    <div class="counts">
-      <div class="cnt"><div class="cl">In</div><div class="cv" id="v-in">4</div>
-        <div class="cb"><button data-s="in:-0.5">−</button><button data-s="in:0.5">+</button></div></div>
-      <div class="cnt"><div class="cl">Hold</div><div class="cv" id="v-hold">2</div>
-        <div class="cb"><button data-s="hold:-0.5">−</button><button data-s="hold:0.5">+</button></div></div>
-      <div class="cnt"><div class="cl">Out</div><div class="cv" id="v-out">6</div>
-        <div class="cb"><button data-s="out:-0.5">−</button><button data-s="out:0.5">+</button></div></div>
-      <div class="cnt"><div class="cl">Empty</div><div class="cv" id="v-empty">0</div>
-        <div class="cb"><button data-s="empty:-0.5">−</button><button data-s="empty:0.5">+</button></div></div>
-    </div>
-
-    <div class="card">
-      <div class="row stack"><span class="lbl">Lift type</span>
-        <div class="seg" id="seg-type">
-          <button data-type="compound">Compound</button><button data-type="isolation">Isolation</button>
-        </div></div>
-      <div class="row"><span class="lbl">Rest</span>
-        <div class="step"><button data-s="rest:-15">−</button><span class="v" id="v-rest">3:00</span><button data-s="rest:15">+</button></div></div>
-    </div>
-
     <div class="card">
       <div class="row stack"><span class="lbl">Sound</span>
         <div class="seg sound" data-for="lift"></div></div>
+    </div>
+
+    <button class="btn ghost" id="b-tune">Tune</button>
+    <div id="tunebox" class="hid">
+      <div class="counts" style="margin-top:14px">
+        <div class="cnt"><div class="cl">In</div><div class="cv" id="v-in">4</div>
+          <div class="cb"><button data-s="in:-0.5">−</button><button data-s="in:0.5">+</button></div></div>
+        <div class="cnt"><div class="cl">Hold</div><div class="cv" id="v-hold">2</div>
+          <div class="cb"><button data-s="hold:-0.5">−</button><button data-s="hold:0.5">+</button></div></div>
+        <div class="cnt"><div class="cl">Out</div><div class="cv" id="v-out">6</div>
+          <div class="cb"><button data-s="out:-0.5">−</button><button data-s="out:0.5">+</button></div></div>
+      </div>
+      <div class="card">
+        <div class="row"><span class="lbl">Rest</span>
+          <div class="step"><button data-s="rest:-15">−</button><span class="v" id="v-rest">3:00</span><button data-s="rest:15">+</button></div></div>
+      </div>
     </div>
   </div>
   <div class="foot"><button class="btn go" data-start="lift">Start</button></div>
@@ -247,10 +250,13 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 "use strict";
 
 /* ============================ STORAGE ============================ */
-var KEY = "bp.v2";
+var KEY = "bp.v3";
 var DEF = {
   cfg: {
-    lift:    {reps:10, sets:4, "in":4, hold:2, out:6, empty:0, rest:180, type:"compound", holdMode:0, holdSec:45, sound:"tone"},
+    lift: {preset:"compound", reps:10, sets:4, holdSec:45, sound:"tone",
+      tune:{compound:{"in":4, hold:2, out:6, rest:180},
+            isolation:{"in":2, hold:0, out:3, rest:90},
+            hold:{"in":4, hold:0, out:8, rest:90}}},
     breathe: {cycles:8, pat:"478", sound:"tone"}
   },
   stats: {sec:0, modes:{lift:0, breathe:0}, log:[]}
@@ -258,22 +264,55 @@ var DEF = {
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
 var DB = clone(DEF);
 var SOUND_OK = {tone:1, breath:1};
+var PRESET_OK = {compound:1, isolation:1, hold:1};
+
+/* old flat lift config (v1/v2) -> preset shape */
+function liftToV3(o){
+  var out = clone(DEF.cfg.lift);
+  if(!o) return out;
+  if(o.reps) out.reps = o.reps;
+  if(o.sets) out.sets = o.sets;
+  if(o.holdSec) out.holdSec = o.holdSec;
+  if(o.sound) out.sound = o.sound;
+  out.preset = o.holdMode ? "hold" : (o.type === "isolation" ? "isolation" : "compound");
+  if(!o.holdMode && o["in"] !== undefined){
+    var t = out.tune[out.preset];
+    t["in"] = +o["in"] || t["in"];
+    t.hold = +o.hold || 0;
+    t.out = +o.out || t.out;
+    t.rest = +o.rest || t.rest;
+  }
+  return out;
+}
 try{
   var raw = JSON.parse(localStorage.getItem(KEY) || "null");
   if(!raw){
-    var v1 = JSON.parse(localStorage.getItem("bp.v1") || "null");
-    if(v1){
-      raw = {cfg:{}, stats:{}};
-      raw.cfg.lift = v1.cfg && v1.cfg.lift || {};
-      raw.cfg.breathe = v1.cfg && v1.cfg.sleep || {};
-      var st1 = v1.stats || {};
-      raw.stats = {sec: st1.sec || 0,
-        modes:{lift:(st1.modes&&st1.modes.lift)||0,
-               breathe:((st1.modes&&st1.modes.sleep)||0)+((st1.modes&&st1.modes.drive)||0)},
-        log:(st1.log||[]).map(function(e){ if(e.m==="sleep")e.m="breathe"; return e; })};
+    var v2 = JSON.parse(localStorage.getItem("bp.v2") || "null");
+    if(!v2){
+      var v1 = JSON.parse(localStorage.getItem("bp.v1") || "null");
+      if(v1){
+        var st1 = v1.stats || {};
+        v2 = {cfg:{lift: v1.cfg && v1.cfg.lift || {}, breathe: v1.cfg && v1.cfg.sleep || {}},
+          stats:{sec: st1.sec || 0,
+            modes:{lift:(st1.modes&&st1.modes.lift)||0,
+                   breathe:((st1.modes&&st1.modes.sleep)||0)+((st1.modes&&st1.modes.drive)||0)},
+            log:(st1.log||[]).map(function(e){ if(e.m==="sleep")e.m="breathe"; return e; })}};
+      }
+    }
+    if(v2){
+      raw = {cfg:{lift: liftToV3(v2.cfg && v2.cfg.lift), breathe: v2.cfg && v2.cfg.breathe || {}},
+             stats: v2.stats || {}};
     }
   }
-  if(raw && raw.cfg){ for(var m in DB.cfg){ if(raw.cfg[m]) for(var k in DB.cfg[m]) if(raw.cfg[m][k] !== undefined) DB.cfg[m][k] = raw.cfg[m][k]; } }
+  if(raw && raw.cfg){
+    var L = raw.cfg.lift;
+    if(L){
+      if(L.tune === undefined) L = liftToV3(L);
+      ["preset","reps","sets","holdSec","sound"].forEach(function(k){ if(L[k] !== undefined) DB.cfg.lift[k] = L[k]; });
+      if(L.tune) for(var pk in DB.cfg.lift.tune){ if(L.tune[pk]) for(var tk in DB.cfg.lift.tune[pk]) if(L.tune[pk][tk] !== undefined) DB.cfg.lift.tune[pk][tk] = L.tune[pk][tk]; }
+    }
+    if(raw.cfg.breathe) for(var bk in DB.cfg.breathe) if(raw.cfg.breathe[bk] !== undefined) DB.cfg.breathe[bk] = raw.cfg.breathe[bk];
+  }
   if(raw && raw.stats){
     DB.stats.sec = raw.stats.sec || 0;
     if(raw.stats.modes) for(var mm in DB.stats.modes) DB.stats.modes[mm] = raw.stats.modes[mm] || 0;
@@ -282,6 +321,8 @@ try{
 }catch(e){}
 if(!SOUND_OK[DB.cfg.lift.sound]) DB.cfg.lift.sound = "tone";
 if(!SOUND_OK[DB.cfg.breathe.sound]) DB.cfg.breathe.sound = "tone";
+if(!PRESET_OK[DB.cfg.lift.preset]) DB.cfg.lift.preset = "compound";
+try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){} }
 
 /* ============================ CLOCK ============================
@@ -583,14 +624,13 @@ function coherentSteps(seconds, stage, setNo){
 function buildSteps(){
   var st = [], c = DB.cfg, i, s, r;
   if(S.mode === "lift"){
-    var L = c.lift;
-    var counts = S.holdMode ? {"in":4, hold:0, out:8, empty:2}
-                            : {"in":+L["in"], hold:+L.hold, out:+L.out, empty:+L.empty};
+    var T = c.lift.tune[c.lift.preset];
+    var counts = {"in":+T["in"], hold:+T.hold, out:+T.out, empty:0};
     for(s=1; s<=S.sets; s++){
       st.push(ph("getset", 3, "getset", s, 0));
       var mark = st.length;
       if(S.holdMode){
-        var cyc = counts["in"] + counts.hold + counts.out + counts.empty;
+        var cyc = counts["in"] + counts.hold + counts.out;
         var reps = Math.ceil(S.holdSec / cyc) + 1;
         for(r=1; r<=reps; r++) pushCycle(st, counts, "set", s, r);
         trimTo(st, mark, S.holdSec);
@@ -616,8 +656,9 @@ function startSession(mode){
   S.mode = mode;
   S.sound = c[mode].sound;
   if(mode === "lift"){
-    S.reps = c.lift.reps; S.sets = c.lift.sets; S.restDur = c.lift.rest;
-    S.holdMode = c.lift.holdMode ? 1 : 0; S.holdSec = c.lift.holdSec;
+    S.reps = c.lift.reps; S.sets = c.lift.sets;
+    S.restDur = c.lift.tune[c.lift.preset].rest;
+    S.holdMode = c.lift.preset === "hold" ? 1 : 0; S.holdSec = c.lift.holdSec;
   }else{
     S.reps = c.breathe.cycles; S.sets = 1; S.holdMode = 0;
   }
@@ -888,22 +929,22 @@ function initSoundPickers(){
 }
 function fmtN(v){ return (Math.round(v*10)/10).toString(); }
 function refresh(){
-  var L = DB.cfg.lift, P = DB.cfg.breathe, i;
+  var L = DB.cfg.lift, P = DB.cfg.breathe, T = L.tune[L.preset], i;
+  var isHold = L.preset === "hold";
   document.getElementById("v-reps").textContent = L.reps;
   document.getElementById("v-sets").textContent = L.sets;
   document.getElementById("v-holdSec").textContent = L.holdSec;
-  document.getElementById("v-in").textContent = L.holdMode ? "4" : fmtN(L["in"]);
-  document.getElementById("v-hold").textContent = L.holdMode ? "0" : fmtN(L.hold);
-  document.getElementById("v-out").textContent = L.holdMode ? "8" : fmtN(L.out);
-  document.getElementById("v-empty").textContent = L.holdMode ? "2" : fmtN(L.empty);
-  document.getElementById("v-rest").textContent = fmtClock(L.rest);
+  document.getElementById("v-in").textContent = fmtN(T["in"]);
+  document.getElementById("v-hold").textContent = fmtN(T.hold);
+  document.getElementById("v-out").textContent = fmtN(T.out);
+  document.getElementById("v-rest").textContent = fmtClock(T.rest);
   document.getElementById("v-cycles").textContent = P.cycles;
-  document.getElementById("row-reps").classList.toggle("hid", !!L.holdMode);
-  document.getElementById("row-hsec").classList.toggle("hid", !L.holdMode);
-  var segHold = document.querySelectorAll("#seg-hold button");
-  for(i=0;i<segHold.length;i++) segHold[i].classList.toggle("sel", (segHold[i].getAttribute("data-hold")|0) === (L.holdMode?1:0));
-  var segType = document.querySelectorAll("#seg-type button");
-  for(i=0;i<segType.length;i++) segType[i].classList.toggle("sel", segType[i].getAttribute("data-type") === L.type);
+  document.getElementById("row-reps").classList.toggle("hid", isHold);
+  document.getElementById("row-hsec").classList.toggle("hid", !isHold);
+  var sub = fmtN(T["in"]) + (T.hold > 0 ? " · " + fmtN(T.hold) : "") + " · " + fmtN(T.out) + "   —   rest " + fmtClock(T.rest);
+  document.getElementById("preset-sub").textContent = sub;
+  var segP = document.querySelectorAll("#seg-preset button");
+  for(i=0;i<segP.length;i++) segP[i].classList.toggle("sel", segP[i].getAttribute("data-preset") === L.preset);
   var segPat = document.querySelectorAll("#seg-pat button");
   for(i=0;i<segPat.length;i++) segPat[i].classList.toggle("sel", segPat[i].getAttribute("data-pat") === P.pat);
   var snd = document.querySelectorAll("[data-sound]");
@@ -914,9 +955,12 @@ function refresh(){
 }
 
 var LIM = {reps:[1,60,1], sets:[1,20,1], holdSec:[5,300,5], "in":[0.5,20,0.5], hold:[0,20,0.5],
-           out:[0.5,20,0.5], empty:[0,20,0.5], rest:[0,900,15], cycles:[1,40,1]};
+           out:[0.5,20,0.5], rest:[0,900,15], cycles:[1,40,1]};
 function bump(key, delta){
-  var target = (key === "cycles") ? DB.cfg.breathe : DB.cfg.lift;
+  var target = (key === "cycles") ? DB.cfg.breathe
+             : (key === "in" || key === "hold" || key === "out" || key === "rest")
+               ? DB.cfg.lift.tune[DB.cfg.lift.preset]
+               : DB.cfg.lift;
   var lim = LIM[key];
   var v = (+target[key]) + delta;
   v = Math.round(v*10)/10;
@@ -960,14 +1004,12 @@ function renderStats(){
 
 /* ---- events ---- */
 document.addEventListener("click", function(ev){
-  var t = ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-hold],[data-type],[data-pat],[data-sound],[data-start]") : null;
+  var t = ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-preset],[data-pat],[data-sound],[data-start]") : null;
   if(!t) return;
   var v;
   if((v = t.getAttribute("data-go"))){ if(S.running) return; show(v); return; }
   if((v = t.getAttribute("data-s"))){ var p = v.split(":"); bump(p[0], parseFloat(p[1])); return; }
-  if(t.hasAttribute("data-hold")){ DB.cfg.lift.holdMode = (t.getAttribute("data-hold")|0); save(); refresh(); return; }
-  if((v = t.getAttribute("data-type"))){
-    DB.cfg.lift.type = v; DB.cfg.lift.rest = v === "compound" ? 180 : 90; save(); refresh(); return; }
+  if((v = t.getAttribute("data-preset"))){ DB.cfg.lift.preset = v; save(); refresh(); return; }
   if((v = t.getAttribute("data-pat"))){ DB.cfg.breathe.pat = v; save(); refresh(); return; }
   if((v = t.getAttribute("data-sound"))){ var q = v.split(":"); DB.cfg[q[0]].sound = q[1]; save(); refresh(); return; }
   if((v = t.getAttribute("data-start"))){ startSession(v); return; }
@@ -977,6 +1019,9 @@ bSkip.addEventListener("click", function(e){ e.stopPropagation(); skipRest(); })
 bSave.addEventListener("click", function(e){ e.stopPropagation(); saveSet(); });
 bBack.addEventListener("click", function(e){ e.stopPropagation(); show("mode"); });
 elEnd.addEventListener("click", function(e){ e.stopPropagation(); endSession(false); });
+document.getElementById("b-tune").addEventListener("click", function(){
+  document.getElementById("tunebox").classList.toggle("hid");
+});
 document.getElementById("b-reset").addEventListener("click", function(){
   DB.stats = clone(DEF.stats); save(); renderStats();
 });

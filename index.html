@@ -251,15 +251,17 @@ var DEF = {
   cfg: {
     last: "lift",
     lift: {preset:"compound", reps:10, sets:4, holdSec:45, sound:"tone",
-      tune:{compound:{"in":4, hold:2, out:6, rest:180},
-            isolation:{"in":2, hold:0, out:3, rest:90},
-            hold:{"in":4, hold:0, out:8, rest:90}}},
+      tune:{compound:{"in":2, hold:3, out:2, rest:180},    /* brace at the top, hold through the load, exhale on the drive */
+            isolation:{"in":3, hold:0, out:2, rest:90},    /* exhale on the effort, inhale on the controlled return */
+            hold:{"in":4, hold:0, out:6, rest:90}}},       /* breathe behind the brace: never hold under a static load */
     breathe: {cycles:8, pat:"478", sound:"tone"}
   }
 };
 var PATS = {"478":{"in":4, hold:7, out:8, empty:0},
             coh:{"in":5.5, hold:0, out:5.5, empty:0},
             box:{"in":4, hold:4, out:4, empty:4}};
+/* defaults from earlier releases: a stored tune still equal to one of these was never edited, so it follows the new default */
+var OLD_TUNE = {compound:[{"in":4, hold:2, out:6}], isolation:[{"in":2, hold:0, out:3}], hold:[{"in":4, hold:0, out:8}]};
 var SOUND_OK = {tone:1, breath:1, off:1};
 var PRESET_OK = {compound:1, isolation:1, hold:1};
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
@@ -299,7 +301,16 @@ try{
     if(L){
       if(L.tune === undefined) L = liftToV3(L);
       ["preset","reps","sets","holdSec","sound"].forEach(function(k){ if(L[k] !== undefined) DB.cfg.lift[k] = L[k]; });
-      if(L.tune) for(var pk in DB.cfg.lift.tune){ if(L.tune[pk]) for(var tk in DB.cfg.lift.tune[pk]) if(L.tune[pk][tk] !== undefined) DB.cfg.lift.tune[pk][tk] = +L.tune[pk][tk]; }
+      if(L.tune) for(var pk in DB.cfg.lift.tune){
+        var T0 = L.tune[pk];
+        if(!T0) continue;
+        var stale = (OLD_TUNE[pk] || []).some(function(o){ return +T0["in"] === o["in"] && +T0.hold === o.hold && +T0.out === o.out; });
+        for(var tk in DB.cfg.lift.tune[pk]){
+          if(T0[tk] === undefined) continue;
+          if(stale && tk !== "rest") continue;
+          DB.cfg.lift.tune[pk][tk] = +T0[tk];
+        }
+      }
     }
     if(raw.cfg.breathe) for(var bk in DB.cfg.breathe) if(raw.cfg.breathe[bk] !== undefined) DB.cfg.breathe[bk] = raw.cfg.breathe[bk];
     if(raw.cfg.last === "lift" || raw.cfg.last === "breathe") DB.cfg.last = raw.cfg.last;
@@ -650,10 +661,8 @@ function ph(kind, dur, stage, setNo, rep){
   return {k:kind, dur:dur, stage:stage, set:setNo, rep:rep};
 }
 function pushCycle(arr, c, stage, setNo, rep){
-  if(c["in"]  > 0) arr.push(ph("in",    c["in"],  stage, setNo, rep));
-  if(c.hold   > 0) arr.push(ph("hold",  c.hold,   stage, setNo, rep));
-  if(c.out    > 0) arr.push(ph("out",   c.out,    stage, setNo, rep));
-  if(c.empty  > 0) arr.push(ph("empty", c.empty,  stage, setNo, rep));
+  var order = c.outFirst ? ["out","hold","in","empty"] : ["in","hold","out","empty"], i, k;
+  for(i=0;i<order.length;i++){ k = order[i]; if(c[k] > 0) arr.push(ph(k, c[k], stage, setNo, rep)); }
 }
 function trimTo(arr, from, total){
   var acc = 0, i;
@@ -679,7 +688,7 @@ function buildSteps(){
   var st = [], c = DB.cfg, i, s, r;
   if(S.mode === "lift"){
     var T = c.lift.tune[c.lift.preset];
-    var counts = {"in":+T["in"], hold:+T.hold, out:+T.out, empty:0};
+    var counts = {"in":+T["in"], hold:+T.hold, out:+T.out, empty:0, outFirst: c.lift.preset === "isolation"};
     for(s=1; s<=S.sets; s++){
       st.push(ph("getset", 3, "getset", s, 0));
       var mark = st.length;

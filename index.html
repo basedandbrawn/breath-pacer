@@ -58,14 +58,20 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .btn.ghost{background:transparent;border-color:#1d2a3d80;color:var(--mute);padding:14px;font-size:12px;letter-spacing:.26em}
 .btn.ghost.small{padding:12px;font-size:11px;margin:4px 0 10px}
 
+/* ---------- mode ---------- */
+.eyebrow{font-size:12px;letter-spacing:.38em;color:var(--mute);text-transform:uppercase;font-weight:500}
+.spacer{flex:1 1 auto}
+.modes{display:flex;flex-direction:column;gap:16px}
+.mode{width:100%;text-align:left;padding:30px 26px;border-radius:22px;background:linear-gradient(160deg,#0c1322,#070b14);
+  border:1px solid #1d2a3d;overflow:hidden;position:relative}
+.mode:active{background:#111a2c}
+.mode::after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;
+  background:radial-gradient(circle,#4fd9ff22,transparent 70%)}
+.mode .t{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:min(15vw,74px);line-height:.95;letter-spacing:.08em}
+.mode .s{font-size:11px;letter-spacing:.3em;color:var(--mute);text-transform:uppercase;margin-top:6px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+
 /* ---------- setup ---------- */
-.modeswitch{display:flex;gap:26px;align-items:baseline;padding:0 4px 14px}
-.modeswitch button{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:min(10vw,42px);letter-spacing:.08em;
-  line-height:1;color:var(--mute);padding:6px 0 10px;position:relative;transition:color .25s}
-.modeswitch button.sel{color:var(--fg)}
-.modeswitch button::after{content:"";position:absolute;left:1px;right:1px;bottom:0;height:2px;border-radius:2px;
-  background:var(--acc);box-shadow:0 0 12px var(--acc);opacity:0;transition:opacity .25s}
-.modeswitch button.sel::after{opacity:1}
 
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #16202f80}
 .row:last-child{border-bottom:0}
@@ -144,12 +150,19 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 <div id="flash"></div>
 <audio id="aout" playsinline style="display:none"></audio>
 
-<!-- SETUP: the mode switch is the header; the app opens on the mode used last -->
-<section id="s-setup" class="screen">
-  <div class="modeswitch" role="group" aria-label="Mode">
-    <button data-mode="lift">LIFT</button>
-    <button data-mode="breathe">BREATHE</button>
+<!-- MODE PICK -->
+<section id="s-mode" class="screen">
+  <div class="spacer"></div>
+  <div class="modes">
+    <button class="mode" data-mode="lift"><div class="t">LIFT</div><div class="s">sets · reps · rest</div></button>
+    <button class="mode" data-mode="breathe"><div class="t">BREATHE</div><div class="s">cycles</div></button>
   </div>
+  <div class="spacer"></div>
+</section>
+
+<!-- SETUP -->
+<section id="s-setup" class="screen">
+  <div class="top"><button class="btn ghost" style="width:auto;padding:10px 16px" data-go="mode">Back</button><span class="eyebrow" id="setup-name">Lift</span></div>
   <div class="scroll">
 
     <div id="p-lift">
@@ -251,17 +264,17 @@ var DEF = {
   cfg: {
     last: "lift",
     lift: {preset:"compound", reps:10, sets:4, holdSec:45, sound:"tone",
-      tune:{compound:{"in":2, hold:3, out:2, rest:180},    /* brace at the top, hold through the load, exhale on the drive */
-            isolation:{"in":3, hold:0, out:2, rest:90},    /* exhale on the effort, inhale on the controlled return */
-            hold:{"in":4, hold:0, out:6, rest:90}}},       /* breathe behind the brace: never hold under a static load */
+      tune:{compound:{"in":4, hold:2, out:6, rest:180},
+            isolation:{"in":2, hold:0, out:3, rest:90},
+            hold:{"in":4, hold:0, out:8, rest:90}}},
     breathe: {cycles:8, pat:"478", sound:"tone"}
   }
 };
 var PATS = {"478":{"in":4, hold:7, out:8, empty:0},
             coh:{"in":5.5, hold:0, out:5.5, empty:0},
             box:{"in":4, hold:4, out:4, empty:4}};
-/* defaults from earlier releases: a stored tune still equal to one of these was never edited, so it follows the new default */
-var OLD_TUNE = {compound:[{"in":4, hold:2, out:6}], isolation:[{"in":2, hold:0, out:3}], hold:[{"in":4, hold:0, out:8}]};
+/* defaults shipped briefly by an earlier build: a stored tune still equal to one of these was never edited, so it follows the real default */
+var OLD_TUNE = {compound:[{"in":2, hold:3, out:2}], isolation:[{"in":3, hold:0, out:2}], hold:[{"in":4, hold:0, out:6}]};
 var SOUND_OK = {tone:1, breath:1, off:1};
 var PRESET_OK = {compound:1, isolation:1, hold:1};
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
@@ -498,84 +511,91 @@ function schemeCancel(atCtx){
   }
 }
 
-/* Phase design: IN rises, HOLD is silent stillness, OUT falls.
-   GET SET is three soft low pulses, one per second — the count-in.
-   Everything else (the gap after a set, READY, DONE) is silence.
-   `st` carries the level each phase leaves behind, so phases can be
-   queued seconds ahead without a step in the envelope. */
+/* Phase design, in the manner of a sound bath: the tone is always present.
+   IN swells and keeps blooming to the top of the breath. HOLD is a held
+   note, still but sounding. OUT descends and stays audible to the last
+   moment of the exhale. Nothing is cut short; between phases the pad
+   rests on a quiet bed rather than silence. GET SET is three soft,
+   rounded pulses. `st` carries the level each phase leaves behind so
+   phases can be queued seconds ahead without a step in the envelope. */
 function schemePhase(kind, at, dur){
   if(!scheme || !A) return;
-  var s = scheme, k = s.k, g = Math.max(dur, 0.35), st = s.st, i, n, t, from;
+  var s = scheme, k = s.k, g = Math.max(dur, 0.35), st = s.st, i, n, t, from, lvl;
 
   if(s.kind === "tone"){
-    var hi = 0.30*k, lo = 0.26*k;
+    var hi = 0.30*k, lo = 0.26*k, bedHi = 0.035*k, bedLo = 0.06*k;
     if(kind === "in"){
-      env(s.hi.gain, st.hi, hi, at, g*0.8, easeIO);              /* the bright pad swells in */
-      env(s.hi.gain, hi, hi*0.85, at + g*0.8, g*0.2, easeIO);
-      env(s.lo.gain, st.lo, 0.03*k, at, g*0.5, easeIO);
+      env(s.hi.gain, st.hi, hi, at, g*0.7, easeIO);                /* the bright pad swells in... */
+      env(s.hi.gain, hi, hi*1.06, at + g*0.7, g*0.3, easeIO);      /* ...and keeps opening to the top */
+      env(s.lo.gain, st.lo, bedLo, at, g*0.5, easeIO);
       env(s.lp.frequency, 900, 2200, at, g, easeIO);
-      st.hi = hi*0.85; st.lo = 0.03*k;
-    }else if(kind === "hold" || kind === "empty"){
-      env(s.hi.gain, st.hi, 0.0001, at, Math.min(g*0.3, 0.45), easeOut);   /* silence */
-      env(s.lo.gain, st.lo, 0.0001, at, Math.min(g*0.3, 0.45), easeOut);
-      st.hi = st.lo = 0.0001;
+      st.hi = hi*1.06; st.lo = bedLo;
+    }else if(kind === "hold"){
+      env(s.hi.gain, st.hi, hi*0.62, at, Math.min(g*0.4, 0.7), easeIO);   /* a held note: still, sounding */
+      env(s.lo.gain, st.lo, 0.09*k, at, Math.min(g*0.4, 0.7), easeIO);
+      st.hi = hi*0.62; st.lo = 0.09*k;
+    }else if(kind === "empty"){
+      env(s.hi.gain, st.hi, bedHi, at, Math.min(g*0.4, 0.7), easeIO);     /* empty lungs rest on the bed */
+      env(s.lo.gain, st.lo, bedLo, at, Math.min(g*0.4, 0.7), easeIO);
+      st.hi = bedHi; st.lo = bedLo;
     }else if(kind === "out"){
-      env(s.lo.gain, st.lo, lo, at, g*0.25, easeOut);            /* the low pad answers... */
-      env(s.lo.gain, lo, 0.0003, at + g*0.25, g*0.72, easeIO);   /* ...and settles to rest */
-      env(s.hi.gain, st.hi, 0.0001, at, g*0.4, easeIO);
+      env(s.lo.gain, st.lo, lo, at, g*0.2, easeOut);               /* the low pad answers... */
+      env(s.lo.gain, lo, bedLo*1.3, at + g*0.2, g*0.8, easeIO);    /* ...and descends, audible to the last moment */
+      env(s.hi.gain, st.hi, bedHi, at, g*0.55, easeIO);
       env(s.lp.frequency, 1800, 640, at, g, easeIO);
-      st.lo = 0.0003; st.hi = 0.0001;
+      st.lo = bedLo*1.3; st.hi = bedHi;
     }else if(kind === "getset"){
-      env(s.hi.gain, st.hi, 0.0001, at, 0.3, easeIn);
+      env(s.hi.gain, st.hi, bedHi, at, 0.5, easeIO);
       env(s.lp.frequency, 900, 900, at, 0.05, easeIO);
       n = Math.min(3, Math.floor(dur + 0.001)); from = st.lo;
       for(i=0;i<n;i++){
         t = at + dur - n + i;
-        env(s.lo.gain, from, 0.15*k, t, 0.1, easeOut);
-        env(s.lo.gain, 0.15*k, 0.0001, t + 0.1, 0.55, easeIO);
-        from = 0.0001;
+        env(s.lo.gain, from, 0.2*k, t, 0.3, easeIO);               /* three soft rounded pulses, one a second */
+        env(s.lo.gain, 0.2*k, bedLo, t + 0.3, 0.65, easeIO);
+        from = bedLo;
       }
-      if(!n) env(s.lo.gain, st.lo, 0.0001, at, 0.3, easeIn);
-      st.hi = st.lo = 0.0001;
-    }else{                                                        /* pause / ready / done */
-      env(s.hi.gain, st.hi, 0.0001, at, 0.4, easeIn);
-      env(s.lo.gain, st.lo, 0.0001, at, 0.4, easeIn);
-      st.hi = st.lo = 0.0001;
+      if(!n) env(s.lo.gain, st.lo, bedLo, at, 0.4, easeIO);
+      st.hi = bedHi; st.lo = bedLo;
+    }else{                                                         /* pause / ready: the pad rests */
+      env(s.hi.gain, st.hi, 0.02*k, at, 0.8, easeIO);
+      env(s.lo.gain, st.lo, 0.04*k, at, 0.8, easeIO);
+      st.hi = 0.02*k; st.lo = 0.04*k;
     }
   }
 
   if(s.kind === "breath"){
-    var top = 1.05*k;
+    var top = 1.05*k, bed = 0.06*k;
     if(kind === "in"){
-      env(s.g.gain, st.g, top, at, g*0.6, easeIO);               /* smooth draw in, peaking early */
-      env(s.g.gain, top, top*0.35, at + g*0.6, g*0.35, easeIO);  /* settle before the top */
+      env(s.g.gain, st.g, top, at, g*0.6, easeIO);                 /* smooth draw in, peaking early... */
+      env(s.g.gain, top, top*0.55, at + g*0.6, g*0.4, easeIO);     /* ...settling toward the top, never vanishing */
       env(s.bp.frequency, 520, 1400, at, g, easeIO);
       env(s.lp.frequency, 1800, 2600, at, g, easeIO);
-      st.g = top*0.35;
+      st.g = top*0.55;
     }else if(kind === "hold" || kind === "empty"){
-      env(s.g.gain, st.g, 0.0001, at, 0.3, easeOut);             /* held breath: silence */
-      st.g = 0.0001;
+      lvl = kind === "hold" ? 0.1*k : bed;                         /* a held breath: faint air */
+      env(s.g.gain, st.g, lvl, at, Math.min(g*0.4, 0.6), easeIO);
+      st.g = lvl;
     }else if(kind === "out"){
-      env(s.g.gain, st.g, 0.9*k, at, g*0.14, easeOut);           /* soft release... */
-      env(s.g.gain, 0.9*k, 0.0002, at + g*0.14, g*0.76, easeIO); /* ...long relaxed fall, done before the turn */
+      env(s.g.gain, st.g, 0.9*k, at, g*0.15, easeOut);             /* soft release... */
+      env(s.g.gain, 0.9*k, bed*1.5, at + g*0.15, g*0.85, easeIO);  /* ...a long fall that lasts the whole exhale */
       env(s.bp.frequency, 1200, 380, at, g, easeIO);
       env(s.lp.frequency, 2300, 1100, at, g, easeIO);
-      st.g = 0.0002;
+      st.g = bed*1.5;
     }else if(kind === "getset"){
       env(s.bp.frequency, 700, 700, at, 0.05, easeIO);
       env(s.lp.frequency, 1600, 1600, at, 0.05, easeIO);
       n = Math.min(3, Math.floor(dur + 0.001)); from = st.g;
       for(i=0;i<n;i++){
         t = at + dur - n + i;
-        env(s.g.gain, from, 0.45*k, t, 0.07, easeOut);
-        env(s.g.gain, 0.45*k, 0.0001, t + 0.07, 0.3, easeIO);
-        from = 0.0001;
+        env(s.g.gain, from, 0.5*k, t, 0.2, easeIO);
+        env(s.g.gain, 0.5*k, bed, t + 0.2, 0.6, easeIO);
+        from = bed;
       }
-      if(!n) env(s.g.gain, st.g, 0.0001, at, 0.25, easeOut);
-      st.g = 0.0001;
+      if(!n) env(s.g.gain, st.g, bed, at, 0.4, easeIO);
+      st.g = bed;
     }else{
-      env(s.g.gain, st.g, 0.0001, at, 0.25, easeOut);
-      st.g = 0.0001;
+      env(s.g.gain, st.g, bed*0.6, at, 0.8, easeIO);
+      st.g = bed*0.6;
     }
   }
 }
@@ -623,9 +643,10 @@ function preview(mode, sound){
   scheme = makeScheme(sound, mode === "breathe");
   var lvl = mode === "breathe" ? 0.62 : 0.92, t0 = A.ctx.currentTime + 0.03;
   env(A.master.gain, A.master.gain.value, lvl, t0, 0.2, easeOut);
-  schemePhase("in", t0, 1.6);
-  schemePhase("pause", t0 + 1.6, 0.4);
-  pvT = setTimeout(function(){ pvT = 0; if(!S.running) audioStop(); }, 2200);
+  schemePhase("in", t0, 2.2);
+  schemePhase("out", t0 + 2.2, 2.8);
+  schemePhase("pause", t0 + 5.0, 0.5);
+  pvT = setTimeout(function(){ pvT = 0; if(!S.running) audioStop(); }, 5600);
 }
 
 /* ============================ WAKE LOCK ============================ */
@@ -661,7 +682,7 @@ function ph(kind, dur, stage, setNo, rep){
   return {k:kind, dur:dur, stage:stage, set:setNo, rep:rep};
 }
 function pushCycle(arr, c, stage, setNo, rep){
-  var order = c.outFirst ? ["out","hold","in","empty"] : ["in","hold","out","empty"], i, k;
+  var order = ["in","hold","out","empty"], i, k;
   for(i=0;i<order.length;i++){ k = order[i]; if(c[k] > 0) arr.push(ph(k, c[k], stage, setNo, rep)); }
 }
 function trimTo(arr, from, total){
@@ -688,7 +709,7 @@ function buildSteps(){
   var st = [], c = DB.cfg, i, s, r;
   if(S.mode === "lift"){
     var T = c.lift.tune[c.lift.preset];
-    var counts = {"in":+T["in"], hold:+T.hold, out:+T.out, empty:0, outFirst: c.lift.preset === "isolation"};
+    var counts = {"in":+T["in"], hold:+T.hold, out:+T.out, empty:0};
     for(s=1; s<=S.sets; s++){
       st.push(ph("getset", 3, "getset", s, 0));
       var mark = st.length;
@@ -1109,7 +1130,7 @@ function tuneIsDefault(){
 function refresh(){
   var L = DB.cfg.lift, P = DB.cfg.breathe, T = L.tune[L.preset], i;
   var mode = DB.cfg.last, isHold = L.preset === "hold";
-  sel(document.querySelectorAll(".modeswitch button"), "data-mode", mode);
+  document.getElementById("setup-name").textContent = mode === "lift" ? "Lift" : "Breathe";
   vis(document.getElementById("p-lift"), mode === "lift");
   vis(document.getElementById("p-breathe"), mode === "breathe");
 
@@ -1158,13 +1179,13 @@ function bump(key, delta){
 }
 
 function show(id){
-  var ids = ["setup","run"];
+  var ids = ["mode","setup","run"];
   for(var i=0;i<ids.length;i++) document.getElementById("s-"+ids[i]).classList.toggle("on", ids[i] === id);
   if(id !== "run"){
     elBg.style.backgroundColor = "#04060c";
     document.body.classList.remove("slow");
     lastBg = "#04060c";
-    refresh();
+    if(id === "setup") refresh();
   }else if(!raf){ raf = requestAnimationFrame(tick); }
 }
 
@@ -1186,10 +1207,11 @@ elEnd.addEventListener("click", function(e){
 
 /* ---- events ---- */
 document.addEventListener("click", function(ev){
-  var t = ev.target.closest ? ev.target.closest("[data-mode],[data-s],[data-preset],[data-pat],[data-sound],[data-start]") : null;
+  var t = ev.target.closest ? ev.target.closest("[data-go],[data-mode],[data-s],[data-preset],[data-pat],[data-sound],[data-start]") : null;
   if(!t) return;
   var v;
-  if((v = t.getAttribute("data-mode"))){ if(S.running) return; DB.cfg.last = v; save(); refresh(); return; }
+  if((v = t.getAttribute("data-go"))){ if(S.running) return; show(v); return; }
+  if((v = t.getAttribute("data-mode"))){ if(S.running) return; DB.cfg.last = v; save(); show("setup"); return; }
   if((v = t.getAttribute("data-s"))){
     if(held){ held = false; return; }               /* the press-and-hold already stepped */
     var p = v.split(":"); bump(p[0], parseFloat(p[1])); return;
@@ -1220,7 +1242,7 @@ document.addEventListener("contextmenu", function(e){ if(e.target.closest && e.t
 
 bNext.addEventListener("click", function(e){ e.stopPropagation(); startSet(); });
 bRest.addEventListener("click", function(e){ e.stopPropagation(); endSet(); });
-bBack.addEventListener("click", function(e){ e.stopPropagation(); show("setup"); });
+bBack.addEventListener("click", function(e){ e.stopPropagation(); show("mode"); });
 
 var tuneBtn = document.getElementById("b-tune"), tuneBox = document.getElementById("tunebox");
 tuneBtn.addEventListener("click", function(){
@@ -1256,7 +1278,7 @@ try{ if(document.fonts && document.fonts.ready) document.fonts.ready.then(functi
 /* ---- boot ---- */
 initSoundPickers();
 refresh();
-if(!restore()) show("setup");
+if(!restore()) show("mode");
 if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("./sw.js").catch(function(){}); }catch(e){} }
 
 window.BP = {S:S, DB:DB, now:nowSec, build:buildSteps, advance:advance, sync:syncTap, audio:function(){ return A; }, scheme:function(){ return scheme; }};

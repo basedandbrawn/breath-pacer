@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0e1826">
+<meta name="theme-color" content="#0d1b2a">
 <title>Breath</title>
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -19,13 +19,12 @@
 @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:300 700;font-display:swap;src:url(fonts/space-grotesk.woff2) format('woff2')}
 
 :root{
-  --bg:#0e1826; --fg:#ecdfc4; --mute:#a99f86;
-  --panel:#142136; --panel2:#1b2b45; --line:#2a3b57;
-  --acc:#d0703a; --accA:#d0703a66;
-}
+  --bg:#0d1b2a; --fg:#d7e7f5; --mute:#8a9bb0;
+  --panel:#132537; --panel2:#182c42; --line:#25405a;
+  --acc:#4fd9ff; --accA:#4fd9ff66;
 }
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;height:100%;background:var(--bg);}
+html,body{margin:0;padding:0;height:100%;background:var(--bg);overflow-x:hidden}
 body{
   font-family:'Space Grotesk',-apple-system,system-ui,sans-serif;
   font-weight:500;
@@ -52,22 +51,22 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .btn{display:block;width:100%;padding:19px 16px;border-radius:16px;background:var(--panel2);
   border:1px solid var(--line);color:var(--fg);font-size:13px;font-weight:600;
   letter-spacing:.22em;text-transform:uppercase;text-align:center}
-.btn:active{background:#24365a}
-.btn.go{background:linear-gradient(135deg,#7a3d1c,#4a2411);border:1px solid #d0703a;color:#f4dcc0;
+.btn:active{background:#1e3450}
+.btn.go{background:linear-gradient(135deg,#0f3a55,#0a2038);border:1px solid #2d7ba6;color:#bfeaff;
   font-family:'Rajdhani',sans-serif;font-weight:700;font-size:min(13vw,50px);letter-spacing:.14em;
-  padding:16px 16px 12px;line-height:1;box-shadow:0 0 34px #d0703a44, inset 0 0 22px #d0703a22}
-.btn.ghost{background:transparent;border-color:#2a3b5780;color:var(--mute);padding:14px;font-size:12px;letter-spacing:.26em}
+  padding:16px 16px 12px;line-height:1;box-shadow:0 0 34px #1998d455, inset 0 0 22px #1998d422}
+.btn.ghost{background:transparent;border-color:#25405a80;color:var(--mute);padding:14px;font-size:12px;letter-spacing:.26em}
 .btn.ghost.small{padding:12px;font-size:11px;margin:4px 0 10px}
 
 /* ---------- mode ---------- */
 .eyebrow{font-size:12px;letter-spacing:.38em;color:var(--mute);text-transform:uppercase;font-weight:500}
 .spacer{flex:1 1 auto}
 .modes{display:flex;flex-direction:column;gap:16px}
-.mode{width:100%;text-align:left;padding:34px 28px;border-radius:24px;background:linear-gradient(160deg,#162540,#0f1a2b);
-  border:1px solid #2a3b57;overflow:hidden;position:relative}
-.mode:active{background:#1b2b45}
+.mode{width:100%;text-align:left;padding:34px 28px;border-radius:24px;background:linear-gradient(160deg,#152a40,#0d1b2a);
+  border:1px solid #25405a;overflow:hidden;position:relative}
+.mode:active{background:#182c42}
 .mode::after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;
-  background:radial-gradient(circle,#d0703a26,transparent 70%)}
+  background:radial-gradient(circle,#4fd9ff22,transparent 70%)}
 .mode .t{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:min(15vw,74px);line-height:.95;letter-spacing:.08em}
 .mode .t{padding:2px 0}
 .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -76,7 +75,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 
 /* ---------- setup ---------- */
 
-.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #2a3b5780}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #25405a80}
 .row:last-child{border-bottom:0}
 .row.stack{flex-direction:column;align-items:stretch;gap:10px}
 .row.stack .seg{justify-content:stretch}
@@ -85,33 +84,35 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .step{display:flex;align-items:center;gap:2px}
 .step button{width:54px;height:54px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);
   font-size:26px;line-height:1;color:var(--fg);display:flex;align-items:center;justify-content:center;touch-action:none}
-.step button:active{background:#24365a;border-color:#d0703a}
+.step button:active{background:#1e3450;border-color:#2d7ba6}
 .step .v{min-width:78px;text-align:center;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:42px;line-height:1;font-variant-numeric:tabular-nums}
 .seg{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .seg button{padding:13px 15px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);
   font-size:11px;letter-spacing:.18em;font-weight:600;color:var(--mute);text-transform:uppercase}
-.seg button.sel{background:#3a2418;border-color:#d0703a;color:#f2cfae;box-shadow:0 0 14px #d0703a33}
-.card{background:#121e32;border:1px solid #243450;border-radius:20px;padding:6px 18px;margin-bottom:14px}
+.seg button.sel{background:#123047;border-color:#2d7ba6;color:#a8e5ff;box-shadow:0 0 14px #1998d433}
+.card{background:#112233;border:1px solid #1f3650;border-radius:20px;padding:6px 18px;margin-bottom:14px}
 .sub{display:flex;flex-direction:column;align-items:stretch;gap:9px;width:100%;padding:6px 0 4px;
   font-size:12px;letter-spacing:.22em;color:var(--mute);text-align:center}
-#lift-sub,#breathe-sub{padding:12px 0 10px}
+.row .v.quiet{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:30px;line-height:1;color:var(--mute);font-variant-numeric:tabular-nums;padding-right:6px}
+.adj{display:block;width:100%;text-align:center;padding:10px 0 8px;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--mute);opacity:.55}
+.adj.open{opacity:.9}
 .sub .cap{display:flex;align-items:center;justify-content:center;gap:12px}
 /* a breath drawn to scale: in, hold, out as the phase colours, widths in seconds */
 .bbar{display:flex;gap:3px;height:10px;width:100%}
 .bbar i{display:block;border-radius:99px;min-width:4px}
-.bbar .bi{background:#8fb4d8}.bbar .bh{background:#9fc79a}.bbar .bo{background:#d97b41}.bbar .be{background:#3a4656}
+.bbar .bi{background:#4fd9ff}.bbar .bh{background:#5ee8cf}.bbar .bo{background:#ffab5e}.bbar .be{background:#3a4656}
 .seg button .bbar{height:6px;margin-top:8px;opacity:.55}
 .seg button.sel .bbar{opacity:1}
 .sub .chev{display:inline-block;width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
   transform:translateY(-2px) rotate(45deg);transition:transform .2s;opacity:.8}
 .sub.open .chev{transform:translateY(2px) rotate(225deg)}
 .counts{display:flex;gap:8px;margin:4px 0 12px}
-.cnt{flex:1;background:#0e1826;border:1px solid #243450;border-radius:16px;padding:12px 6px;text-align:center}
+.cnt{flex:1;background:#0d1b2a;border:1px solid #1f3650;border-radius:16px;padding:12px 6px;text-align:center}
 .cnt .cl{font-size:10px;letter-spacing:.18em;color:var(--mute);text-transform:uppercase}
 .cnt .cv{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:32px;line-height:1.05;margin:2px 0 6px}
 .cnt .cb{display:flex;gap:4px}
 .cnt .cb button{flex:1;height:44px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:19px;touch-action:none}
-.cnt .cb button:active{background:#24365a}
+.cnt .cb button:active{background:#1e3450}
 .scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1 1 auto}
 .foot{display:flex;gap:10px;margin-top:14px}
 .foot .btn{flex:1}
@@ -123,8 +124,10 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   border:1px solid transparent;border-radius:12px;transition:opacity .2s}
 #endbtn.arm{opacity:1;border-color:currentColor;background:#ffffff14}
 #rmeta{text-align:center;font-size:min(3.9vw,16px);letter-spacing:.2em;font-weight:600;opacity:.82;
-  text-transform:uppercase;padding:8px 78px;min-height:24px;white-space:nowrap;overflow:hidden}
+  text-transform:uppercase;padding:0 78px;height:40px;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;flex:none}
 #s-run .mid{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:min(3vh,22px)}
+/* the slot under the ring and the footer keep their height in every state, so the ring never moves */
+#below{height:min(17vw,12vh);width:100%;display:flex;align-items:center;justify-content:center}
 
 #ringwrap{position:relative;width:min(88vw,47vh);height:min(88vw,47vh)}
 #halo{position:absolute;inset:0;border-radius:50%;pointer-events:none;
@@ -148,11 +151,12 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   background:transparent;border:1px solid currentColor}
 #bar span{display:block;height:100%;border-radius:99px;background:var(--acc);box-shadow:0 0 10px var(--acc)}
 #clock{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:min(17vw,12vh);line-height:1;text-align:center;font-variant-numeric:tabular-nums}
-#hint{text-align:center;font-size:11px;letter-spacing:.3em;text-transform:uppercase;opacity:.5;padding:0 20px 10px}
-#runfoot{padding:0 20px;display:flex;flex-direction:column;gap:10px;width:100%}
+#hint{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 98px);text-align:center;font-size:11px;letter-spacing:.3em;text-transform:uppercase;opacity:.5;padding:0 20px}
+#runfoot{padding:0 20px;display:flex;align-items:center;width:100%;height:80px;flex:none}
+#runfoot .btn{flex:1;height:60px;display:flex;align-items:center;justify-content:center;padding:0 16px}
 #runfoot .btn{border-color:currentColor;color:inherit;background:transparent;opacity:.9}
-#runfoot .btn.wide{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:min(10vw,44px);
-  letter-spacing:.14em;padding:14px 10px 10px;line-height:1}
+#runfoot .btn.wide{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:min(8.5vw,36px);
+  letter-spacing:.14em;line-height:1;padding-top:3px}
 #runfoot .btn:active{background:#ffffff14}
 #runfoot .btn{position:relative}
 #runfoot .btn.ready{border-color:var(--acc);color:var(--acc);opacity:1;box-shadow:0 0 12px var(--accA)}
@@ -191,13 +195,12 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 
     <div id="p-lift">
       <div class="card">
-        <div class="row stack"><span class="lbl">Preset</span>
-          <div class="seg" id="seg-preset" role="group" aria-label="Preset">
+        <div class="row stack"><span class="lbl">Pattern</span>
+          <div class="seg" id="seg-preset" role="group" aria-label="Pattern">
             <button data-preset="compound"><span>Compound</span><span class="bbar"></span></button>
             <button data-preset="isolation"><span>Isolation</span><span class="bbar"></span></button>
             <button data-preset="hold"><span>Isometric</span><span class="bbar"></span></button>
           </div>
-          <button class="sub" id="b-tune" aria-expanded="false"><span class="cap"><span id="preset-sub"></span><i class="chev"></i></span></button>
           <div id="tunebox" class="hid">
             <div class="counts">
               <div class="cnt"><div class="cl">In</div><div class="cv" id="v-in">4</div>
@@ -218,7 +221,8 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
           <div class="step"><button data-s="sets:-1" aria-label="Fewer sets">−</button><span class="v" id="v-sets">4</span><button data-s="sets:1" aria-label="More sets">+</button></div></div>
         <div class="row"><span class="lbl">Rest</span>
           <div class="step"><button data-s="rest:-15" aria-label="Less rest">−</button><span class="v" id="v-rest">3:00</span><button data-s="rest:15" aria-label="More rest">+</button></div></div>
-        <div class="sub" id="lift-sub"></div>
+        <div class="row"><span class="lbl">Session</span><span class="v quiet" id="lift-sub"></span></div>
+        <button class="adj" id="b-tune" aria-expanded="false">Adjust</button>
       </div>
       <div class="card">
         <div class="row stack"><span class="lbl">Sound</span>
@@ -236,7 +240,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
           </div></div>
         <div class="row"><span class="lbl">Cycles</span>
           <div class="step"><button data-s="cycles:-1" aria-label="Fewer cycles">−</button><span class="v" id="v-cycles">8</span><button data-s="cycles:1" aria-label="More cycles">+</button></div></div>
-        <div class="sub" id="breathe-sub"></div>
+        <div class="row"><span class="lbl">Session</span><span class="v quiet" id="breathe-sub"></span></div>
       </div>
       <div class="card">
         <div class="row stack"><span class="lbl">Sound</span>
@@ -266,9 +270,11 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
         <div id="num"></div>
       </div>
     </div>
-    <div id="clock" class="hid"></div>
-    <div id="dots"></div>
-    <div id="bar" class="hid"><span></span></div>
+    <div id="below">
+      <div id="clock" class="hid"></div>
+      <div id="dots"></div>
+      <div id="bar" class="hid"><span></span></div>
+    </div>
   </div>
   <div id="hint" class="hid">Tap for sound</div>
   <div id="runfoot">
@@ -981,10 +987,10 @@ function ensureAudio(){
 /* ============================ RENDER ============================ */
 /* [bg, text, accent] per phase. One palette for both modes: deep blue filling,
    dark teal holding, ember emptying. Nothing bright; nothing that spikes. */
-var PAL = {"in":["#12243d","#ecdfc4","#8fb4d8"], hold:["#1a2e27","#e6e2c8","#9fc79a"],
-           out:["#3b1c0f","#f1dcc4","#d97b41"], empty:["#0a0f17","#7d7666","#3a3f4a"],
-           getset:["#0e1826","#ecdfc4","#6f86a3"], ready:["#0e1826","#ecdfc4","#d0703a"],
-           pause:["#0a0f17","#7d7666","#3a3f4a"], done:["#0e1826","#ecdfc4","#d0703a"]};
+var PAL = {"in":["#0f2a4a","#d9f2ff","#4fd9ff"], hold:["#0b3634","#d6f5ef","#5ee8cf"],
+           out:["#2a1206","#ffe8d1","#ffab5e"], empty:["#070d15","#5d6b7c","#26313f"],
+           getset:["#0d1b2a","#cfe9ff","#3d7ea3"], ready:["#0d1b2a","#cfe9ff","#4fd9ff"],
+           pause:["#070d15","#5d6b7c","#26313f"], done:["#0d1b2a","#d7e7f5","#4fd9ff"]};
 var elBg = document.getElementById("bg"), elWord = document.getElementById("word"),
     elWordI = document.getElementById("word").firstElementChild,
     elNum = document.getElementById("num"), elDots = document.getElementById("dots"),
@@ -1206,10 +1212,8 @@ function refresh(){
   document.getElementById("v-rest").textContent = fmtClock(T.rest);
   vis(document.getElementById("row-reps"), !isHold);
   vis(document.getElementById("row-hsec"), isHold);
-  document.getElementById("preset-sub").textContent =
-    fmtN(T["in"]) + (T.hold > 0 ? " · " + fmtN(T.hold) : "") + " · " + fmtN(T.out);
   var cyc = +T["in"] + +T.hold + +T.out, work = isHold ? L.holdSec : L.reps * cyc;
-  document.getElementById("lift-sub").textContent = "≈ " + fmtClock(L.sets * (3 + work) + (L.sets - 1) * (+T.rest));
+  document.getElementById("lift-sub").textContent = fmtClock(L.sets * (3 + work) + (L.sets - 1) * (+T.rest));
   vis(document.getElementById("b-tunereset"), !tuneIsDefault());
   var pres = document.querySelectorAll("#seg-preset button");
   for(i=0;i<pres.length;i++){ var tp = L.tune[pres[i].getAttribute("data-preset")]; pres[i].querySelector(".bbar").innerHTML = bbar({"in":tp["in"], hold:tp.hold, out:tp.out, empty:0}); }
@@ -1220,7 +1224,7 @@ function refresh(){
   for(i=0;i<pats.length;i++){ var pb = pats[i].querySelector(".bbar"); if(pb && !pb.firstChild) pb.innerHTML = bbar(PATS[pats[i].getAttribute("data-pat")]); }
   sel(pats, "data-pat", P.pat);
   var cc = PATS[P.pat], total = P.cycles * (cc["in"] + cc.hold + cc.out + cc.empty);
-  document.getElementById("breathe-sub").textContent = "≈ " + fmtClock(total);
+  document.getElementById("breathe-sub").textContent = fmtClock(total);
 
   var snd = document.querySelectorAll("[data-sound]");
   for(i=0;i<snd.length;i++){
@@ -1251,8 +1255,8 @@ function show(id){
   var ids = ["mode","setup","run"];
   for(var i=0;i<ids.length;i++) document.getElementById("s-"+ids[i]).classList.toggle("on", ids[i] === id);
   if(id !== "run"){
-    elBg.style.backgroundColor = "#0e1826";
-    lastBg = "#0e1826";
+    elBg.style.backgroundColor = "#0d1b2a";
+    lastBg = "#0d1b2a";
     if(id === "setup") refresh();
   }else if(!raf){ raf = requestAnimationFrame(tick); }
 }

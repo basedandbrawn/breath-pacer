@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#120c07">
+<meta name="theme-color" content="#0d0c0d">
 <title>Breath</title>
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -20,16 +20,16 @@
 
 :root{
   /* THEME START — every colour in the app comes from this block and the PAL table below */
-  --bg:#120c07; --fg:#faf4c8; --mute:#b38f58;
-  --panel:#221810; --panel2:#2c2016; --line:#553f24; --lineA:#553f2499;
-  --acc:#c18e5b; --accA:#c18e5b66; --accB:#c18e5b33; --accC:#c18e5b14;
-  --active:#3a2a17; --activeline:#b38f58;
-  --go1:#6e3a10; --go2:#2c1808; --goline:#b38f58; --gotx:#f8e4c0;
-  --selbg:#43301a; --selline:#b38f58; --seltx:#f0d5a4;
-  --top:#4a2c10;
-  --lift1:#2a1d10; --lift2:#1a1109; --liftline:#5b4326; --liftmc:#8fb3a6; --liftmcA:#8fb3a655; --liftmcB:#8fb3a622;
-  --br1:#331a0c; --br2:#1e1108; --brline:#5c3a1e; --brmc:#cf4b00; --brmcA:#cf4b0055; --brmcB:#cf4b0022;
-  --bi:#8fb3a6; --bh:#b38f58; --bo:#cf4b00; --be:#3a2c1c;
+  --bg:#0d0c0d; --fg:#e9dfc9; --mute:#8f867a;
+  --panel:#1a1a1d; --panel2:#262627; --line:#454140; --lineA:#45414099;
+  --acc:#c9622a; --accA:#c9622a66; --accB:#c9622a33; --accC:#c9622a14;
+  --active:#2f2e2e; --activeline:#c9622a;
+  --go1:#6b2a10; --go2:#2a1008; --goline:#cf7b4a; --gotx:#f7dcc4;
+  --selbg:#361f13; --selline:#c9622a; --seltx:#dfba99;
+  --top:#3a1a10;
+  --lift1:#1d2027; --lift2:#15161a; --liftline:#464647; --liftmc:#8fa9c4; --liftmcA:#8fa9c455; --liftmcB:#8fa9c422;
+  --br1:#2e1410; --br2:#1e100e; --brline:#533d35; --brmc:#d84a12; --brmcA:#d84a1255; --brmcB:#d84a1222;
+  --bi:#8fa9c4; --bh:#b8963f; --bo:#d84a12; --be:#2e2c29;
   /* THEME END */
 }
 *{box-sizing:border-box}
@@ -196,17 +196,12 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 }
 .hid{display:none !important}
 
-/* THEME-EXTRA START — surface treatment that belongs to the theme, not the layout */
-/* rustic: carved wood, brass fittings, lamplight */
-.card{border-radius:8px;box-shadow:inset 0 0 0 1px #b38f5822, inset 0 22px 40px #00000040;
-  background-image:linear-gradient(180deg,#2a1e13,#1d150d)}
-.btn,.seg button,.step button{border-radius:7px}
-.btn.go{border-radius:9px;letter-spacing:.2em;text-shadow:0 1px 0 #00000066}
-.mode{border-radius:14px;box-shadow:inset 0 0 0 1px #b38f5826, 0 14px 40px #00000070}
-.mode .t{letter-spacing:.12em}
-.eyebrow,.lbl{letter-spacing:.34em}
-#s-mode::after{content:"";position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(120% 70% at 50% 0%,#00000000 40%,#00000066 100%)}
+/* THEME-EXTRA START */
+.card{border-radius:3px;outline:1px solid #2a2725;outline-offset:3px;box-shadow:inset 0 0 0 1px #00000088, inset 0 18px 36px #00000066}
+.btn,.seg button,.step button{border-radius:3px}
+.btn.go{border-radius:3px;outline:1px solid #6b2a1099;outline-offset:3px;text-shadow:0 1px 0 #000}
+.mode{border-radius:4px;outline:1px solid #2a2725;outline-offset:3px;box-shadow:inset 0 0 0 1px #00000088, 0 14px 40px #000000aa}
+#s-mode::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 70% at 50% 0%,#00000000 40%,#00000088 100%)}
 /* THEME-EXTRA END */
 
 </style>
@@ -234,8 +229,8 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 
     <div id="p-lift">
       <div class="card">
-        <div class="row stack"><span class="lbl">Pattern</span>
-          <div class="seg" id="seg-preset" role="group" aria-label="Pattern">
+        <div class="row stack"><span class="lbl">Cadence</span>
+          <div class="seg" id="seg-preset" role="group" aria-label="Cadence">
             <button data-preset="compound"><span>Compound</span><span class="bbar"></span></button>
             <button data-preset="isolation"><span>Isolation</span><span class="bbar"></span></button>
             <button data-preset="hold"><span>Isometric</span><span class="bbar"></span></button>
@@ -274,8 +269,8 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 
     <div id="p-breathe">
       <div class="card">
-        <div class="row stack"><span class="lbl">Pattern</span>
-          <div class="seg" id="seg-pat" role="group" aria-label="Pattern">
+        <div class="row stack"><span class="lbl">Cadence</span>
+          <div class="seg" id="seg-pat" role="group" aria-label="Cadence">
             <button data-pat="478"><span>4 · 7 · 8</span><span class="bbar"></span></button>
             <button data-pat="coh"><span>5.5 · 5.5</span><span class="bbar"></span></button>
             <button data-pat="box"><span>4 · 4 · 4 · 4</span><span class="bbar"></span></button>
@@ -1034,10 +1029,10 @@ function ensureAudio(){
 /* [bg, text, accent] per phase. One palette for both modes: deep blue filling,
    old gold holding, terracotta emptying. No green anywhere. Nothing bright;
    nothing that spikes. */
-var PAL = {"in":["#16241f","#f2ead2","#8fb3a6"], hold:["#2e2412","#faf4c8","#b38f58"],
-           out:["#3a1605","#f5d5ae","#cf4b00"], empty:["#0c0805","#8a7a5c","#2a2015"],
-           getset:["#120c07","#f0e3c4","#8a6b3c"], ready:["#120c07","#f0e3c4","#c18e5b"],
-           pause:["#0c0805","#8a7a5c","#2a2015"], done:["#120c07","#faf4c8","#c18e5b"]};
+var PAL = {"in":["#161d26","#e8eef4","#8fa9c4"], hold:["#2a2210","#f3e8c8","#b8963f"],
+           out:["#35110a","#f7dcd0","#d84a12"], empty:["#080708","#7a7268","#272524"],
+           getset:["#0d0c0d","#d7ceba","#5b6a7b"], ready:["#0d0c0d","#d7ceba","#8fa9c4"],
+           pause:["#080708","#7a7268","#272524"], done:["#0d0c0d","#e9dfc9","#8fa9c4"]};
 var BG0 = (getComputedStyle(document.documentElement).getPropertyValue("--bg") || "#120c07").trim();
 var elBg = document.getElementById("bg"), elWord = document.getElementById("word"),
     elWordI = document.getElementById("word").firstElementChild,

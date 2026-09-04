@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#040c24">
+<meta name="theme-color" content="#1c2a30">
 <title>Breath</title>
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -19,9 +19,9 @@
 @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:300 700;font-display:swap;src:url(fonts/space-grotesk.woff2) format('woff2')}
 
 :root{
-  --bg:#040c24; --fg:#e8f3ff; --mute:#93a9c9;
-  --panel:#081636; --panel2:#0c1d44; --line:#1a3a6a;
-  --acc:#3ae0ff; --accA:#3ae0ff66;
+  --bg:#1c2a30; --fg:#e8eff3; --mute:#9db0b9;
+  --panel:#22343b; --panel2:#293e46; --line:#38535d;
+  --acc:#5ccfee; --accA:#5ccfee66;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;height:100%;background:var(--bg);overflow-x:hidden}
@@ -51,24 +51,24 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .btn{display:block;width:100%;padding:19px 16px;border-radius:16px;background:var(--panel2);
   border:1px solid var(--line);color:var(--fg);font-size:13px;font-weight:600;
   letter-spacing:.22em;text-transform:uppercase;text-align:center}
-.btn:active{background:#12305f}
-.btn.go{background:linear-gradient(135deg,#0d4f86,#082a5c);border:1px solid #3ab4ea;color:#d2f5ff;
+.btn:active{background:#31505b}
+.btn.go{background:linear-gradient(135deg,#215f78,#183c4b);border:1px solid #4fb6d6;color:#dcf5fd;
   font-family:'Rajdhani',sans-serif;font-weight:700;font-size:min(13vw,50px);letter-spacing:.14em;
-  padding:16px 16px 12px;line-height:1;box-shadow:0 0 38px #1fb8ff66, inset 0 0 22px #1fb8ff2e}
-.btn.ghost{background:transparent;border-color:#1a3a6a99;color:var(--mute);padding:14px;font-size:12px;letter-spacing:.26em}
+  padding:16px 16px 12px;line-height:1;box-shadow:0 0 36px #3fb9dd5c, inset 0 0 22px #3fb9dd2a}
+.btn.ghost{background:transparent;border-color:#38535d99;color:var(--mute);padding:14px;font-size:12px;letter-spacing:.26em}
 .btn.ghost.small{padding:12px;font-size:11px;margin:4px 0 10px}
 
 /* ---------- mode ---------- */
 .eyebrow{font-size:12px;letter-spacing:.38em;color:var(--mute);text-transform:uppercase;font-weight:500}
 .spacer{flex:1 1 auto}
-#s-mode{background:radial-gradient(130% 55% at 50% -12%,#0f3a86 0%,#040c2400 62%)}
+#s-mode{background:radial-gradient(130% 55% at 50% -12%,#2f4d5a 0%,#1c2a3000 62%)}
 .modes{display:flex;flex-direction:column;gap:18px;flex:0 1 auto;height:min(72vh,720px)}
 /* each card is a breath: a ring that fills, holds and empties in its own colour.
    Lift breathes like a compound rep (4·2·6), Breathe like coherent (5.5·5.5). */
-.mode{--mc:#3ae0ff;--mcA:#3ae0ff40;flex:1;width:100%;text-align:left;padding:0 30px;border-radius:28px;
-  background:linear-gradient(150deg,#0c2354,#040c24);border:1px solid #1f4680;overflow:hidden;position:relative;
+.mode{--mc:#5ccfee;--mcA:#5ccfee40;flex:1;width:100%;text-align:left;padding:0 30px;border-radius:28px;
+  background:linear-gradient(150deg,#28414c,#1c2a30);border:1px solid #3d5c68;overflow:hidden;position:relative;
   display:flex;align-items:center;box-shadow:inset 0 0 0 1px #ffffff08, 0 10px 40px #00000055}
-.mode.breathe{--mc:#ffc43d;--mcA:#ffc43d38;background:linear-gradient(150deg,#1a1a3e,#040c24);border-color:#3a3562}
+.mode.breathe{--mc:#d9ae4f;--mcA:#d9ae4f38;background:linear-gradient(150deg,#33353b,#1c2a30);border-color:#4d4d50}
 .mode:active{filter:brightness(1.18)}
 .mode .halo{position:absolute;right:-12%;top:50%;width:min(74vw,360px);aspect-ratio:1;transform:translateY(-50%);border-radius:50%;
   background:radial-gradient(circle,var(--mcA) 0%,transparent 60%);opacity:.5;animation:mhalo 10s cubic-bezier(.45,0,.35,1) -4.5s infinite}
@@ -92,7 +92,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 
 /* ---------- setup ---------- */
 
-.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #1a3a6a99}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #38535d99}
 .row:last-child{border-bottom:0}
 .row.stack{flex-direction:column;align-items:stretch;gap:10px}
 .row.stack .seg{justify-content:stretch}
@@ -101,13 +101,13 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .step{display:flex;align-items:center;gap:2px}
 .step button{width:54px;height:54px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);
   font-size:26px;line-height:1;color:var(--fg);display:flex;align-items:center;justify-content:center;touch-action:none}
-.step button:active{background:#12305f;border-color:#3ab4ea}
+.step button:active{background:#31505b;border-color:#4fb6d6}
 .step .v{min-width:78px;text-align:center;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:42px;line-height:1;font-variant-numeric:tabular-nums}
 .seg{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .seg button{padding:13px 15px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);
   font-size:11px;letter-spacing:.18em;font-weight:600;color:var(--mute);text-transform:uppercase}
-.seg button.sel{background:#0d3468;border-color:#3ab4ea;color:#9cf0ff;box-shadow:0 0 16px #1fb8ff44}
-.card{background:#081636;border:1px solid #1a3a6a;border-radius:20px;padding:6px 18px;margin-bottom:14px}
+.seg button.sel{background:#204c5d;border-color:#4fb6d6;color:#bdeefb;box-shadow:0 0 16px #3fb9dd40}
+.card{background:#22343b;border:1px solid #38535d;border-radius:20px;padding:6px 18px;margin-bottom:14px}
 .sub{display:flex;flex-direction:column;align-items:stretch;gap:9px;width:100%;padding:6px 0 4px;
   font-size:12px;letter-spacing:.22em;color:var(--mute);text-align:center}
 .row .v.quiet{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:30px;line-height:1;color:var(--mute);font-variant-numeric:tabular-nums;padding-right:6px}
@@ -117,14 +117,14 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 /* a breath drawn to scale: in, hold, out as the phase colours, widths in seconds */
 .bbar{display:flex;gap:3px;height:10px;width:100%}
 .bbar i{display:block;border-radius:99px;min-width:4px}
-.bbar .bi{background:#3ae0ff}.bbar .bh{background:#ffc43d}.bbar .bo{background:#ff6a2b}.bbar .be{background:#2a3d63}
+.bbar .bi{background:#5ccfee}.bbar .bh{background:#d9ae4f}.bbar .bo{background:#ea8324}.bbar .be{background:#3e555f}
 .seg button .bbar{height:6px;margin-top:8px;opacity:.55}
 .seg button.sel .bbar{opacity:1}
 .sub .chev{display:inline-block;width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
   transform:translateY(-2px) rotate(45deg);transition:transform .2s;opacity:.8}
 .sub.open .chev{transform:translateY(2px) rotate(225deg)}
 .counts{display:flex;gap:8px;margin:4px 0 12px}
-.cnt{flex:1;background:#040c24;border:1px solid #1a3a6a;border-radius:16px;padding:12px 6px;text-align:center}
+.cnt{flex:1;background:#1c2a30;border:1px solid #38535d;border-radius:16px;padding:12px 6px;text-align:center}
 .cnt .cl{font-size:10px;letter-spacing:.18em;color:var(--mute);text-transform:uppercase}
 .cnt .cv{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:32px;line-height:1.05;margin:2px 0 6px}
 .cnt .cb{display:flex;gap:4px}
@@ -1008,10 +1008,10 @@ function ensureAudio(){
 /* [bg, text, accent] per phase. One palette for both modes: deep blue filling,
    old gold holding, terracotta emptying. No green anywhere. Nothing bright;
    nothing that spikes. */
-var PAL = {"in":["#062a5e","#e6f7ff","#3ae0ff"], hold:["#2e1f00","#fff1cc","#ffc43d"],
-           out:["#3c0e02","#ffe3d3","#ff6a2b"], empty:["#02061a","#6b7d9c","#22304f"],
-           getset:["#040c24","#d6ecff","#3e8fc4"], ready:["#040c24","#d6ecff","#3ae0ff"],
-           pause:["#02061a","#6b7d9c","#22304f"], done:["#040c24","#e8f3ff","#3ae0ff"]};
+var PAL = {"in":["#16364c","#e6f5fb","#5ccfee"], hold:["#2e2816","#f6edd9","#d9ae4f"],
+           out:["#37200e","#fbe9d8","#ea8324"], empty:["#121c21","#748891","#2f454d"],
+           getset:["#1c2a30","#dbe9ef","#4a97b1"], ready:["#1c2a30","#dbe9ef","#5ccfee"],
+           pause:["#121c21","#748891","#2f454d"], done:["#1c2a30","#e8eff3","#5ccfee"]};
 var elBg = document.getElementById("bg"), elWord = document.getElementById("word"),
     elWordI = document.getElementById("word").firstElementChild,
     elNum = document.getElementById("num"), elDots = document.getElementById("dots"),
@@ -1276,8 +1276,8 @@ function show(id){
   var ids = ["mode","setup","run"];
   for(var i=0;i<ids.length;i++) document.getElementById("s-"+ids[i]).classList.toggle("on", ids[i] === id);
   if(id !== "run"){
-    elBg.style.backgroundColor = "#040c24";
-    lastBg = "#040c24";
+    elBg.style.backgroundColor = "#1c2a30";
+    lastBg = "#1c2a30";
     if(id === "setup") refresh();
   }else if(!raf){ raf = requestAnimationFrame(tick); }
 }

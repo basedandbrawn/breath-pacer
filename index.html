@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#1c2a30">
+<meta name="theme-color" content="#060c22">
 <title>Breath</title>
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -19,9 +19,9 @@
 @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:300 700;font-display:swap;src:url(fonts/space-grotesk.woff2) format('woff2')}
 
 :root{
-  --bg:#1c2a30; --fg:#e8eff3; --mute:#9db0b9;
-  --panel:#22343b; --panel2:#293e46; --line:#38535d;
-  --acc:#5ccfee; --accA:#5ccfee66;
+  --bg:#060c22; --fg:#e6eefb; --mute:#93a6cc;
+  --panel:#0b1430; --panel2:#101c40; --line:#1f3060;
+  --acc:#6cb4ff; --accA:#6cb4ff66;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;height:100%;background:var(--bg);overflow-x:hidden}
@@ -51,48 +51,44 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .btn{display:block;width:100%;padding:19px 16px;border-radius:16px;background:var(--panel2);
   border:1px solid var(--line);color:var(--fg);font-size:13px;font-weight:600;
   letter-spacing:.22em;text-transform:uppercase;text-align:center}
-.btn:active{background:#31505b}
-.btn.go{background:linear-gradient(135deg,#215f78,#183c4b);border:1px solid #4fb6d6;color:#dcf5fd;
+.btn:active{background:#142a5c}
+.btn.go{background:linear-gradient(135deg,#1b4f94,#0e2a5e);border:1px solid #5aa3f0;color:#dfeeff;
   font-family:'Rajdhani',sans-serif;font-weight:700;font-size:min(13vw,50px);letter-spacing:.14em;
-  padding:16px 16px 12px;line-height:1;box-shadow:0 0 36px #3fb9dd5c, inset 0 0 22px #3fb9dd2a}
-.btn.ghost{background:transparent;border-color:#38535d99;color:var(--mute);padding:14px;font-size:12px;letter-spacing:.26em}
+  padding:16px 16px 12px;line-height:1;box-shadow:0 0 10px #6cb4ff55, 0 0 34px #6cb4ff33, 0 0 80px #6cb4ff14, inset 0 0 24px #6cb4ff22}
+.btn.ghost{background:transparent;border-color:#1f306099;color:var(--mute);padding:14px;font-size:12px;letter-spacing:.26em}
 .btn.ghost.small{padding:12px;font-size:11px;margin:4px 0 10px}
 
 /* ---------- mode ---------- */
 .eyebrow{font-size:12px;letter-spacing:.38em;color:var(--mute);text-transform:uppercase;font-weight:500}
 .spacer{flex:1 1 auto}
-#s-mode{background:radial-gradient(130% 55% at 50% -12%,#2f4d5a 0%,#1c2a3000 62%)}
+#s-mode{background:radial-gradient(120% 50% at 50% -10%,#16307a 0%,#060c2200 62%)}
 .modes{display:flex;flex-direction:column;gap:18px;flex:0 1 auto;height:min(72vh,720px)}
-/* each card is a breath: a ring that fills, holds and empties in its own colour.
-   Lift breathes like a compound rep (4·2·6), Breathe like coherent (5.5·5.5). */
-.mode{--mc:#5ccfee;--mcA:#5ccfee40;flex:1;width:100%;text-align:left;padding:0 30px;border-radius:28px;
-  background:linear-gradient(150deg,#28414c,#1c2a30);border:1px solid #3d5c68;overflow:hidden;position:relative;
-  display:flex;align-items:center;box-shadow:inset 0 0 0 1px #ffffff08, 0 10px 40px #00000055}
-.mode.breathe{--mc:#d9ae4f;--mcA:#d9ae4f38;background:linear-gradient(150deg,#33353b,#1c2a30);border-color:#4d4d50}
+/* Two still cards. Each carries a ring of light in its own colour: azure for Lift,
+   orange for Breathe. Nothing on this screen moves. */
+.mode{--mc:#6cb4ff;--mcA:#6cb4ff55;--mcB:#6cb4ff22;flex:1;width:100%;text-align:left;padding:0 30px;border-radius:28px;
+  background:linear-gradient(150deg,#0e1f52 0%,#081338 55%,#060c22 100%);border:1px solid #223a74;overflow:hidden;position:relative;
+  display:flex;align-items:center;box-shadow:inset 0 1px 0 #ffffff12, 0 14px 44px #00000066}
+.mode.breathe{--mc:#f08a2e;--mcA:#f08a2e55;--mcB:#f08a2e22;background:linear-gradient(150deg,#241a3a 0%,#140f30 55%,#060c22 100%);border-color:#3a2f5c}
 .mode:active{filter:brightness(1.18)}
-.mode .halo{position:absolute;right:-12%;top:50%;width:min(74vw,360px);aspect-ratio:1;transform:translateY(-50%);border-radius:50%;
-  background:radial-gradient(circle,var(--mcA) 0%,transparent 60%);opacity:.5;animation:mhalo 10s cubic-bezier(.45,0,.35,1) -4.5s infinite}
-.mode .orb{position:absolute;right:-16%;top:50%;width:min(64vw,310px);height:auto;transform:translateY(-50%) rotate(-90deg);overflow:visible}
-.mode .orb circle{fill:none;stroke-width:3.2;stroke-linecap:round}
-.mode .orb .base{stroke:var(--fg);opacity:.1}
-.mode .orb .arc{stroke:var(--mc);stroke-dasharray:251.4;stroke-dashoffset:251.4;filter:drop-shadow(0 0 7px var(--mc));
-  animation:morb 10s cubic-bezier(.45,0,.35,1) -4.5s infinite}
-.mode.breathe .orb .arc{animation-name:morb2;animation-duration:11s;animation-delay:-8s}
-.mode.breathe .halo{animation-name:mhalo2;animation-duration:11s;animation-delay:-8s}
-@keyframes morb{0%{stroke-dashoffset:251.4}40%{stroke-dashoffset:0}60%{stroke-dashoffset:0}100%{stroke-dashoffset:251.4}}
-@keyframes mhalo{0%{opacity:.15;transform:translateY(-50%) scale(.8)}40%{opacity:.8;transform:translateY(-50%) scale(1.05)}60%{opacity:.8;transform:translateY(-50%) scale(1.05)}100%{opacity:.15;transform:translateY(-50%) scale(.8)}}
-@keyframes morb2{0%{stroke-dashoffset:251.4}50%{stroke-dashoffset:0}100%{stroke-dashoffset:251.4}}
-@keyframes mhalo2{0%{opacity:.15;transform:translateY(-50%) scale(.8)}50%{opacity:.8;transform:translateY(-50%) scale(1.05)}100%{opacity:.15;transform:translateY(-50%) scale(.8)}}
+.mode .halo{position:absolute;right:-14%;top:50%;width:min(80vw,380px);aspect-ratio:1;transform:translateY(-50%);border-radius:50%;
+  background:radial-gradient(circle,var(--mcA) 0%,var(--mcB) 28%,transparent 62%)}
+.mode .orb{position:absolute;right:-16%;top:50%;width:min(64vw,310px);height:auto;transform:translateY(-50%) rotate(-135deg);overflow:visible}
+.mode .orb circle{fill:none;stroke-linecap:round}
+.mode .orb .base{stroke:var(--fg);opacity:.1;stroke-width:3.2}
+.mode .orb .g3{stroke:var(--mc);stroke-width:26;opacity:.035}
+.mode .orb .g2{stroke:var(--mc);stroke-width:14;opacity:.09}
+.mode .orb .g1{stroke:var(--mc);stroke-width:7;opacity:.22}
+.mode .orb .arc{stroke:var(--mc);stroke-width:3.2}
+.mode .orb .g3,.mode .orb .g2,.mode .orb .g1,.mode .orb .arc{stroke-dasharray:188.5 251.4}
 .mode .t{position:relative;z-index:1;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:min(16vw,78px);line-height:.95;letter-spacing:.08em;
-  padding:2px 0;text-shadow:0 0 24px var(--mcA)}
+  padding:2px 0;text-shadow:0 0 14px var(--mcA), 0 0 46px var(--mcB)}
 .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .brand{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.38em;text-transform:uppercase;color:var(--mute);font-weight:500;padding:4px 6px}
-.brand i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--acc);box-shadow:0 0 10px var(--acc);display:block;animation:bpulse 5.5s ease-in-out infinite}
-@keyframes bpulse{0%,100%{opacity:.55;transform:scale(.85)}50%{opacity:1;transform:scale(1.1)}}
+.brand i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--acc);box-shadow:0 0 6px var(--acc), 0 0 18px var(--accA);display:block}
 
 /* ---------- setup ---------- */
 
-.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #38535d99}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #1f306099}
 .row:last-child{border-bottom:0}
 .row.stack{flex-direction:column;align-items:stretch;gap:10px}
 .row.stack .seg{justify-content:stretch}
@@ -101,13 +97,13 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .step{display:flex;align-items:center;gap:2px}
 .step button{width:54px;height:54px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);
   font-size:26px;line-height:1;color:var(--fg);display:flex;align-items:center;justify-content:center;touch-action:none}
-.step button:active{background:#31505b;border-color:#4fb6d6}
+.step button:active{background:#142a5c;border-color:#5aa3f0}
 .step .v{min-width:78px;text-align:center;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:42px;line-height:1;font-variant-numeric:tabular-nums}
 .seg{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .seg button{padding:13px 15px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);
   font-size:11px;letter-spacing:.18em;font-weight:600;color:var(--mute);text-transform:uppercase}
-.seg button.sel{background:#204c5d;border-color:#4fb6d6;color:#bdeefb;box-shadow:0 0 16px #3fb9dd40}
-.card{background:#22343b;border:1px solid #38535d;border-radius:20px;padding:6px 18px;margin-bottom:14px}
+.seg button.sel{background:#143266;border-color:#5aa3f0;color:#c6deff;box-shadow:0 0 8px #6cb4ff44, 0 0 26px #6cb4ff22}
+.card{background:#0b1430;border:1px solid #1f3060;border-radius:20px;padding:6px 18px;margin-bottom:14px}
 .sub{display:flex;flex-direction:column;align-items:stretch;gap:9px;width:100%;padding:6px 0 4px;
   font-size:12px;letter-spacing:.22em;color:var(--mute);text-align:center}
 .row .v.quiet{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:30px;line-height:1;color:var(--mute);font-variant-numeric:tabular-nums;padding-right:6px}
@@ -117,14 +113,14 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 /* a breath drawn to scale: in, hold, out as the phase colours, widths in seconds */
 .bbar{display:flex;gap:3px;height:10px;width:100%}
 .bbar i{display:block;border-radius:99px;min-width:4px}
-.bbar .bi{background:#5ccfee}.bbar .bh{background:#d9ae4f}.bbar .bo{background:#ea8324}.bbar .be{background:#3e555f}
+.bbar .bi{background:#6cb4ff}.bbar .bh{background:#e3b656}.bbar .bo{background:#f08a2e}.bbar .be{background:#24325a}
 .seg button .bbar{height:6px;margin-top:8px;opacity:.55}
 .seg button.sel .bbar{opacity:1}
 .sub .chev{display:inline-block;width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
   transform:translateY(-2px) rotate(45deg);transition:transform .2s;opacity:.8}
 .sub.open .chev{transform:translateY(2px) rotate(225deg)}
 .counts{display:flex;gap:8px;margin:4px 0 12px}
-.cnt{flex:1;background:#1c2a30;border:1px solid #38535d;border-radius:16px;padding:12px 6px;text-align:center}
+.cnt{flex:1;background:#060c22;border:1px solid #1f3060;border-radius:16px;padding:12px 6px;text-align:center}
 .cnt .cl{font-size:10px;letter-spacing:.18em;color:var(--mute);text-transform:uppercase}
 .cnt .cv{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:32px;line-height:1.05;margin:2px 0 6px}
 .cnt .cb{display:flex;gap:4px}
@@ -149,11 +145,13 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 #ringwrap{position:relative;width:min(88vw,47vh);height:min(88vw,47vh)}
 #halo{position:absolute;inset:0;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle at 50% 50%, var(--acc) 0%, transparent 62%);
+  background:radial-gradient(circle at 50% 50%, var(--acc) 0%, color-mix(in srgb, var(--acc) 45%, transparent) 26%, transparent 64%);
   opacity:.1;transform:scale(.6);will-change:transform,opacity}
 #ring{width:100%;height:100%;transform:rotate(-90deg);display:block;position:relative}
 #ring .track{fill:none;stroke:currentColor;stroke-opacity:.13;stroke-width:2.6}
-#ring .glow{fill:none;stroke:var(--acc);stroke-width:8;stroke-linecap:round;opacity:.18}
-#ring .glow2{fill:none;stroke:var(--acc);stroke-width:15;stroke-linecap:round;opacity:.06}
+#ring .glow{fill:none;stroke:var(--acc);stroke-width:7;stroke-linecap:round;opacity:.22}
+#ring .glow2{fill:none;stroke:var(--acc);stroke-width:14;stroke-linecap:round;opacity:.09}
+#ring .glow3{fill:none;stroke:var(--acc);stroke-width:26;stroke-linecap:round;opacity:.035}
 #ring .fill{fill:none;stroke:var(--acc);stroke-width:2.6;stroke-linecap:round}
 #ringin{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 #word span{display:inline-block}
@@ -185,9 +183,6 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   #runfoot .btn.ready::after{animation:none;opacity:.5}
   #bg{transition-duration:.15s}
   #flash.go{animation:none}
-  .mode .orb .arc{animation:none;stroke-dashoffset:100}
-  .mode .halo{animation:none;opacity:.5}
-  .brand i{animation:none}
 }
 .hid{display:none !important}
 </style>
@@ -202,8 +197,8 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   <div class="brand"><i></i>Breath</div>
   <div class="spacer"></div>
   <div class="modes">
-    <button class="mode lift" data-mode="lift"><div class="halo"></div><svg class="orb" viewBox="0 0 100 100" aria-hidden="true"><circle class="base" cx="50" cy="50" r="40"/><circle class="arc" cx="50" cy="50" r="40"/></svg><div class="t">LIFT</div></button>
-    <button class="mode breathe" data-mode="breathe"><div class="halo"></div><svg class="orb" viewBox="0 0 100 100" aria-hidden="true"><circle class="base" cx="50" cy="50" r="40"/><circle class="arc" cx="50" cy="50" r="40"/></svg><div class="t">BREATHE</div></button>
+    <button class="mode lift" data-mode="lift"><div class="halo"></div><svg class="orb" viewBox="0 0 100 100" aria-hidden="true"><circle class="base" cx="50" cy="50" r="40"/><circle class="g3" cx="50" cy="50" r="40"/><circle class="g2" cx="50" cy="50" r="40"/><circle class="g1" cx="50" cy="50" r="40"/><circle class="arc" cx="50" cy="50" r="40"/></svg><div class="t">LIFT</div></button>
+    <button class="mode breathe" data-mode="breathe"><div class="halo"></div><svg class="orb" viewBox="0 0 100 100" aria-hidden="true"><circle class="base" cx="50" cy="50" r="40"/><circle class="g3" cx="50" cy="50" r="40"/><circle class="g2" cx="50" cy="50" r="40"/><circle class="g1" cx="50" cy="50" r="40"/><circle class="arc" cx="50" cy="50" r="40"/></svg><div class="t">BREATHE</div></button>
   </div>
   <div class="spacer"></div>
 </section>
@@ -281,6 +276,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
       <div id="halo"></div>
       <svg id="ring" viewBox="-9 -9 118 118" aria-hidden="true">
         <circle class="track" cx="50" cy="50" r="46"/>
+        <circle class="glow3" cx="50" cy="50" r="46"/>
         <circle class="glow2" cx="50" cy="50" r="46"/>
         <circle class="glow" cx="50" cy="50" r="46"/>
         <circle class="fill" cx="50" cy="50" r="46"/>
@@ -1008,10 +1004,10 @@ function ensureAudio(){
 /* [bg, text, accent] per phase. One palette for both modes: deep blue filling,
    old gold holding, terracotta emptying. No green anywhere. Nothing bright;
    nothing that spikes. */
-var PAL = {"in":["#16364c","#e6f5fb","#5ccfee"], hold:["#2e2816","#f6edd9","#d9ae4f"],
-           out:["#37200e","#fbe9d8","#ea8324"], empty:["#121c21","#748891","#2f454d"],
-           getset:["#1c2a30","#dbe9ef","#4a97b1"], ready:["#1c2a30","#dbe9ef","#5ccfee"],
-           pause:["#121c21","#748891","#2f454d"], done:["#1c2a30","#e8eff3","#5ccfee"]};
+var PAL = {"in":["#0a2358","#e8f2ff","#6cb4ff"], hold:["#2b2110","#f7ecd3","#e3b656"],
+           out:["#381806","#fde8d6","#f08a2e"], empty:["#03071a","#6f7fa3","#1d2a4e"],
+           getset:["#060c22","#d9e6fb","#4d86c8"], ready:["#060c22","#d9e6fb","#6cb4ff"],
+           pause:["#03071a","#6f7fa3","#1d2a4e"], done:["#060c22","#e6eefb","#6cb4ff"]};
 var elBg = document.getElementById("bg"), elWord = document.getElementById("word"),
     elWordI = document.getElementById("word").firstElementChild,
     elNum = document.getElementById("num"), elDots = document.getElementById("dots"),
@@ -1023,17 +1019,17 @@ var elBg = document.getElementById("bg"), elWord = document.getElementById("word
     elEnd = document.getElementById("endbtn"),
     elRingWrap = document.getElementById("ringwrap"),
     elRingFill = document.querySelector("#ring .fill"), elRingGlow = document.querySelector("#ring .glow"),
-    elRingGlow2 = document.querySelector("#ring .glow2"), elHalo = document.getElementById("halo");
+    elRingGlow2 = document.querySelector("#ring .glow2"), elRingGlow3 = document.querySelector("#ring .glow3"), elHalo = document.getElementById("halo");
 var CIRC = 2 * Math.PI * 46;
-elRingFill.style.strokeDasharray = elRingGlow.style.strokeDasharray = elRingGlow2.style.strokeDasharray = CIRC;
-elRingFill.style.strokeDashoffset = elRingGlow.style.strokeDashoffset = elRingGlow2.style.strokeDashoffset = CIRC;
+elRingFill.style.strokeDasharray = elRingGlow.style.strokeDasharray = elRingGlow2.style.strokeDasharray = elRingGlow3.style.strokeDasharray = CIRC;
+elRingFill.style.strokeDashoffset = elRingGlow.style.strokeDashoffset = elRingGlow2.style.strokeDashoffset = elRingGlow3.style.strokeDashoffset = CIRC;
 var lastWord = null, lastNum = null, lastClock = null, lastMeta = null, lastBg = null, lastDots = -1,
     lastRestLbl = null, lastHint = null, lastReady = null;
 
 var lastHalo = -1;
 function setRing(p){                       /* p: 0 empty .. 1 full */
   p = Math.max(0, Math.min(1, p));
-  elRingFill.style.strokeDashoffset = elRingGlow.style.strokeDashoffset = elRingGlow2.style.strokeDashoffset = CIRC * (1 - p);
+  elRingFill.style.strokeDashoffset = elRingGlow.style.strokeDashoffset = elRingGlow2.style.strokeDashoffset = elRingGlow3.style.strokeDashoffset = CIRC * (1 - p);
   /* the halo: a soft disc of the phase colour that swells with the lungs, for the corner of the eye */
   var h = Math.round(p * 200) / 200;
   if(h !== lastHalo){
@@ -1276,8 +1272,8 @@ function show(id){
   var ids = ["mode","setup","run"];
   for(var i=0;i<ids.length;i++) document.getElementById("s-"+ids[i]).classList.toggle("on", ids[i] === id);
   if(id !== "run"){
-    elBg.style.backgroundColor = "#1c2a30";
-    lastBg = "#1c2a30";
+    elBg.style.backgroundColor = "#060c22";
+    lastBg = "#060c22";
     if(id === "setup") refresh();
   }else if(!raf){ raf = requestAnimationFrame(tick); }
 }

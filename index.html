@@ -37,7 +37,6 @@ body{
   touch-action:manipulation;
 }
 #bg{position:fixed;inset:0;background:var(--bg);z-index:0;transition:background-color .5s cubic-bezier(.42,0,.25,1)}
-body.slow #bg{transition-duration:1.2s}
 #flash{position:fixed;inset:0;z-index:9;pointer-events:none;background:#fff;opacity:0}
 #flash.go{animation:fl .5s ease-out}
 @keyframes fl{0%{opacity:.12}100%{opacity:0}}
@@ -71,7 +70,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .mode::after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;
   background:radial-gradient(circle,#4fd9ff22,transparent 70%)}
 .mode .t{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:min(15vw,74px);line-height:.95;letter-spacing:.08em}
-.mode .s{font-size:11px;letter-spacing:.3em;color:var(--mute);text-transform:uppercase;margin-top:6px}
+.mode .bbar{height:6px;margin-top:16px;max-width:58%;opacity:.7}
 .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .brand{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.38em;text-transform:uppercase;color:var(--mute);font-weight:500;padding:4px 6px}
 .brand i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--acc);box-shadow:0 0 8px var(--accA);display:block}
@@ -100,7 +99,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 /* a breath drawn to scale: in, hold, out as the phase colours, widths in seconds */
 .bbar{display:flex;gap:3px;height:10px;width:100%}
 .bbar i{display:block;border-radius:99px;min-width:4px}
-.bbar .bi{background:#4fd9ff}.bbar .bh{background:#bfe3ec}.bbar .bo{background:#ffab5e}.bbar .be{background:#3a4656}
+.bbar .bi{background:#4fd9ff}.bbar .bh{background:#5ee8cf}.bbar .bo{background:#ffab5e}.bbar .be{background:#3a4656}
 .seg button .bbar{height:6px;margin-top:8px;opacity:.55}
 .seg button.sel .bbar{opacity:1}
 .sub .chev{display:inline-block;width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
@@ -136,7 +135,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 #ring .glow{fill:none;stroke:var(--acc);stroke-width:8;stroke-linecap:round;opacity:.18}
 #ring .glow2{fill:none;stroke:var(--acc);stroke-width:15;stroke-linecap:round;opacity:.06}
 #ring .fill{fill:none;stroke:var(--acc);stroke-width:2.6;stroke-linecap:round}
-#ringin{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+#ringin{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 #word span{display:inline-block}
 #word{overflow:hidden;font-family:'Rajdhani','Arial Narrow',sans-serif;font-weight:700;line-height:.9;
   text-align:center;white-space:nowrap;letter-spacing:.06em;width:100%}
@@ -163,7 +162,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 @media (prefers-reduced-motion: reduce){
   .screen.on,#s-run.on #ringwrap{animation:none}
   #runfoot .btn.ready::after{animation:none;opacity:.5}
-  #bg,body.slow #bg{transition-duration:.15s}
+  #bg{transition-duration:.15s}
   #flash.go{animation:none}
 }
 .hid{display:none !important}
@@ -179,8 +178,8 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   <div class="brand"><i></i>Breath</div>
   <div class="spacer"></div>
   <div class="modes">
-    <button class="mode" data-mode="lift"><div class="t">LIFT</div><div class="s">sets · reps · rest</div></button>
-    <button class="mode" data-mode="breathe"><div class="t">BREATHE</div><div class="s">cycles</div></button>
+    <button class="mode" data-mode="lift"><div class="t">LIFT</div><div class="bbar" id="mode-bar-lift"></div></button>
+    <button class="mode" data-mode="breathe"><div class="t">BREATHE</div><div class="bbar" id="mode-bar-breathe"></div></button>
   </div>
   <div class="spacer"></div>
 </section>
@@ -194,11 +193,11 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
       <div class="card">
         <div class="row stack" style="border-bottom:0">
           <div class="seg" id="seg-preset" role="group" aria-label="Preset">
-            <button data-preset="compound">Compound</button>
-            <button data-preset="isolation">Isolation</button>
-            <button data-preset="hold">Isometric</button>
+            <button data-preset="compound"><span>Compound</span><span class="bbar"></span></button>
+            <button data-preset="isolation"><span>Isolation</span><span class="bbar"></span></button>
+            <button data-preset="hold"><span>Isometric</span><span class="bbar"></span></button>
           </div>
-          <button class="sub" id="b-tune" aria-expanded="false"><span class="bbar" id="preset-bar"></span><span class="cap"><span id="preset-sub"></span><i class="chev"></i></span></button>
+          <button class="sub" id="b-tune" aria-expanded="false"><span class="cap"><span id="preset-sub"></span><i class="chev"></i></span></button>
         </div>
         <div id="tunebox" class="hid">
           <div class="counts">
@@ -509,33 +508,31 @@ function nowPlaying(mode){
 }
 function keep(n){ A.nodes.push(n); return n; }
 
-/* ---------- TONE — a soft pad in the 528 Hz family.
-   The inhale OPENS: it begins on a G and a bright C chord joins and takes
-   over, growing to the top of the breath. The exhale SETTLES: a warm C
-   answers and sinks onto a dark low G, fading to the last moment. Nothing
-   glides, so nothing reads as a siren; the direction is carried by which
-   voices sound. The hold is silence. ---------- */
+/* ---------- TONE — one steady note, 528 Hz, that never changes pitch.
+   The inhale grows: quiet to full, the filter opening, a faint octave
+   shimmer above. The exhale falls: full to faint, the filter closing, a
+   faint octave below. The hold is the same note, softer and still.
+   Direction is carried by loudness and brightness alone. ---------- */
 function mkTone(k){
   var ctx = A.ctx;
   var lp = keep(ctx.createBiquadFilter()); lp.type = "lowpass"; lp.frequency.value = 1200; lp.Q.value = 0.5;
-  function group(freqs, amps){
+  function group(freq, amp){
     var g = keep(ctx.createGain()); g.gain.value = 0.0001;
-    for(var i=0;i<freqs.length;i++) for(var d=0; d<2; d++){
+    for(var d=0; d<2; d++){
       var o = ctx.createOscillator(); o.type = "sine";
-      o.frequency.value = freqs[i]; o.detune.value = d ? 3 : -3;
-      var og = keep(ctx.createGain()); og.gain.value = amps[i]*0.5;
+      o.frequency.value = freq; o.detune.value = d ? 3 : -3;
+      var og = keep(ctx.createGain()); og.gain.value = amp*0.5;
       o.connect(og); og.connect(g); o.start(); keep(o);
     }
     g.connect(lp);
     return g;
   }
-  var a = group([396], [0.62]);              /* in, opening: G4 */
-  var b = group([528, 792], [0.55, 0.12]);   /* in, top: C5 + G5, bright */
-  var c = group([264, 396], [0.55, 0.18]);   /* out, answer: C4 + G4, warm */
-  var d = group([198, 132], [0.50, 0.36]);   /* out, floor: G3 + C3, dark */
+  var core = group(528, 0.62);    /* the note */
+  var hi   = group(1056, 0.14);   /* shimmer above, inhale only */
+  var lo   = group(264, 0.40);    /* warmth below, exhale only */
   lp.connect(A.wetIn);
-  return {kind:"tone", a:a, b:b, c:c, d:d, lp:lp, k:k, st:{a:0.0001, b:0.0001, c:0.0001, d:0.0001},
-          params:[a.gain, b.gain, c.gain, d.gain, lp.frequency], gains:[a.gain, b.gain, c.gain, d.gain]};
+  return {kind:"tone", core:core, hi:hi, lo:lo, lp:lp, k:k, st:{c:0.0001, h:0.0001, l:0.0001},
+          params:[core.gain, hi.gain, lo.gain, lp.frequency], gains:[core.gain, hi.gain, lo.gain]};
 }
 
 /* ---------- BREATH — two different airs. The inhale is a thin, bright
@@ -573,68 +570,70 @@ function schemeCancel(atCtx){
   }
 }
 
-/* Phase design. IN rises: pitch, brightness and loudness all climb to the
-   top of the breath. OUT falls: all three sink, audible to the last moment.
-   HOLD is silence, so the stop of the breath is the stop of the sound.
-   GET SET is three soft low pulses. `st` carries the level each phase
-   leaves behind so phases can be queued seconds ahead without a step. */
+/* Phase design. Every boundary is audible within a fifth of a second.
+   IN grows from quiet to full. HOLD is the same note, softer and still
+   (breath: silent). OUT begins full and falls away, audible to the last
+   moment. GET SET is three soft pulses. `st` carries the level each
+   phase leaves behind so phases can be queued seconds ahead. */
 var Z = 0.0001;
 function schemePhase(kind, at, dur){
   if(!scheme || !A) return;
-  var s = scheme, k = s.k, g = Math.max(dur, 0.35), st = s.st, i, n, t, from, q = Math.min(g*0.3, 0.35);
+  var s = scheme, k = s.k, g = Math.max(dur, 0.35), st = s.st, i, n, t, from;
 
   if(s.kind === "tone"){
+    var full = 0.34*k, soft = 0.15*k;
     if(kind === "in"){
-      env(s.a.gain, st.a, 0.24*k, at, g*0.35, easeIO);             /* the G opens... */
-      env(s.a.gain, 0.24*k, 0.05*k, at + g*0.45, g*0.45, easeIO);  /* ...and yields */
-      env(s.b.gain, st.b, Z, at, 0.05, easeIO);
-      env(s.b.gain, Z, 0.34*k, at + g*0.3, g*0.6, easeIO);          /* the bright C climbs to the top */
-      env(s.b.gain, 0.34*k, 0.32*k, at + g*0.9, g*0.1, easeIO);
-      env(s.c.gain, st.c, Z, at, q, easeIO);
-      env(s.d.gain, st.d, Z, at, q, easeIO);
-      env(s.lp.frequency, 800, 2600, at, g, easeIO);
-      st.a = 0.05*k; st.b = 0.32*k; st.c = Z; st.d = Z;
+      env(s.core.gain, st.c, 0.12*k, at, 0.2, easeOut);                 /* heard at once... */
+      env(s.core.gain, 0.12*k, full, at + 0.2, Math.max(g - 0.2, 0.15), easeIO);   /* ...then grows to the top */
+      env(s.hi.gain, st.h, 0.06*k, at, g, easeIO);
+      env(s.lo.gain, st.l, Z, at, 0.2, easeIO);
+      env(s.lp.frequency, 900, 2400, at, g, easeIO);
+      st.c = full; st.h = 0.06*k; st.l = Z;
+    }else if(kind === "hold"){
+      env(s.core.gain, st.c, soft, at, 0.3, easeIO);                     /* the same note, softer, still */
+      env(s.hi.gain, st.h, Z, at, 0.3, easeIO);
+      env(s.lo.gain, st.l, 0.03*k, at, 0.3, easeIO);
+      env(s.lp.frequency, 1500, 1500, at, 0.3, easeIO);
+      st.c = soft; st.h = Z; st.l = 0.03*k;
     }else if(kind === "out"){
-      env(s.c.gain, st.c, 0.30*k, at, g*0.12, easeOut);            /* the warm C answers... */
-      env(s.c.gain, 0.30*k, 0.03*k, at + g*0.12, g*0.6, easeIO);   /* ...and gives way */
-      env(s.d.gain, st.d, Z, at, 0.05, easeIO);
-      env(s.d.gain, Z, 0.24*k, at + g*0.25, g*0.35, easeIO);        /* the low G takes the weight */
-      env(s.d.gain, 0.24*k, 0.03*k, at + g*0.6, g*0.4, easeIO);    /* and settles, still sounding */
-      env(s.a.gain, st.a, Z, at, q, easeIO);
-      env(s.b.gain, st.b, Z, at, g*0.3, easeIO);
-      env(s.lp.frequency, 2000, 420, at, g, easeIO);
-      st.a = Z; st.b = Z; st.c = 0.03*k; st.d = 0.03*k;
+      env(s.core.gain, st.c, 0.30*k, at, 0.15, easeOut);                /* full at once... */
+      env(s.core.gain, 0.30*k, 0.03*k, at + 0.15, Math.max(g - 0.15, 0.15), easeIO);   /* ...then falls away, still sounding */
+      env(s.lo.gain, st.l, 0.09*k, at, 0.3, easeOut);
+      env(s.lo.gain, 0.09*k, 0.02*k, at + 0.3, Math.max(g - 0.3, 0.1), easeIO);
+      env(s.hi.gain, st.h, Z, at, 0.2, easeIO);
+      env(s.lp.frequency, 2000, 480, at, g, easeIO);
+      st.c = 0.03*k; st.h = Z; st.l = 0.02*k;
     }else if(kind === "getset"){
-      env(s.a.gain, st.a, Z, at, 0.3, easeIO); env(s.b.gain, st.b, Z, at, 0.3, easeIO); env(s.c.gain, st.c, Z, at, 0.3, easeIO);
-      env(s.lp.frequency, 700, 700, at, 0.05, easeIO);
-      n = Math.min(3, Math.floor(dur + 0.001)); from = st.d;
+      env(s.hi.gain, st.h, Z, at, 0.2, easeIO); env(s.lo.gain, st.l, Z, at, 0.2, easeIO);
+      env(s.lp.frequency, 1200, 1200, at, 0.05, easeIO);
+      n = Math.min(3, Math.floor(dur + 0.001)); from = st.c;
       for(i=0;i<n;i++){
         t = at + dur - n + i;
-        env(s.d.gain, from, 0.22*k, t, 0.25, easeIO);              /* three soft low pulses */
-        env(s.d.gain, 0.22*k, Z, t + 0.25, 0.6, easeIO);
+        env(s.core.gain, from, 0.2*k, t, 0.2, easeIO);                   /* three soft pulses of the note */
+        env(s.core.gain, 0.2*k, Z, t + 0.2, 0.55, easeIO);
         from = Z;
       }
-      if(!n) env(s.d.gain, st.d, Z, at, 0.3, easeIO);
-      st.a = st.b = st.c = st.d = Z;
-    }else{                                                          /* hold / empty / pause / ready: silence */
-      env(s.a.gain, st.a, Z, at, q, easeIO); env(s.b.gain, st.b, Z, at, q, easeIO);
-      env(s.c.gain, st.c, Z, at, q, easeIO); env(s.d.gain, st.d, Z, at, q, easeIO);
-      st.a = st.b = st.c = st.d = Z;
+      if(!n) env(s.core.gain, st.c, Z, at, 0.3, easeIO);
+      st.c = st.h = st.l = Z;
+    }else{                                                             /* empty / pause / ready: silence */
+      env(s.core.gain, st.c, Z, at, 0.3, easeIO); env(s.hi.gain, st.h, Z, at, 0.3, easeIO); env(s.lo.gain, st.l, Z, at, 0.3, easeIO);
+      st.c = st.h = st.l = Z;
     }
   }
 
   if(s.kind === "breath"){
     var topI = 1.75*k, topO = 1.0*k;    /* measured: the in chain is 2.3x quieter at unity; in lands at ~3/4 of out */
     if(kind === "in"){
-      env(s.gI.gain, st.i, topI, at, g*0.75, easeIO);              /* fills, growing to the top */
+      env(s.gI.gain, st.i, topI*0.35, at, 0.2, easeOut);           /* heard at once... */
+      env(s.gI.gain, topI*0.35, topI, at + 0.2, Math.max(g*0.75 - 0.2, 0.15), easeIO);   /* ...fills, growing to the top */
       env(s.gI.gain, topI, topI*0.7, at + g*0.75, g*0.25, easeIO);
-      env(s.gO.gain, st.o, Z, at, q, easeIO);
+      env(s.gO.gain, st.o, Z, at, 0.2, easeIO);
       env(s.bpI.frequency, 1000, 2100, at, g, easeIO);              /* and brightens as it rises */
       st.i = topI*0.7; st.o = Z;
     }else if(kind === "out"){
-      env(s.gO.gain, st.o, topO, at, g*0.12, easeOut);             /* releases... */
-      env(s.gO.gain, topO, topO*0.06, at + g*0.12, g*0.88, easeIO); /* ...and empties over the whole exhale */
-      env(s.gI.gain, st.i, Z, at, q, easeIO);
+      env(s.gO.gain, st.o, topO, at, 0.15, easeOut);               /* releases at once... */
+      env(s.gO.gain, topO, topO*0.06, at + 0.15, Math.max(g - 0.15, 0.15), easeIO);   /* ...and empties over the whole exhale */
+      env(s.gI.gain, st.i, Z, at, 0.2, easeIO);
       env(s.bpO.frequency, 650, 240, at, g, easeIO);                /* darkening as it falls */
       env(s.lpO.frequency, 1800, 700, at, g, easeIO);
       st.o = topO*0.06; st.i = Z;
@@ -651,7 +650,7 @@ function schemePhase(kind, at, dur){
       if(!n) env(s.gO.gain, st.o, Z, at, 0.3, easeIO);
       st.i = st.o = Z;
     }else{                                                          /* hold / empty / pause / ready: silence */
-      env(s.gI.gain, st.i, Z, at, q, easeIO); env(s.gO.gain, st.o, Z, at, q, easeIO);
+      env(s.gI.gain, st.i, Z, at, 0.25, easeIO); env(s.gO.gain, st.o, Z, at, 0.25, easeIO);
       st.i = st.o = Z;
     }
   }
@@ -836,7 +835,6 @@ function startSession(mode){
   persist();
 }
 function beginRun(){
-  document.body.classList.toggle("slow", S.mode === "breathe");
   lastWord = lastNum = lastClock = lastMeta = lastBg = null; lastDots = -1;
   buildDots();
   elBarIn.style.width = "0%";
@@ -1000,17 +998,12 @@ function ensureAudio(){
 }
 
 /* ============================ RENDER ============================ */
-/* [bg, text, accent] per phase; index 0 = lift, 1 = breathe (dimmed) */
-var PAL = {
-  0: {"in":["#071c33","#d9f2ff","#4fd9ff"], hold:["#dcf1fb","#082031","#0e7490"],
-      out:["#2a1206","#ffe8d1","#ffab5e"], empty:["#030407","#5d6b7c","#26313f"],
-      getset:["#06080f","#cfe9ff","#3d7ea3"], ready:["#06080f","#cfe9ff","#4fd9ff"],
-      pause:["#030407","#5d6b7c","#26313f"], done:["#04060c","#d7e7f5","#4fd9ff"]},
-  1: {"in":["#050b14","#7d95ab","#3d7ea3"], hold:["#10161f","#9db2c6","#557f9b"],
-      out:["#150b04","#a58a68","#8a5a33"], empty:["#000000","#44515f","#1c2733"],
-      getset:["#04060c","#7d95ab","#3d7ea3"], ready:["#04060c","#7d95ab","#3d7ea3"],
-      pause:["#000000","#44515f","#1c2733"], done:["#000000","#7d95ab","#3d7ea3"]}
-};
+/* [bg, text, accent] per phase. One palette for both modes: deep blue filling,
+   dark teal holding, ember emptying. Nothing bright; nothing that spikes. */
+var PAL = {"in":["#071c33","#d9f2ff","#4fd9ff"], hold:["#0b3634","#d6f5ef","#5ee8cf"],
+           out:["#2a1206","#ffe8d1","#ffab5e"], empty:["#030407","#5d6b7c","#26313f"],
+           getset:["#06080f","#cfe9ff","#3d7ea3"], ready:["#06080f","#cfe9ff","#4fd9ff"],
+           pause:["#030407","#5d6b7c","#26313f"], done:["#04060c","#d7e7f5","#4fd9ff"]};
 var elBg = document.getElementById("bg"), elWord = document.getElementById("word"),
     elWordI = document.getElementById("word").firstElementChild,
     elNum = document.getElementById("num"), elDots = document.getElementById("dots"),
@@ -1036,9 +1029,8 @@ function setRing(p){                       /* p: 0 empty .. 1 full */
   /* the halo: a soft disc of the phase colour that swells with the lungs, for the corner of the eye */
   var h = Math.round(p * 200) / 200;
   if(h !== lastHalo){
-    var dim = S.mode === "breathe" ? 0.6 : 1;
     elHalo.style.transform = "scale(" + (0.6 + 0.55*h).toFixed(3) + ")";
-    elHalo.style.opacity = ((0.06 + 0.4*h) * dim).toFixed(3);
+    elHalo.style.opacity = (0.06 + 0.4*h).toFixed(3);
     lastHalo = h;
   }
 }
@@ -1050,7 +1042,6 @@ function buildDots(){
   for(var i=0;i<n;i++) elDots.appendChild(document.createElement("i"));
   lastDots = -1;
 }
-function palIdx(){ return S.mode === "breathe" ? 1 : 0; }
 function fmtClock(s){
   s = Math.max(0, Math.ceil(s));
   var m = Math.floor(s/60), r = s % 60;
@@ -1062,7 +1053,7 @@ function fmtUp(s){
   return "+" + m + ":" + (r < 10 ? "0" : "") + r;
 }
 function paint(kind){
-  var p = PAL[palIdx()][kind] || PAL[palIdx()].done;
+  var p = PAL[kind] || PAL.done;
   if(lastBg !== p[0]){
     elBg.style.backgroundColor = p[0];
     elRun.style.color = p[1];
@@ -1072,9 +1063,9 @@ function paint(kind){
   }
 }
 function fitWord(w){
-  var avail = elRingWrap.clientWidth * 0.64;
+  var avail = elRingWrap.clientWidth * 0.5;
   if(!w || avail < 60) return;
-  var size = Math.min(window.innerWidth*0.30, window.innerHeight*0.20);
+  var size = Math.min(window.innerWidth*0.25, window.innerHeight*0.165);
   elWordI.textContent = w;
   elWord.style.fontSize = size + "px";
   var wd = elWordI.offsetWidth, pass = 0;
@@ -1103,7 +1094,7 @@ function render(now){
   else if(st.k === "hold") setRing(1);
   else if(st.k === "out") setRing(1 - frac);
   else if(st.k === "empty" || st.k === "pause") setRing(0);
-  else if(st.k === "getset") setRing(1 - frac);   /* drains down as the countdown runs */
+  else if(st.k === "getset") setRing(0);          /* empty: the first inhale fills it */
   else setRing(1);
 
   var word = WORDS[st.k] || "";
@@ -1236,9 +1227,10 @@ function refresh(){
   vis(document.getElementById("row-hsec"), isHold);
   document.getElementById("preset-sub").textContent =
     fmtN(T["in"]) + (T.hold > 0 ? " · " + fmtN(T.hold) : "") + " · " + fmtN(T.out) + "   —   rest " + fmtClock(T.rest);
-  document.getElementById("preset-bar").innerHTML = bbar({"in":T["in"], hold:T.hold, out:T.out, empty:0});
   vis(document.getElementById("b-tunereset"), !tuneIsDefault());
-  sel(document.querySelectorAll("#seg-preset button"), "data-preset", L.preset);
+  var pres = document.querySelectorAll("#seg-preset button");
+  for(i=0;i<pres.length;i++){ var tp = L.tune[pres[i].getAttribute("data-preset")]; pres[i].querySelector(".bbar").innerHTML = bbar({"in":tp["in"], hold:tp.hold, out:tp.out, empty:0}); }
+  sel(pres, "data-preset", L.preset);
 
   document.getElementById("v-cycles").textContent = P.cycles;
   var pats = document.querySelectorAll("#seg-pat button");
@@ -1275,9 +1267,13 @@ function bump(key, delta){
 function show(id){
   var ids = ["mode","setup","run"];
   for(var i=0;i<ids.length;i++) document.getElementById("s-"+ids[i]).classList.toggle("on", ids[i] === id);
+  if(id === "mode"){
+    var tl = DB.cfg.lift.tune[DB.cfg.lift.preset];
+    document.getElementById("mode-bar-lift").innerHTML = bbar({"in":tl["in"], hold:tl.hold, out:tl.out, empty:0});
+    document.getElementById("mode-bar-breathe").innerHTML = bbar(PATS[DB.cfg.breathe.pat]);
+  }
   if(id !== "run"){
     elBg.style.backgroundColor = "#04060c";
-    document.body.classList.remove("slow");
     lastBg = "#04060c";
     if(id === "setup") refresh();
   }else if(!raf){ raf = requestAnimationFrame(tick); }

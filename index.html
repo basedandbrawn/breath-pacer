@@ -91,6 +91,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #553f2499}
 .row:last-child{border-bottom:0}
 .row.stack{flex-direction:column;align-items:stretch;gap:10px}
+.row.head{padding:13px 0 4px;border-bottom:0}
 .row.stack .seg{justify-content:stretch}
 .row.stack .seg button{flex:1 1 0;min-width:0;padding:14px 8px;font-size:11px;letter-spacing:.14em}
 .lbl{font-size:11px;letter-spacing:.28em;color:var(--mute);text-transform:uppercase;font-weight:500}
@@ -240,6 +241,10 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
             <button class="btn ghost small hid" id="b-tunereset">Reset preset</button>
           </div>
         </div>
+        <button class="adj" id="b-tune" aria-expanded="false">Adjust</button>
+      </div>
+      <div class="card">
+        <div class="row head"><span class="lbl">Session</span></div>
         <div class="row" id="row-reps"><span class="lbl">Reps</span>
           <div class="step"><button data-s="reps:-1" aria-label="Fewer reps">−</button><span class="v" id="v-reps">10</span><button data-s="reps:1" aria-label="More reps">+</button></div></div>
         <div class="row hid" id="row-hsec"><span class="lbl">Seconds</span>
@@ -248,8 +253,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
           <div class="step"><button data-s="sets:-1" aria-label="Fewer sets">−</button><span class="v" id="v-sets">4</span><button data-s="sets:1" aria-label="More sets">+</button></div></div>
         <div class="row"><span class="lbl">Rest</span>
           <div class="step"><button data-s="rest:-15" aria-label="Less rest">−</button><span class="v" id="v-rest">3:00</span><button data-s="rest:15" aria-label="More rest">+</button></div></div>
-        <div class="row"><span class="lbl">Session</span><span class="v quiet" id="lift-sub"></span></div>
-        <button class="adj" id="b-tune" aria-expanded="false">Adjust</button>
+        <div class="row"><span class="lbl">Length</span><span class="v quiet" id="lift-sub"></span></div>
       </div>
       <div class="card">
         <div class="row stack"><span class="lbl">Sound</span>
@@ -265,9 +269,12 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
             <button data-pat="coh"><span>5.5 · 5.5</span><span class="bbar"></span></button>
             <button data-pat="box"><span>4 · 4 · 4 · 4</span><span class="bbar"></span></button>
           </div></div>
+      </div>
+      <div class="card">
+        <div class="row head"><span class="lbl">Session</span></div>
         <div class="row"><span class="lbl">Cycles</span>
           <div class="step"><button data-s="cycles:-1" aria-label="Fewer cycles">−</button><span class="v" id="v-cycles">8</span><button data-s="cycles:1" aria-label="More cycles">+</button></div></div>
-        <div class="row"><span class="lbl">Session</span><span class="v quiet" id="breathe-sub"></span></div>
+        <div class="row"><span class="lbl">Length</span><span class="v quiet" id="breathe-sub"></span></div>
       </div>
       <div class="card">
         <div class="row stack"><span class="lbl">Sound</span>

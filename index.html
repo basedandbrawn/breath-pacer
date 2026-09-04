@@ -109,7 +109,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 /* ---------- run ---------- */
 #s-run{padding:calc(env(safe-area-inset-top) + 10px) 0 calc(env(safe-area-inset-bottom) + 12px)}
 #endbtn{position:absolute;top:calc(env(safe-area-inset-top) + 8px);right:calc(env(safe-area-inset-right) + 12px);
-  z-index:4;padding:12px 16px;font-size:12px;letter-spacing:.24em;color:inherit;opacity:.45;font-weight:600;text-transform:uppercase;
+  z-index:4;padding:15px 16px;font-size:12px;letter-spacing:.24em;color:inherit;opacity:.45;font-weight:600;text-transform:uppercase;
   border:1px solid transparent;border-radius:12px;transition:opacity .2s}
 #endbtn.arm{opacity:1;border-color:currentColor;background:#ffffff14}
 #rmeta{text-align:center;font-size:min(3.9vw,16px);letter-spacing:.2em;font-weight:600;opacity:.6;
@@ -119,8 +119,9 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 #ringwrap{position:relative;width:min(82vw,44vh);height:min(82vw,44vh)}
 #ring{width:100%;height:100%;transform:rotate(-90deg);display:block}
 #ring .track{fill:none;stroke:currentColor;stroke-opacity:.13;stroke-width:2.6}
-#ring .fill{fill:none;stroke:var(--acc);stroke-width:2.6;stroke-linecap:round;
-  filter:drop-shadow(0 0 6px var(--acc));transition:none}
+#ring .glow{fill:none;stroke:var(--acc);stroke-width:8;stroke-linecap:round;opacity:.18}
+#ring .glow2{fill:none;stroke:var(--acc);stroke-width:15;stroke-linecap:round;opacity:.06}
+#ring .fill{fill:none;stroke:var(--acc);stroke-width:2.6;stroke-linecap:round}
 #ringin{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 #word span{display:inline-block}
 #word{overflow:hidden;font-family:'Rajdhani','Arial Narrow',sans-serif;font-weight:700;line-height:.9;
@@ -140,8 +141,16 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 #runfoot .btn.wide{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:min(10vw,44px);
   letter-spacing:.14em;padding:14px 10px 10px;line-height:1}
 #runfoot .btn:active{background:#ffffff14}
-#runfoot .btn.ready{border-color:var(--acc);color:var(--acc);opacity:1;animation:readyp 2.4s ease-in-out infinite}
-@keyframes readyp{0%,100%{box-shadow:0 0 12px var(--accA)}50%{box-shadow:0 0 34px var(--accA)}}
+#runfoot .btn{position:relative}
+#runfoot .btn.ready{border-color:var(--acc);color:var(--acc);opacity:1;box-shadow:0 0 12px var(--accA)}
+#runfoot .btn.ready::after{content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;
+  box-shadow:0 0 34px var(--accA);opacity:0;animation:readyp 2.4s ease-in-out infinite}
+@keyframes readyp{50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){
+  #runfoot .btn.ready::after{animation:none;opacity:.5}
+  #bg,body.slow #bg{transition-duration:.15s}
+  #flash.go{animation:none}
+}
 .hid{display:none !important}
 </style>
 </head>
@@ -235,6 +244,8 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
     <div id="ringwrap">
       <svg id="ring" viewBox="0 0 100 100" aria-hidden="true">
         <circle class="track" cx="50" cy="50" r="46"/>
+        <circle class="glow2" cx="50" cy="50" r="46"/>
+        <circle class="glow" cx="50" cy="50" r="46"/>
         <circle class="fill" cx="50" cy="50" r="46"/>
       </svg>
       <div id="ringin">
@@ -348,7 +359,7 @@ function nowSec(){ return performance.now()/1000; }
 function toCtx(t){ return A.ctx.currentTime + (t - nowSec()); }
 
 /* ============================ AUDIO ============================ */
-var scheme = null, audioDead = false, stopT = 0;
+var scheme = null, audioDead = false, stopT = 0, muted = false;
 
 function easeIO(p){ return p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2, 3)/2; }
 function easeOut(p){ return 1 - Math.pow(1-p, 3); }
@@ -404,6 +415,22 @@ function makeIR(ctx, sec){
 }
 
 var audioEl = document.getElementById("aout");
+/* One second of silence as a real, looping media file. Playing it in a
+   media element is what makes iOS treat the app as playing media, so the
+   audio session and timers survive a locked screen. The pacer's own sound
+   plays through Web Audio into the same session. */
+function silentWav(){
+  var rate = 8000, n = rate, buf = new Uint8Array(44 + n), i;
+  function w32(o,v){ buf[o]=v&255; buf[o+1]=(v>>8)&255; buf[o+2]=(v>>16)&255; buf[o+3]=(v>>24)&255; }
+  function w16(o,v){ buf[o]=v&255; buf[o+1]=(v>>8)&255; }
+  function str(o,x){ for(var j=0;j<x.length;j++) buf[o+j]=x.charCodeAt(j); }
+  str(0,"RIFF"); w32(4,36+n); str(8,"WAVE"); str(12,"fmt "); w32(16,16); w16(20,1); w16(22,1);
+  w32(24,rate); w32(28,rate); w16(32,1); w16(34,8); str(36,"data"); w32(40,n);
+  for(i=0;i<n;i++) buf[44+i] = 128;
+  var out = "", step = 8192;
+  for(i=0;i<buf.length;i+=step) out += String.fromCharCode.apply(null, buf.subarray(i, i+step));
+  return "data:audio/wav;base64," + btoa(out);
+}
 function initAudio(){
   if(A) return A;
   var AC = window.AudioContext || window.webkitAudioContext;
@@ -421,18 +448,12 @@ function initAudio(){
   var shelf = ctx.createBiquadFilter(); shelf.type = "highshelf"; shelf.frequency.value = 2400; shelf.gain.value = -7;
   roll.connect(shelf); shelf.connect(lim); lim.connect(master);
 
-  /* media-element route so iOS treats the session as media playback */
+  master.connect(ctx.destination);
   try{
-    var msd = ctx.createMediaStreamDestination();
-    master.connect(msd);
-    audioEl.srcObject = msd.stream;
+    audioEl.src = silentWav(); audioEl.loop = true;
     var pr = audioEl.play();
     if(pr && pr.catch) pr.catch(function(){});
   }catch(e){}
-  master.connect(ctx.destination);
-
-  var ka = ctx.createConstantSource ? ctx.createConstantSource() : null;
-  if(ka){ var kg = ctx.createGain(); kg.gain.value = 0.0001; ka.connect(kg); kg.connect(ctx.destination); ka.start(); }
 
   var dryIn = ctx.createGain(); dryIn.gain.value = 1; dryIn.connect(roll);
   var wetIn = ctx.createGain(); wetIn.gain.value = 1;
@@ -447,16 +468,27 @@ function initAudio(){
     /* after an interruption the audio clock stood still: drop what was queued, re-queue from where the session is now */
     if(ctx.state === "running" && S.running && scheme) rescheduleFrom(nowSec());
   };
+  /* lock-screen controls: pause mutes, play unmutes. The session itself keeps time
+     either way; an earbud tap must never end a workout. */
   try{
-    if(window.MediaMetadata && navigator.mediaSession){
-      navigator.mediaSession.metadata = new MediaMetadata({title:"Breathing"});
+    if(navigator.mediaSession){
       navigator.mediaSession.playbackState = "playing";
-      ["play","pause"].forEach(function(a){
-        try{ navigator.mediaSession.setActionHandler(a, function(){ try{ ctx.resume(); audioEl.play(); }catch(e){} }); }catch(e){}
-      });
+      try{ navigator.mediaSession.setActionHandler("play", function(){ setMuted(false); }); }catch(e){}
+      try{ navigator.mediaSession.setActionHandler("pause", function(){ setMuted(true); }); }catch(e){}
     }
   }catch(e){}
   return A;
+}
+function setMuted(on){
+  muted = on;
+  if(!A) return;
+  var ctx = A.ctx;
+  if(!on){ try{ ctx.resume(); audioEl.play(); }catch(e){} }
+  env(A.master.gain, A.master.gain.value, on ? 0.0001 : A.lvl, ctx.currentTime, on ? 0.4 : 0.6, easeIO);
+  try{ navigator.mediaSession.playbackState = on ? "paused" : "playing"; }catch(e){}
+}
+function nowPlaying(mode){
+  try{ if(window.MediaMetadata && navigator.mediaSession) navigator.mediaSession.metadata = new MediaMetadata({title:"Breath", artist: mode === "breathe" ? "Breathe" : "Lift"}); }catch(e){}
 }
 function keep(n){ A.nodes.push(n); return n; }
 
@@ -469,17 +501,18 @@ function mkTone(k){
     for(var d=0; d<2; d++){
       var o = ctx.createOscillator(); o.type = "sine";
       o.frequency.value = freq; o.detune.value = d ? 3 : -3;
-      var og = ctx.createGain(); og.gain.value = amp*0.5;
+      var og = keep(ctx.createGain()); og.gain.value = amp*0.5;
       o.connect(og); og.connect(dest); o.start(); keep(o);
     }
   }
-  var gHi = ctx.createGain(); gHi.gain.value = 0.0001;
+  var gHi = keep(ctx.createGain()); gHi.gain.value = 0.0001;
   voice(528, 0.55, gHi); voice(792, 0.10, gHi); voice(396, 0.22, gHi);
-  var gLo = ctx.createGain(); gLo.gain.value = 0.0001;
+  var gLo = keep(ctx.createGain()); gLo.gain.value = 0.0001;
   voice(264, 0.60, gLo); voice(132, 0.30, gLo); voice(396, 0.14, gLo);
+  keep(lp);
   gHi.connect(lp); gLo.connect(lp); lp.connect(A.wetIn);
   return {kind:"tone", hi:gHi, lo:gLo, lp:lp, k:k, st:{hi:0.0001, lo:0.0001},
-          params:[gHi.gain, gLo.gain, lp.frequency]};
+          params:[gHi.gain, gLo.gain, lp.frequency], gains:[gHi.gain, gLo.gain]};
 }
 
 /* ---------- BREATH — a slow, relaxed meditation breath ---------- */
@@ -489,10 +522,11 @@ function mkBreath(k){
   var bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 800; bp.Q.value = 0.9;
   var pk = ctx.createBiquadFilter(); pk.type = "peaking"; pk.frequency.value = 528; pk.Q.value = 1.2; pk.gain.value = 4;
   var lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2300; lp.Q.value = 0.4;
-  var g = ctx.createGain(); g.gain.value = 0.0001;
+  var g = keep(ctx.createGain()); g.gain.value = 0.0001;
+  keep(bp); keep(pk); keep(lp);
   src.connect(bp); bp.connect(pk); pk.connect(lp); lp.connect(g); g.connect(A.dryIn);
   src.start(); keep(src);
-  return {kind:"breath", g:g, bp:bp, lp:lp, k:k, st:{g:0.0001}, params:[g.gain, bp.frequency, lp.frequency]};
+  return {kind:"breath", g:g, bp:bp, lp:lp, k:k, st:{g:0.0001}, params:[g.gain, bp.frequency, lp.frequency], gains:[g.gain]};
 }
 
 function makeScheme(name, dim){
@@ -610,21 +644,32 @@ function audioStart(mode, sound){
   teardownScheme();
   scheme = makeScheme(sound, mode === "breathe");
   A.lvl = mode === "breathe" ? 0.62 : 0.92;
+  muted = false;
   env(A.master.gain, 0.0001, A.lvl, A.ctx.currentTime + 0.02, 1.0, easeOut);
+  nowPlaying(mode);
   try{ if(navigator.mediaSession) navigator.mediaSession.playbackState = "playing"; }catch(e){}
 }
+/* the old scheme fades out over 40 ms before its sources stop, so a sound
+   cut mid-preview never clicks; every node it made leaves the graph */
 function teardownScheme(){
   if(!A) return;
-  for(var i=0;i<A.nodes.length;i++){ try{ A.nodes[i].stop(); }catch(e){} try{ A.nodes[i].disconnect(); }catch(e){} }
-  A.nodes = [];
-  scheme = null;
+  var t = A.ctx.currentTime, nodes = A.nodes, i;
+  if(scheme) for(i=0;i<scheme.gains.length;i++){
+    var gp = scheme.gains[i];
+    try{ gp.cancelScheduledValues(t); gp.setValueAtTime(gp.value, t); gp.linearRampToValueAtTime(0.0001, t + 0.04); }catch(e){}
+  }
+  A.nodes = []; scheme = null;
+  setTimeout(function(){
+    for(var j=0;j<nodes.length;j++){ try{ if(nodes[j].stop) nodes[j].stop(); }catch(e){} try{ nodes[j].disconnect(); }catch(e){} }
+  }, 120);
 }
-function audioStop(){
+function audioStop(fade){
   if(!A) return;
   var t = A.ctx.currentTime;
-  env(A.master.gain, A.master.gain.value, 0.0001, t, 1.2, easeIn);
+  fade = fade || 1.2;
+  env(A.master.gain, A.master.gain.value, 0.0001, t, fade, easeIn);
   if(stopT) clearTimeout(stopT);
-  stopT = setTimeout(function(){ stopT = 0; if(!S.running) teardownScheme(); }, 1500);
+  stopT = setTimeout(function(){ stopT = 0; if(!S.running) teardownScheme(); }, fade*1000 + 300);
   try{ if(navigator.mediaSession) navigator.mediaSession.playbackState = "paused"; }catch(e){}
 }
 
@@ -672,7 +717,7 @@ document.addEventListener("visibilitychange", function(){
 });
 
 /* ============================ SESSION ============================ */
-var LOOK = 3.0;        /* seconds of audio queued ahead of the clock */
+var LOOK = 5.0;        /* seconds of audio queued ahead of the clock: more than any timer throttle */
 var INF = 1e9;         /* an open-ended step: READY waits for a tap, DONE waits for nothing */
 var S = {running:false, mode:"lift", sound:"tone", steps:[], idx:0, stepStart:0, schedIdx:-1,
          reps:10, sets:4, restDur:180, holdMode:0, holdSec:45};
@@ -697,11 +742,18 @@ function trimTo(arr, from, total){
     acc += arr[i].dur;
   }
 }
-/* coherent breathing that fills `seconds` with whole breaths: the tempo bends
-   by at most a few percent so the rest always ends on a finished exhale */
-function coherentSteps(seconds, stage, setNo){
-  var out = [], n = Math.max(1, Math.round(seconds / 11)), each = seconds / (2*n), i;
-  for(i=0;i<2*n;i++) out.push(ph(i % 2 ? "out" : "in", each, stage, setNo, 0));
+/* Recovery breathing. The lifter is still panting when the set ends, so the
+   first breaths are short and each is a little longer than the last, settling
+   at coherent 5.5 / 5.5 by the fifth breath. Whole breaths only, fitted to the
+   rest exactly, so the rest always ends on a finished exhale. */
+function restSteps(seconds, stage, setNo){
+  var out = [], ph_ = [], n = Math.min(5, Math.floor(seconds / 11)), i, sum = 0;
+  for(i=0;i<n;i++){ var d = n === 1 ? 4 : 3 + 2*i/(n-1); ph_.push(d); sum += 2*d; }
+  var rem = seconds - sum;
+  if(rem >= 11){ var m = Math.max(1, Math.round(rem / 11)), each = rem / (2*m); for(i=0;i<m;i++) ph_.push(each); }
+  else if(ph_.length){ var f = seconds / sum; for(i=0;i<ph_.length;i++) ph_[i] *= f; }
+  else ph_.push(seconds / 2);
+  for(i=0;i<ph_.length;i++){ out.push(ph("in", ph_[i], stage, setNo, 0)); out.push(ph("out", ph_[i], stage, setNo, 0)); }
   return out;
 }
 
@@ -724,7 +776,7 @@ function buildSteps(){
       if(s < S.sets){
         st.push(ph("pause", 2, "rest", s, 0));                    /* a breath of silence: the set is over */
         if(S.restDur > 2){
-          var rest = coherentSteps(S.restDur - 2, "rest", s);
+          var rest = restSteps(S.restDur - 2, "rest", s);
           for(i=0;i<rest.length;i++) st.push(rest[i]);
         }
         st.push(ph("ready", INF, "rest", s, 0));                  /* rest is up; the next set waits for a tap */
@@ -732,7 +784,8 @@ function buildSteps(){
     }
   }else{
     var cc = PATS[c.breathe.pat] || PATS["478"];
-    for(r=1; r<=S.reps; r++) pushCycle(st, cc, "set", 1, r);     /* no countdown — begins on the first inhale */
+    st.push(ph("pause", 1.5, "lead", 0, 0));                       /* a still beat for the hand to settle; no countdown */
+    for(r=1; r<=S.reps; r++) pushCycle(st, cc, "set", 1, r);     /* then it begins on the first inhale */
   }
   st.push(ph("done", INF, "done", 0, 0));
   return st;
@@ -800,7 +853,7 @@ function endSession(natural){
   S.running = false;
   if(ivl){ clearInterval(ivl); ivl = 0; }
   persist();
-  audioStop();
+  audioStop(natural && S.mode === "breathe" ? 3.5 : 1.2);
   wake(false);
   disarmEnd();
   if(!natural){ show("setup"); }
@@ -821,7 +874,7 @@ function scheduleAhead(now){
     var at = t, dur = stp.dur;
     if(at + dur <= now && stp.k !== "done"){ S.schedIdx = j; continue; }   /* already over: nothing to play */
     if(at < now){ dur = dur - (now - at); at = now; }                      /* under way: play the remainder */
-    if(stp.k === "done") env(A.master.gain, A.lvl, 0.0001, toCtx(at + 0.005), 1.5, easeIn);
+    if(stp.k === "done") env(A.master.gain, A.lvl, 0.0001, toCtx(at + 0.005), S.mode === "breathe" ? 3.5 : 1.5, easeIn);
     else schemePhase(stp.k, toCtx(at + 0.005), dur);
     S.schedIdx = j;
   }
@@ -945,16 +998,17 @@ var elBg = document.getElementById("bg"), elWord = document.getElementById("word
     bBack = document.getElementById("b-back"), elRun = document.getElementById("s-run"),
     elEnd = document.getElementById("endbtn"),
     elRingWrap = document.getElementById("ringwrap"),
-    elRingFill = document.querySelector("#ring .fill");
+    elRingFill = document.querySelector("#ring .fill"), elRingGlow = document.querySelector("#ring .glow"),
+    elRingGlow2 = document.querySelector("#ring .glow2");
 var CIRC = 2 * Math.PI * 46;
-elRingFill.style.strokeDasharray = CIRC;
-elRingFill.style.strokeDashoffset = CIRC;
+elRingFill.style.strokeDasharray = elRingGlow.style.strokeDasharray = elRingGlow2.style.strokeDasharray = CIRC;
+elRingFill.style.strokeDashoffset = elRingGlow.style.strokeDashoffset = elRingGlow2.style.strokeDashoffset = CIRC;
 var lastWord = null, lastNum = null, lastClock = null, lastMeta = null, lastBg = null, lastDots = -1,
     lastRestLbl = null, lastHint = null, lastReady = null;
 
 function setRing(p){                       /* p: 0 empty .. 1 full */
   p = Math.max(0, Math.min(1, p));
-  elRingFill.style.strokeDashoffset = CIRC * (1 - p);
+  elRingFill.style.strokeDashoffset = elRingGlow.style.strokeDashoffset = elRingGlow2.style.strokeDashoffset = CIRC * (1 - p);
 }
 function buildDots(){
   elDots.innerHTML = "";
@@ -1097,11 +1151,11 @@ var raf = 0;
 function tick(){
   raf = 0;
   if(!elRun.classList.contains("on")) return;
-  raf = requestAnimationFrame(tick);
   var now = nowSec();
   advance(now);
   if(S.running && A && scheme && A.ctx.state === "running") scheduleAhead(now);
   render(now);
+  if(S.running) raf = requestAnimationFrame(tick);   /* DONE is painted once, then the loop rests */
 }
 
 /* ============================ UI ============================ */
@@ -1260,6 +1314,7 @@ var elFlash = document.getElementById("flash");
 elRun.addEventListener("pointerdown", function(ev){
   if(!S.running) return;
   ensureAudio();
+  if(muted) setMuted(false);
   if(A && A.ctx.state !== "running"){ try{ A.ctx.resume(); }catch(e){} }
   if(ev.target.closest && ev.target.closest("button")) return;
   if(syncTap()){
@@ -1279,7 +1334,17 @@ try{ if(document.fonts && document.fonts.ready) document.fonts.ready.then(functi
 initSoundPickers();
 refresh();
 if(!restore()) show("mode");
-if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("./sw.js").catch(function(){}); }catch(e){} }
+if("serviceWorker" in navigator){
+  try{
+    navigator.serviceWorker.register("./sw.js").catch(function(){});
+    /* when a new version takes over while nothing is happening, pick it up now rather than next launch */
+    var hadCtl = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange", function(){
+      if(hadCtl && !S.running && document.getElementById("s-mode").classList.contains("on")) location.reload();
+      hadCtl = true;
+    });
+  }catch(e){}
+}
 
 window.BP = {S:S, DB:DB, now:nowSec, build:buildSteps, advance:advance, sync:syncTap, audio:function(){ return A; }, scheme:function(){ return scheme; }};
 

@@ -1,6 +1,8 @@
 {
   "name": "The Wind",
-  "short_name": "Wind",
+  "short_name": "The Wind",
+  "id": "./",
+  "scope": "./",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",

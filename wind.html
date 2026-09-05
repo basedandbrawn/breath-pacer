@@ -323,7 +323,7 @@ function audioStart(mode, sound){
   env(A.master.gain, 0.0001, mode==="breathe"?0.62:0.92, A.ctx.currentTime+0.02, 1.0, easeOut);
   try{ if(navigator.mediaSession) navigator.mediaSession.playbackState="playing"; }catch(e){}
 }
-function teardownScheme(){ if(!A) return; for(var i=0;i<A.nodes.length;i++){ try{A.nodes[i].stop();}catch(e){} try{A.nodes[i].disconnect();}catch(e){} } A.nodes=[]; scheme=null; }
+function teardownScheme(){ mirrorVoice=null; if(!A) return; for(var i=0;i<A.nodes.length;i++){ try{A.nodes[i].stop();}catch(e){} try{A.nodes[i].disconnect();}catch(e){} } A.nodes=[]; scheme=null; }
 function audioStop(){ if(!A) return; env(A.master.gain, A.master.gain.value, 0.0001, A.ctx.currentTime, 1.2, easeIn); setTimeout(teardownScheme, 1500); try{ if(navigator.mediaSession) navigator.mediaSession.playbackState="paused"; }catch(e){} }
 /* the loudness of the sound the app is making right now, 0..1 */
 var ampSm = 0;
@@ -589,11 +589,106 @@ function FieldGL(cv){
   return {kind:"field", resize:resize, frame:frame, halve:halve, addDebris:function(){}, isLost:function(){ return lost; }, probe:function(){ probeReq=true; }, destroy:function(){ try{ gl.getExtension("WEBGL_lose_context").loseContext(); }catch(e){} }, info:function(){ return "GPU fluid · "+simW+"×"+simH+" sim · "+dyeW+"×"+dyeH+" dye"; }};
 }
 
+/* ============================ MIRROR ============================
+   The phone on the abdomen tilts with each breath. We read the gravity
+   vector, band-pass it around breathing rates, and take its turning
+   points. Which turning point is the inhale comes from the breath itself:
+   at rest the exhale is the longer half, so the shorter segment is IN. */
+var MIR = {on:false, supported:(typeof DeviceMotionEvent!=="undefined"), perm:"unknown", lastT:0, evt:0,
+  dc:[0,0], lp:[0,0], vel:[0,0], env:[0,0], axis:-1, sign:1, dir:0, segT:0,
+  rises:[], falls:[], troughs:[], peaks:[], starts:[], lastStartT:0, period:0, rate:0, conf:0,
+  moving:false, moveT:-9, fill:0.5, flow:0, armedAt:0, calmSince:0};
+var SLEEP_AFTER = 240;                                   /* seconds of calm, still breathing before the session ends itself */
+function mirrorReset(){ MIR.lastT=0; MIR.evt=0; MIR.dc=[0,0]; MIR.lp=[0,0]; MIR.vel=[0,0]; MIR.env=[0,0]; MIR.axis=-1; MIR.sign=1; MIR.dir=0; MIR.segT=0;
+  MIR.rises=[]; MIR.falls=[]; MIR.troughs=[]; MIR.peaks=[]; MIR.starts=[]; MIR.lastStartT=0; MIR.period=0; MIR.rate=0; MIR.conf=0; MIR.moving=false; MIR.moveT=-9; MIR.fill=0.5; MIR.flow=0; MIR.armedAt=0; MIR.calmSince=0; }
+function motionRequest(){
+  if(!MIR.supported) return Promise.resolve(false);
+  if(typeof DeviceMotionEvent.requestPermission==="function"){
+    try{ return DeviceMotionEvent.requestPermission().then(function(r){ return r==="granted"; }, function(){ return false; }); }catch(e){ return Promise.resolve(false); }
+  }
+  return Promise.resolve(true);
+}
+function mirrorStart(){ mirrorReset(); MIR.on=true; window.addEventListener("devicemotion", onMotion); }
+function mirrorStop(){ MIR.on=false; window.removeEventListener("devicemotion", onMotion); }
+function median(arr){ var a=arr.slice().sort(function(x,y){ return x-y; }); return a[Math.floor(a.length/2)]; }
+function onMotion(e){
+  var a=e.accelerationIncludingGravity; if(!a||a.x==null) return;
+  var t=performance.now()/1000, dt=MIR.lastT?Math.min(0.1,Math.max(0.004,t-MIR.lastT)):0.016; MIR.lastT=t; MIR.evt++;
+  var g=Math.hypot(a.x,a.y,a.z)||9.81;
+  if(Math.abs(g-9.81)>1.2){ MIR.moving=true; MIR.moveT=t; } else if(t-MIR.moveT>2.0) MIR.moving=false;
+  var raw=[a.x/g, a.y/g], i, best=0, bestE=-1;
+  for(i=0;i<2;i++){
+    if(MIR.evt===1) MIR.dc[i]=raw[i];
+    MIR.dc[i]+=(raw[i]-MIR.dc[i])*Math.min(1,dt/15);           /* very slow: removes posture */
+    var hp=raw[i]-MIR.dc[i], prev=MIR.lp[i];
+    MIR.lp[i]+=(hp-MIR.lp[i])*Math.min(1,dt/0.3);              /* smooth: removes heartbeat and jitter */
+    var v=(MIR.lp[i]-prev)/dt; MIR.vel[i]+=(v-MIR.vel[i])*Math.min(1,dt/0.15);
+    var ab=Math.abs(MIR.lp[i]); MIR.env[i]+=(ab-MIR.env[i])*Math.min(1, ab>MIR.env[i]?dt/0.5:dt/12);
+    if(MIR.env[i]>bestE){ bestE=MIR.env[i]; best=i; }
+  }
+  if(MIR.axis<0 || MIR.env[MIR.axis]<bestE*0.5) MIR.axis=best;    /* the axis the breath lives on */
+  var ax=MIR.axis, env=MIR.env[ax], x=MIR.lp[ax], v=MIR.vel[ax];
+  var thr=Math.max(0.0025, env*0.18);
+  if(MIR.moving){ MIR.dir=0; MIR.conf=0; return; }
+  var nd = v>thr ? 1 : v<-thr ? -1 : MIR.dir;
+  if(nd!==MIR.dir && nd!==0){
+    if(MIR.dir===0){ MIR.dir=nd; MIR.segT=t; }
+    else if(t-MIR.segT>0.7){
+      var len=t-MIR.segT;
+      if(nd>0){ MIR.falls.push(len); MIR.troughs.push(t); } else { MIR.rises.push(len); MIR.peaks.push(t); }
+      if(MIR.falls.length>6) MIR.falls.shift(); if(MIR.rises.length>6) MIR.rises.shift();
+      if(MIR.troughs.length>8) MIR.troughs.shift(); if(MIR.peaks.length>8) MIR.peaks.shift();
+      if(MIR.rises.length>=2 && MIR.falls.length>=2){
+        var r=0,fl=0,k; for(k=0;k<MIR.rises.length;k++) r+=MIR.rises[k]; r/=MIR.rises.length; for(k=0;k<MIR.falls.length;k++) fl+=MIR.falls[k]; fl/=MIR.falls.length;
+        MIR.sign = r>fl*1.15 ? -1 : 1;                           /* the shorter half is the inhale */
+      }
+      MIR.dir=nd; MIR.segT=t;
+    }
+  }
+  MIR.starts = MIR.sign>0 ? MIR.troughs : MIR.peaks;
+  var n=MIR.starts.length;
+  MIR.lastStartT = n ? MIR.starts[n-1] : 0;
+  if(n>=2){ var per=[], j; for(j=Math.max(1,n-4); j<n; j++) per.push(MIR.starts[j]-MIR.starts[j-1]); MIR.period=median(per); MIR.rate=60/MIR.period; }
+  var ampOk=Math.min(1, Math.max(0,(env-0.004)/0.008));
+  var recent = (n && MIR.period) ? ((t-MIR.lastStartT) < 2.5*MIR.period ? 1 : 0) : 0;
+  MIR.conf = ampOk * (n>=3 ? 1 : n/3) * recent;
+  var nx=Math.max(-1,Math.min(1, x*MIR.sign/(env*1.1+1e-6))); MIR.fill=(nx+1)/2;
+  MIR.flow=Math.max(-1,Math.min(1, v*MIR.sign/(env*0.9+1e-6)));
+}
+/* SENSE: the session opens listening. Three inhale starts give the period; the
+   first cycle begins on the next real inhale, so the pacer's first breath is yours. */
+function senseGo(pt){
+  S.period = Math.max(3, Math.min(15, MIR.period));
+  S.steps.splice(S.idx, 1); appendCycle(S.steps); reanchor(true);
+}
+function senseToTap(){ var st=S.steps[S.idx]; if(!st||st.k!=="sense") return; st.k="tap"; st.stage="tap"; S.taps=[]; lastKind=null; }
+function sleepEnd(){
+  if(S.sleeping) return; S.sleeping=true;
+  if(A){ env(A.master.gain, A.master.gain.value, 0.0001, A.ctx.currentTime, 8, easeIn); }
+  setTimeout(function(){ if(S.running) endSession(true); }, 8500);
+}
+/* the mirror voice: brown noise whose loudness is your actual airflow */
+var mirrorVoice=null;
+function mkMirror(){
+  var ctx=A.ctx, src=ctx.createBufferSource(); src.buffer=noiseBuffer(ctx,5,true); src.loop=true;
+  var bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=700; bp.Q.value=0.8;
+  var lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2400; lp.Q.value=0.4;
+  var g=ctx.createGain(); g.gain.value=0.0001;
+  src.connect(bp); bp.connect(lp); lp.connect(g); g.connect(A.dryIn); src.start(); keep(src);
+  return {g:g, bp:bp};
+}
+function mirrorVoiceFrame(){
+  if(!mirrorVoice||!A||A.ctx.state!=="running") return;
+  var now=A.ctx.currentTime, lvl = (S.mirror && !S.sleeping) ? MIR.conf*Math.min(1,Math.abs(MIR.flow))*0.6 : 0;
+  mirrorVoice.g.gain.setTargetAtTime(lvl+0.0001, now, 0.12);
+  mirrorVoice.bp.frequency.setTargetAtTime(MIR.flow>0?1300:480, now, 0.25);
+}
+
 /* ============================ SESSION ============================ */
 var LEAD = 0.12;
 var S = {running:false, mode:"lift", sound:"tone", steps:[], idx:0, stepStart:0, schedIdx:-1,
          reps:10, sets:4, restDur:180, holdMode:0, holdSec:45, startedAt:0, recorded:{}, ended:false,
-         dyn:null, period:0, turb:0, follow:false, taps:[]};
+         dyn:null, period:0, turb:0, follow:false, taps:[], mirror:false, sleeping:false, senseT:0};
 function ph(kind, dur, stage, setNo, rep){ return {k:kind, dur:dur, stage:stage, set:setNo, rep:rep}; }
 function pushCycle(arr, c, stage, setNo, rep){
   if(c["in"]>0) arr.push(ph("in",c["in"],stage,setNo,rep)); if(c.hold>0) arr.push(ph("hold",c.hold,stage,setNo,rep));
@@ -613,7 +708,7 @@ function buildSteps(){
     }
   }else{
     var P=c.breathe;
-    if(S.follow){ S.dyn={left:P.cycles, rep:0}; S.taps=[]; st.push(ph("tap",1e9,"tap",1,0)); }   /* three taps set the period, then the first cycle starts */
+    if(S.follow){ S.dyn={left:P.cycles, rep:0}; S.taps=[]; st.push(S.mirror ? ph("sense",1e9,"sense",1,0) : ph("tap",1e9,"tap",1,0)); }   /* the sensor or three taps set the period, then the first cycle starts */
     else { var cc = P.pat==="coh"?{"in":5.5,hold:0,out:5.5,empty:0}:{"in":4,hold:7,out:8,empty:0}; for(r=1;r<=P.cycles;r++) pushCycle(st,cc,"set",1,r); }
   }
   st.push(ph("done",1e9,"done",0,0));
@@ -644,9 +739,11 @@ function appendCycle(st){
 }
 function startSession(mode){
   var c=DB.cfg; S.mode=mode; S.sound=c[mode].sound; S.follow = mode==="breathe" && c.breathe.pat==="follow";
+  S.mirror = S.follow && MIR.perm==="granted"; S.sleeping=false; S.senseT=performance.now()/1000;
   if(mode==="lift"){ S.reps=c.lift.reps; S.sets=c.lift.sets; S.restDur=c.lift.tune[c.lift.preset].rest; S.holdMode=c.lift.preset==="hold"?1:0; S.holdSec=c.lift.holdSec; }
   else { S.reps=c.breathe.cycles; S.sets=1; S.holdMode=0; }
-  audioStart(mode, S.sound);
+  audioStart(mode, S.mirror ? "tone" : S.sound);     /* in the mirror the tone leads and the noise is you */
+  if(S.mirror){ mirrorStart(); if(A) mirrorVoice=mkMirror(); }
   S.dyn=null; S.steps=buildSteps(); S.idx=0; S.schedIdx=-1; S.ended=false; S.recorded={}; S.turb=0;
   S.stepStart=nowSec()+0.1; S.startedAt=nowSec(); S.running=true;
   lastKind=null;
@@ -657,7 +754,7 @@ function startSession(mode){
 function endSession(natural){
   if(!S.running) return; S.running=false;
   DB.stats.sec += Math.max(0, nowSec()-S.startedAt); save();
-  audioStop(); wake(false); S.ended=true;
+  audioStop(); mirrorStop(); wake(false); S.ended=true;
   if(!natural){ show("home"); } else { paintDone(); }
 }
 function recordSet(setNo, done){
@@ -729,11 +826,11 @@ var elWord=document.getElementById("word"), elWordI=elWord.firstElementChild, el
     elEnd=document.getElementById("endbtn"), bSkip=document.getElementById("b-skip"), bSave=document.getElementById("b-save"), bBack=document.getElementById("b-back"),
     elMark=document.getElementById("mark"), rails=document.querySelectorAll(".rail .r"), elPerf=document.getElementById("perf");
 var lastWord=null, lastNum=null, lastMeta=null, lastKind=null, lastRail=null, lastFoot=null;
-var WORDS={"in":"IN",hold:"HOLD",out:"OUT",empty:"",getset:"READY",done:"DONE",rest:"REST",tap:"TAP"};
+var WORDS={"in":"IN",hold:"HOLD",out:"OUT",empty:"",getset:"READY",done:"DONE",rest:"REST",tap:"TAP",sense:"WAIT"};
 
 /* fitted ONCE for the widest word that can ever appear; never per word */
 function fitWordOnce(){
-  var words=["READY","HOLD","REST","DONE","TAP"], size=Math.min(window.innerWidth*0.30, window.innerHeight*0.19), avail=window.innerWidth*0.84;
+  var words=["READY","HOLD","REST","DONE","TAP","WAIT"], size=Math.min(window.innerWidth*0.30, window.innerHeight*0.19), avail=window.innerWidth*0.84;
   var keep=elWordI.textContent;
   document.documentElement.style.setProperty("--wordSize", size+"px");
   var maxW=0; for(var i=0;i<words.length;i++){ elWordI.textContent=words[i]; maxW=Math.max(maxW, elWordI.offsetWidth); }
@@ -757,11 +854,23 @@ function render(now){
     if(st.k==="in" && st.stage==="set" && ENG.inst && ENG.inst.addDebris) ENG.inst.addDebris(fs.temp); }
   /* the breath as numbers the field can use */
   fs.stage=st.stage; fs.phase=st.k; fs.prog=frac; fs.rep=st.rep; fs.reps=S.reps; fs.set=st.set; fs.sets=S.sets;
-  if(st.k==="in") fs.fill=easeIO(frac); else if(st.k==="hold") fs.fill=1; else if(st.k==="out") fs.fill=1-easeIO(frac); else if(st.k==="getset") fs.fill=0.15*(1-frac); else if(st.k==="tap") fs.fill=0.12; else fs.fill=0;
+  if(st.k==="in") fs.fill=easeIO(frac); else if(st.k==="hold") fs.fill=1; else if(st.k==="out") fs.fill=1-easeIO(frac); else if(st.k==="getset") fs.fill=0.15*(1-frac); else if(st.k==="tap") fs.fill=0.12; else if(st.k==="sense") fs.fill=0.12; else fs.fill=0;
   var bell=Math.pow(Math.sin(frac*Math.PI),0.7);
   fs.flow = st.k==="in"?bell : st.k==="out"?-bell : 0;
   if(st.stage==="rest") fs.flow*=0.45;
   var a=audioAmp(); if(a<0) a=bell*0.6; ampSm += (a-ampSm)*0.25; fs.amp=ampSm;
+  /* the mirror: when the sensor sees you, the wind is you and the tone is the pacer */
+  var pt=performance.now()/1000, seeing = S.mirror && MIR.conf>0.35 && !MIR.moving;
+  if(seeing){ fs.fill=MIR.fill; fs.flow=MIR.flow; fs.amp=Math.min(1,Math.abs(MIR.flow)); }
+  if(st.k==="sense"){
+    if(MIR.starts.length>=3 && MIR.conf>0.5 && !MIR.moving){ if(!MIR.armedAt) MIR.armedAt=pt; if(MIR.lastStartT>MIR.armedAt && pt-MIR.lastStartT<0.6){ senseGo(pt); return; } }
+    if(pt-S.senseT>45 && MIR.conf<0.3) senseToTap();
+  }
+  if(S.mirror && st.stage==="set"){
+    var calm = seeing && MIR.rate<=12;
+    if(calm){ if(!MIR.calmSince) MIR.calmSince=pt; else if(pt-MIR.calmSince>SLEEP_AFTER) sleepEnd(); } else MIR.calmSince=0;
+  }
+  mirrorVoiceFrame();
   fs.temp = st.stage==="set" && !S.holdMode && S.reps>1 ? (st.rep-1)/(S.reps-1) : st.stage==="set" && S.holdMode ? Math.min(1,setProgress()/S.holdSec) : st.stage==="rest"?0.5:0.15;
   S.turb *= (1 - 0.12*Math.min(1, (now - (S._lt||now)))); S._lt=now;
   fs.turb=Math.min(1,S.turb);
@@ -772,10 +881,11 @@ function render(now){
   var word = isRest ? "REST" : WORDS[st.k];
   lastWord=txt(elWordI, word, lastWord);
   if(isRest){ var left=rem,i; for(i=S.idx+1;i<S.steps.length&&S.steps[i].stage==="rest"&&S.steps[i].set===st.set;i++) left+=S.steps[i].dur; lastNum=txt(elNum,fmtClock(left),lastNum); }
-  else { var shown=Math.min(Math.ceil(rem-0.001),Math.ceil(st.dur)); lastNum=txt(elNum, st.k==="empty"?"":st.k==="tap"?String(3-S.taps.length):String(shown||1), lastNum); }
+  else { var shown=Math.min(Math.ceil(rem-0.001),Math.ceil(st.dur)); lastNum=txt(elNum, st.k==="empty"?"":st.k==="tap"?String(3-S.taps.length):st.k==="sense"?String(Math.max(0,3-MIR.starts.length)):String(shown||1), lastNum); }
   setRail(st.k==="in"||st.k==="hold"||st.k==="out"?st.k:null);
   var meta;
   if(st.k==="tap") meta="TAP EACH BREATH IN";
+  else if(st.k==="sense") meta = MIR.moving ? "HOLD STILL" : MIR.armedAt ? "ON YOUR NEXT BREATH IN" : MIR.conf>0.3 ? "BREATHING · "+MIR.rate.toFixed(1)+"/MIN" : "PHONE ON YOUR BELLY";
   else if(isRest) meta="REST · SET "+st.set+"/"+S.sets;
   else if(S.holdMode && isSet){ var pr=setProgress(); meta="SET "+st.set+"/"+S.sets+" · "+Math.ceil(S.holdSec-pr)+"S"; }
   else if(S.mode==="breathe"){ meta = isSet ? ("CYCLE "+st.rep+"/"+S.reps + (S.follow ? " · "+(60/(st.dur/(st.k==="in"?0.45:0.55))).toFixed(1)+"/MIN" : "")) : ""; }
@@ -794,7 +904,7 @@ function tick(){
   raf=requestAnimationFrame(tick);
   var now=nowSec(), t=performance.now()/1000, dt=lastT?Math.min(1/30, t-lastT):1/60; lastT=t;
   if(S.running){
-    if(S.dyn && S.steps[S.idx] && S.steps[S.idx].k!=="tap"){ while(S.dyn.left>0 && S.steps.length-S.idx<=3) appendCycle(S.steps); }
+    if(S.dyn && S.steps[S.idx] && S.steps[S.idx].k!=="tap" && S.steps[S.idx].k!=="sense"){ while(S.dyn.left>0 && S.steps.length-S.idx<=3) appendCycle(S.steps); }
     var guard=0;
     while(S.idx<S.steps.length-1 && now>=S.stepStart+S.steps[S.idx].dur && guard++<400){
       var prev=S.steps[S.idx]; S.stepStart+=prev.dur; S.idx++; var cur=S.steps[S.idx];
@@ -810,7 +920,7 @@ function tick(){
   var cpu=performance.now()-c0; budget(cpu, t);
   frameNo++;
   if(Q.probe && ENG.inst && ENG.inst.probe && probeStage<PROBE_AT.length && t>=PROBE_AT[probeStage]){ probeStage++; console.log("PROBE t="+t.toFixed(1)+" frame "+frameNo+" phase="+frameState.phase+" fill="+frameState.fill.toFixed(2)+" flow="+frameState.flow.toFixed(2)+" amp="+frameState.amp.toFixed(2)+" vp="+window.innerWidth+"x"+window.innerHeight+" eng="+ENG.name+" reason="+ENG.reason+" dt="+dt.toFixed(4)); ENG.inst.probe(); }
-  if(perfOn){ fpsEMA += (1/Math.max(dt,1e-3)-fpsEMA)*0.05; elPerf.style.display="block"; elPerf.textContent = ENG.name+"  "+(ENG.inst?ENG.inst.info():"")+"\n"+cpuEMA.toFixed(1)+" ms engine · "+fpsEMA.toFixed(0)+" fps"; }
+  if(perfOn){ fpsEMA += (1/Math.max(dt,1e-3)-fpsEMA)*0.05; elPerf.style.display="block"; elPerf.textContent = ENG.name+"  "+(ENG.inst?ENG.inst.info():"")+"\n"+cpuEMA.toFixed(1)+" ms engine · "+fpsEMA.toFixed(0)+" fps"+(MIR.on?"\nmirror ax"+MIR.axis+" sign"+MIR.sign+" env "+(MIR.env[Math.max(0,MIR.axis)]*1000).toFixed(1)+"m · "+MIR.rate.toFixed(1)+"/min conf "+MIR.conf.toFixed(2)+(MIR.moving?" MOVING":""):""); }
 }
 
 /* ============================ UI ============================ */
@@ -821,7 +931,7 @@ function refresh(){
   document.getElementById("v-reps").textContent=L.reps; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-holdSec").textContent=L.holdSec; document.getElementById("v-cycles").textContent=P.cycles;
   document.getElementById("row-reps").classList.toggle("hid",isHold); document.getElementById("row-hsec").classList.toggle("hid",!isHold);
   document.getElementById("preset-sub").textContent = fmtN(T["in"])+(T.hold>0?" · "+fmtN(T.hold):"")+" · "+fmtN(T.out)+"   —   rest "+fmtClock(T.rest);
-  document.getElementById("pat-sub").textContent = P.pat==="follow" ? "Tap at the start of three breaths in. It starts at your pace and leads you down to 5.5 a minute." : P.pat==="coh" ? "Coherent breathing, 5.5 a minute." : "Relaxing breath. Long exhale.";
+  document.getElementById("pat-sub").textContent = P.pat==="follow" ? "Lie down, phone on your belly just below the navel, screen up. It finds your breath by itself and leads you down to 5.5 a minute. If it can't, it asks for three taps." : P.pat==="coh" ? "Coherent breathing, 5.5 a minute." : "Relaxing breath. Long exhale.";
   document.getElementById("setup-lift").classList.toggle("hid", setupMode!=="lift"); document.getElementById("setup-breathe").classList.toggle("hid", setupMode!=="breathe");
   document.getElementById("setup-title").textContent = setupMode==="lift"?"Lift":"Breathe";
   document.getElementById("setupnote").textContent = ENG.name==="field" ? "The wind reads the sound it makes: the gust you hear is the gust you see." : "";
@@ -845,7 +955,13 @@ document.addEventListener("click", function(ev){
   if((v=t.getAttribute("data-sound"))){ DB.cfg[setupMode].sound=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-eng"))){ DB.cfg.engine=v; DB.cfg.chose=true; save(); pickEngine(v); return; }
 });
-document.getElementById("b-start").addEventListener("click", function(){ startSession(setupMode); });
+document.getElementById("b-start").addEventListener("click", function(){
+  /* the audio graph must be born inside the tap; the motion prompt can come after */
+  initAudio(); if(A){ try{ A.ctx.resume(); }catch(e){} try{ var p=audioEl.play(); if(p&&p.catch) p.catch(function(){}); }catch(e){} }
+  var wantMirror = setupMode==="breathe" && DB.cfg.breathe.pat==="follow";
+  if(!wantMirror){ startSession(setupMode); return; }
+  motionRequest().then(function(ok){ MIR.perm = ok ? "granted" : "denied"; startSession(setupMode); });
+});
 bSkip.addEventListener("click", function(e){ e.stopPropagation(); skipRest(); });
 bSave.addEventListener("click", function(e){ e.stopPropagation(); saveSet(); });
 bBack.addEventListener("click", function(e){ e.stopPropagation(); show("home"); });
@@ -856,7 +972,8 @@ elRun.addEventListener("pointerdown", function(ev){
   if(ev.target.closest && ev.target.closest("button")) return; if(!S.running) return;
   if(A&&A.ctx.state!=="running"){ try{A.ctx.resume();}catch(e){} }
   var st=S.steps[S.idx]; if(!st) return;
-  if(st.k==="tap"){ tapCalibrate(); }
+  if(st.k==="sense"){ senseToTap(); tapCalibrate(); }   /* a tap while sensing means: do it by hand */
+  else if(st.k==="tap"){ tapCalibrate(); }
   else if(st.stage==="set"){ reanchor(false); }
   else return; elFlash.classList.remove("go"); void elFlash.offsetWidth; elFlash.classList.add("go");
 });
@@ -870,7 +987,7 @@ window.WIND = {
   state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst?ENG.inst.info():""}; },
   probe:function(){ if(ENG.inst&&ENG.inst.probe) ENG.inst.probe(); },
   rects:function(){ var out={}, els=document.querySelectorAll("#s-run .slot, #word span, #num, .rail .r"); for(var i=0;i<els.length;i++){ var r=els[i].getBoundingClientRect(); out[(els[i].id||els[i].className)+"#"+i]=[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]; } out.wordSize=getComputedStyle(elWord).fontSize; return out; },
-  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, tap:tapCalibrate, period:function(){ return S.period; }
+  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, tap:tapCalibrate, period:function(){ return S.period; }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,sleeping:S.sleeping,mirror:S.mirror}; }, sleepAfter:function(s){ SLEEP_AFTER=s; }
 };
 /* ---- boot ---- */
 fitWordOnce();

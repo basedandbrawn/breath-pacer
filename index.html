@@ -26,10 +26,10 @@
   --active:#2f2e2e; --activeline:#c9622a;
   --go1:#6b2a10; --go2:#2a1008; --goline:#cf7b4a; --gotx:#f7dcc4;
   --selbg:#361f13; --selline:#c9622a; --seltx:#dfba99;
-  --top:#3a1a10;
   --lift1:#1d2027; --lift2:#15161a; --liftline:#464647; --liftmc:#8fa9c4; --liftmcA:#8fa9c455; --liftmcB:#8fa9c422;
   --br1:#2e1410; --br2:#1e100e; --brline:#533d35; --brmc:#d84a12; --brmcA:#d84a1255; --brmcB:#d84a1222;
   --bi:#8fa9c4; --bh:#b8963f; --bo:#d84a12; --be:#a89e90;
+  --brassA:#b08a4a55;
   /* THEME END */
 }
 *{box-sizing:border-box}
@@ -69,28 +69,28 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 
 /* ---------- mode ---------- */
 .eyebrow{font-size:12px;letter-spacing:.38em;color:var(--mute);text-transform:uppercase;font-weight:500}
-.spacer{flex:1 1 auto}
-#s-mode{background:radial-gradient(120% 50% at 50% -10%,var(--top) 0%,transparent 62%)}
-.modes{display:flex;flex-direction:column;gap:18px;flex:0 1 auto;height:min(72vh,720px)}
-/* Two still cards. Each carries a ring of light in its own colour: azure for Lift,
-   orange for Breathe. Nothing on this screen moves. */
-.mode{--mc:var(--liftmc);--mcA:var(--liftmcA);--mcB:var(--liftmcB);flex:1;width:100%;text-align:left;padding:0 30px;border-radius:28px;
-  background:linear-gradient(150deg,var(--lift1) 0%,var(--lift2) 55%,var(--bg) 100%);border:1px solid var(--liftline);overflow:hidden;position:relative;
-  display:flex;align-items:center;box-shadow:inset 0 1px 0 #ffffff12, 0 14px 44px #00000066}
-.mode.breathe{--mc:var(--brmc);--mcA:var(--brmcA);--mcB:var(--brmcB);background:linear-gradient(150deg,var(--br1) 0%,var(--br2) 55%,var(--bg) 100%);border-color:var(--brline)}
-.mode:active{filter:brightness(1.18)}
-.mode .halo{position:absolute;right:-14%;top:50%;width:min(80vw,380px);aspect-ratio:1;transform:translateY(-50%);border-radius:50%;
-  background:radial-gradient(circle,var(--mcA) 0%,var(--mcB) 28%,transparent 62%)}
-.mode .orb{position:absolute;right:-16%;top:50%;width:min(64vw,310px);height:auto;transform:translateY(-50%) rotate(-135deg);overflow:visible}
-.mode .orb circle{fill:none;stroke-linecap:round}
-.mode .orb .base{stroke:var(--fg);opacity:.1;stroke-width:3.2}
-.mode .orb .g3{stroke:var(--mc);stroke-width:26;opacity:.035}
-.mode .orb .g2{stroke:var(--mc);stroke-width:14;opacity:.09}
-.mode .orb .g1{stroke:var(--mc);stroke-width:7;opacity:.22}
-.mode .orb .arc{stroke:var(--mc);stroke-width:3.2}
-.mode .orb .g3,.mode .orb .g2,.mode .orb .g1,.mode .orb .arc{stroke-dasharray:188.5 251.4}
-.mode .t{position:relative;z-index:1;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:min(16vw,78px);line-height:.95;letter-spacing:.08em;
-  padding:2px 0;text-shadow:0 0 14px var(--mcA), 0 0 46px var(--mcB)}
+/* Two cards filling the screen. A brass catch-light along the top edge, a fine
+   grain beneath, each mode's mark set in a bezel and repeated huge and faint
+   behind it. Nothing here moves and nothing is written but the two names. */
+.modes{flex:1;display:flex;flex-direction:column;gap:14px;padding:2px 0 0}
+.mode{--mc:var(--liftmc);--mcA:var(--liftmcA);--mcB:var(--liftmcB);position:relative;flex:1;
+  display:flex;align-items:center;gap:20px;padding:0 22px;border-radius:24px;overflow:hidden;text-align:left;
+  background-color:color-mix(in srgb,var(--mc) 6%,var(--panel));
+  background-image:repeating-linear-gradient(180deg,#ffffff07 0 1px,transparent 1px 6px);
+  box-shadow:inset 0 1px 0 var(--brassA), inset 0 0 0 1px #00000066}
+.mode.breathe{--mc:var(--brmc);--mcA:var(--brmcA);--mcB:var(--brmcB)}
+.mode:active{background-color:color-mix(in srgb,var(--mc) 12%,var(--panel))}
+.mode .sig{fill:none;stroke:var(--mc);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;display:block}
+.mode .mark{position:absolute;right:-12%;bottom:-30%;width:min(58vw,270px);opacity:.07;pointer-events:none}
+.mode .mark .sig{width:100%;stroke-width:2}
+.mode .bez{position:relative;flex:none;width:76px;height:76px;border-radius:18px;
+  display:flex;align-items:center;justify-content:center;background:var(--bg);
+  box-shadow:inset 0 0 0 1px var(--brassA)}
+.mode .bez .sig{width:46px;filter:drop-shadow(0 0 8px var(--mcA))}
+.mode .t{position:relative;flex:1;font-family:'Rajdhani',sans-serif;font-weight:700;line-height:1;
+  font-size:min(12vw,50px);letter-spacing:.01em}
+.mode .chev{position:relative;flex:none;width:11px;height:11px;transform:rotate(45deg);
+  border-right:2.5px solid var(--mc);border-top:2.5px solid var(--mc)}
 .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .brand{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.38em;text-transform:uppercase;color:var(--mute);font-weight:500;padding:4px 6px}
 .brand i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--acc);box-shadow:0 0 6px var(--acc), 0 0 18px var(--accA);display:block}
@@ -201,8 +201,6 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .card{border-radius:3px;outline:1px solid #2a2725;outline-offset:3px;box-shadow:inset 0 0 0 1px #00000088, inset 0 18px 36px #00000066}
 .btn,.seg button,.step button{border-radius:3px}
 .btn.go{border-radius:3px;outline:1px solid #6b2a1099;outline-offset:3px;text-shadow:0 1px 0 #000}
-.mode{border-radius:4px;outline:1px solid #2a2725;outline-offset:3px;box-shadow:inset 0 0 0 1px #00000088, 0 14px 40px #000000aa}
-#s-mode::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 70% at 50% 0%,#00000000 40%,#00000088 100%)}
 /* THEME-EXTRA END */
 
 </style>
@@ -215,12 +213,10 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 <!-- MODE PICK -->
 <section id="s-mode" class="screen">
   <div class="brand"><i></i>Breath</div>
-  <div class="spacer"></div>
   <div class="modes">
-    <button class="mode lift" data-mode="lift"><div class="halo"></div><svg class="orb" viewBox="0 0 100 100" aria-hidden="true"><circle class="base" cx="50" cy="50" r="40"/><circle class="g3" cx="50" cy="50" r="40"/><circle class="g2" cx="50" cy="50" r="40"/><circle class="g1" cx="50" cy="50" r="40"/><circle class="arc" cx="50" cy="50" r="40"/></svg><div class="t">LIFT</div></button>
-    <button class="mode breathe" data-mode="breathe"><div class="halo"></div><svg class="orb" viewBox="0 0 100 100" aria-hidden="true"><circle class="base" cx="50" cy="50" r="40"/><circle class="g3" cx="50" cy="50" r="40"/><circle class="g2" cx="50" cy="50" r="40"/><circle class="g1" cx="50" cy="50" r="40"/><circle class="arc" cx="50" cy="50" r="40"/></svg><div class="t">BREATHE</div></button>
+    <button class="mode lift" data-mode="lift"><span class="mark"><svg class="sig" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6 L38 13 L32 20 L26 13 Z"/><path d="M19 35 L32 22 L45 35"/><path d="M32 50 V24"/><path d="M14 52 H50"/></svg></span><span class="bez"><svg class="sig" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6 L38 13 L32 20 L26 13 Z"/><path d="M19 35 L32 22 L45 35"/><path d="M32 50 V24"/><path d="M14 52 H50"/></svg></span><span class="t">Lift</span><i class="chev"></i></button>
+    <button class="mode breathe" data-mode="breathe"><span class="mark"><svg class="sig" viewBox="0 0 64 64" aria-hidden="true"><path d="M17 15 C25 10 39 10 47 15"/><path d="M19 23 C26 19 38 19 45 23"/><path d="M17 31 C24 26 40 26 47 31"/><path d="M14 40 C14 55 50 55 50 40"/></svg></span><span class="bez"><svg class="sig" viewBox="0 0 64 64" aria-hidden="true"><path d="M17 15 C25 10 39 10 47 15"/><path d="M19 23 C26 19 38 19 45 23"/><path d="M17 31 C24 26 40 26 47 31"/><path d="M14 40 C14 55 50 55 50 40"/></svg></span><span class="t">Breathe</span><i class="chev"></i></button>
   </div>
-  <div class="spacer"></div>
 </section>
 
 <!-- SETUP -->

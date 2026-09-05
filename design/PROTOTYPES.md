@@ -37,24 +37,22 @@ the Breathe setup, **Method**, and combine freely.
 
 | Method | Setting | What it is | Needs |
 |---|---|---|---|
-| **Belly** | Off · On (default On) | The phone on the abdomen reads the breath from the accelerometer. The wind and the breath noise become your actual breath; the tone is the pacer. With the Follow pattern it also finds your pace and leads you down to 5.5 s each way. | One motion-permission tap on iOS |
-| **Tap** | Off · Sync · Inhale (default Off) | Two readings of one gesture. Sync: a tap restarts the phase you are in. Inhale: a tap means *breathing in now*, and a held finger holds the hold. Both are gusts in the field. | Nothing |
-| **Ears** | Off · On (default Off) | Spatial wind. The breath noise is placed around the head with HRTF panning and circles it once per breath. Eyes closed, you hear where you are. | Headphones |
+| **Belly** | On by default | The phone on the abdomen reads the breath from the accelerometer. The wind and the breath noise become your actual breath; the tone is the pacer. | One motion-permission tap on iOS |
+| **Tap** | Off by default | You drum the breath: tap once a second on the count through the inhale and the exhale, press and hold through the hold. Each tap is a real gust into the fluid at your fingertip. The pacer gives the beat as a tick and a pulse of light. | Nothing |
+| **Ears** | Off by default | Spatial wind. Two voices around the head: a thin rising whistle that comes in from the left and climbs to the right ear, a low falling blow that sinks away behind. Eyes closed, you hear the breath. | Headphones |
+
+Follow, the pattern that started at your own pace and led you down to 5.5 s,
+is gone. It carried its own start screen, a three-tap calibration, a
+sensing state with four prompts, dynamic cycle building and an automatic
+sleep ending, and none of it was the pacer: it was a second product bolted
+to the side. The two fixed patterns remain and every method works with both.
 
 ## Belly: the breath mirror
 
-Breathe · Follow leads the user from their own breathing rate down to 5.5
-breaths a minute — 5.5 s in and 5.5 s out — near the resonance frequency where
-heart rate variability peaks.
-It needs one trustworthy reading of the current pace, and asking someone to
-breathe normally while they are being measured does not give one: attending
-to the breath changes it. So the reading is passive.
-
 **Setup.** Method · Belly on (the default). Lie down, phone on the belly just
 below the navel, screen up. Start asks once for motion access (iOS prompts;
-Android and desktop do not). Belly works with every pattern: on 4 · 7 · 8 and
-5.5 · 5.5 it is the mirror alone, the tone paces the fixed pattern and the
-wind and the noise are you; on Follow it also senses the starting pace.
+Android and desktop do not). The tone paces the pattern; the wind on the
+screen and the breath noise in the sound are your actual breath.
 
 **Sensing.** The phone tilts a degree or two with each breath. The gravity
 vector is read at the sensor rate, the posture is removed with a 15 s
@@ -66,99 +64,83 @@ half, so the shorter segment is IN. Verified in the harness with the tilt
 polarity inverted, where the sign flips and the session still starts on an
 inhale.
 
-**Start.** The screen reads WAIT with a count of the inhale starts still
-needed; the meta line reads PHONE ON YOUR BELLY, then BREATHING · x/MIN once
-the rate is known, HOLD STILL when the phone is moving, and ON YOUR NEXT
-BREATH IN once three starts are counted. The first cycle begins on the next
-real inhale, so the pacer's first breath is yours. Each cycle is then built at
-even halves and the period slides 12% per cycle toward 11 s, so the destination
-is exactly the 5.5 · 5.5 pattern. The meta line shows the current half in
-seconds, climbing toward 5.5.
-
 **The mirror.** While the sensor sees you, the wind on the screen and the
 breath noise in the sound are driven by your actual breath: the noise is
 loud where your airflow is fast and silent at the turnarounds, brighter on
-the inhale and darker on the exhale. The pad tone is the pacer, leading
-slightly slower. You hear yourself and hear where to go.
+the inhale and darker on the exhale. The pad tone is the pacer. You hear
+yourself against where you should be.
 
-**Sleep.** When the breathing stays slow and steady, at or under 12 a
-minute, with no movement for four minutes, the sound fades over eight
-seconds and the session ends by itself. The wake lock releases and the
-screen sleeps on its own.
+**Fallbacks.** Motion refused or absent: the session runs without the
+mirror. Nothing else changes.
 
-**Fallbacks.** Motion refused or absent: the tap flow (three taps at the
-start of three breaths in). No breath found within 45 s: drops to taps. A
-tap while sensing: taps, immediately. Everything works with the sensor off;
-only the mirror is lost.
+## Tap: drum the breath
 
-## Tap: two readings of one gesture
+Method · Tap on. The pacer counts; you play the count.
 
-Method · Tap: Off (default), Sync, Inhale. Both live
-versions are built so they can be compared in the hand rather than argued
-about. Lift keeps Sync and is not affected by the setting.
+- **Inhale.** Tap once a second, on the count. Active phase, active hand.
+- **Hold.** Press and hold. Breath held, finger held.
+- **Exhale.** Tap once a second again.
 
-| | Sync | Inhale |
-|---|---|---|
-| A tap means | *this phase starts now* | *I am breathing in now* |
-| During IN | restarts the inhale | restarts the inhale |
-| During HOLD or OUT | restarts that hold or exhale | jumps to the next inhale; the rest of the cycle is dropped |
-| Press and hold | nothing | the hold lasts as long as the finger is down; letting go starts the exhale. A pattern with no hold (5.5 · 5.5, Follow) gets one if you hold |
-| The pacer's order | kept; you set its timing | yours; the pacer keeps the durations |
-| Last cycle, no inhale left | restarts the phase | ignored |
+Each tap pushes the wind: a real gust into the fluid at your fingertip, a
+radial shove in the velocity field plus a puff of dye, so the air moves
+because you moved it. A held finger pins the air under it: velocity is
+damped in a small disc around the touch, and the field settles there
+first. In the particle fallback the same two things happen to particles.
 
-In both, the tap is a gust: a short inward shove in the field on an inhale
-tap, outward on the release, and the miss between where you tapped and
-where the pacer was becomes turbulence. There is no score and nothing is
-counted against you. A held hold shows HELD on the meta line and the count
-climbs instead of falling. The layout does not move in either: the same
-slot rectangles as before, measured during IN and during a held HOLD.
+Taps never move the clock. The gap between your tap and the nearest beat
+becomes turbulence, the same channel pace error has always used, and
+nothing is scored or displayed. The layout does not move.
 
-Mechanics of the held hold: while the finger is down the current hold's
-length is kept 0.6 s ahead of the clock so it cannot end; an inhale within
-0.3 s of ending under a held finger has a hold spliced in after it, before
-the exhale is scheduled (the audio lead is 0.12 s). Releasing sets the hold
-to end at that instant and the exhale is scheduled from there.
+**The beat.** Because the phone cannot tap you back, the pacer gives the
+beat two other ways. A soft tick (1480 Hz, 55 ms) at each second of an
+active phase, scheduled with the same look-ahead as the breath sound so it
+holds through dropped frames. And a pulse of light: the whole ground
+blinks up a step at each beat and settles in a tenth of a second, which
+peripheral vision catches. The hold has no beat; the finger just stays.
+
+**The version that is out of reach.** The ideal form taps back: a tick you
+feel at each beat, so you could do this with the phone face-down and eyes
+shut, purely by touch. iOS Safari has no vibration API. `navigator.vibrate`
+is Android-only, and the one iOS trick, a `<input type="checkbox" switch>`
+that clicks when the user flips it, fires on the user's own gesture and
+cannot be driven on a timer. So that version is blocked by the platform,
+not by effort. If this method turns out to be the one used every night,
+that is the first real argument in this project for a native app.
 
 ## Ears: spatial wind
 
 Method · Ears on, headphones in. The sound scheme becomes the spatial wind
 and the Sound row is disabled: the wind is the sound.
 
-The breath noise (the same brown noise through a bandpass) is fed through a
-`PannerNode` with HRTF panning and an inverse distance model, and its
-position is scheduled with the same look-ahead as the envelopes, 26 linear
-ramps per phase on `positionX` and `positionZ`, so it survives dropped
-frames like the rest of the audio. Where a browser has no position
-AudioParams it falls back to `setPosition` once per frame.
+The first version moved one voice around the head and it was not enough:
+in and out were hard to tell apart. Front and back are the weakest cues in
+HRTF, and a bandpass on brown noise barely changes character. This version
+uses **two different voices**, and the strongest cue in hearing, the
+direction of a pitch glide.
 
-One breath is one circle around the head:
+- **Inhale.** A thin, rising whistle. White noise through a bandpass that
+  sweeps 450 to 2600 Hz while its Q tightens from 1.2 to 3.0, so the pitch
+  climbs the whole way. It swells to full level only at the end. It comes
+  in from far left (7 m), across the front, to the right ear (0.8 m), and
+  rises from below the ears to overhead.
+- **Hold.** Close, overhead, still, faint (14%). Air already in, nothing
+  new entering, but present, so silence is never mistaken for a dead
+  headphone.
+- **Exhale.** A broad, low blow. Full level at once, then sinking away;
+  bandpass falling 1400 to 170 Hz with Q loosening to 0.7 and the top end
+  closing from 5.2 kHz to 900 Hz. It leaves from the right ear, round the
+  back, out to the far left, and sinks below.
 
-- **Inhale.** The wind starts far away on the left (5 m), sweeps across the
-  front and closes in, arriving at the right ear (0.8 m) as the lungs fill.
-  Loudness rises from the approach and from the envelope; the bandpass
-  opens from 600 to 1500 Hz.
-- **Hold.** It stays at the right ear, close and faint (12% level). Air
-  already in, nothing new entering, but the presence is there so silence
-  is never mistaken for a dead headphone.
-- **Exhale.** It leaves from the right, round the back, out to the far
-  left, darkening from 1300 to 420 Hz, where the next inhale begins.
+So the inhale is *rising, tightening, swelling, climbing, approaching* and
+the exhale is *falling, loosening, fading, sinking, receding*. Any one of
+those is enough with eyes shut; they all agree.
 
-Distance is lung volume, direction of travel is the phase. Front and back
-are the weakest cues in HRTF, so neither carries anything alone: the
-inhale is *approaching and brightening*, the exhale is *receding and
-darkening*, and left-right tells you how far through each you are. With
-Belly on as well, the pacer circles you while your own airflow stays in
-the centre of the head as the mirror voice.
-
-The output low-pass, 2600 Hz in Breathe for the other schemes, opens to
-7 kHz for Ears because the pinna cues live above 4 kHz.
-
-Verified headless with Chromium's HRTF: far left at the start of the
-inhale, in front at its middle, at the right ear on the hold and holding
-there, leaving to the right and louder at the start of the exhale, behind
-at its middle, far left again as the next inhale starts. Not yet heard on
-the phone: the level balance against the tone and whether iOS's HRTF
-externalises well enough are for a device pass.
+Position is scheduled with the same look-ahead as the envelopes, 26
+linear ramps per phase on `positionX`, `positionY` and `positionZ`, with a
+per-frame `setPosition` fallback where those params are missing. The
+output low-pass opens to 7 kHz for Ears because pinna cues live above
+4 kHz. With Belly on as well, the pacer circles you while your own airflow
+stays in the centre of the head as the mirror voice.
 
 ### Why not the microphone
 
@@ -202,11 +184,47 @@ iPhone at 60 fps with negligible CPU.
 Still to cut from Field: the swirl term, and the idle wind on the home screen
 if it costs battery.
 
+## Evaluation after the third pass
+
+What was removed: the Follow pattern with its WAIT and TAP screens, the
+three-tap calibration, dynamic cycle building, the 45 s sensing timeout,
+the sleep ending, the Sync and Inhale tap readings with the held-hold
+splice. About 120 lines, four session-state fields, two step kinds, two
+words in the word slot. What was added: one tap that only touches the
+field, a beat, two Ears voices, three toggles.
+
+**UI.** The Breathe setup is now Pattern and Cycles, then a Method card of
+three rows with a name, one line of what it does, and an On/Off pill; then
+Sound. The earlier three segmented controls with sub-lines were three
+copies of the same widget for three yes/no questions. The row form reads
+top to bottom as a list of what the pacer can do to you. When Ears is on
+the Sound buttons dim and the reason is printed inside the Sound card,
+not in a footer note. Nothing on the run screen moved: the meta line gains
+"· TAP" or "· PRESS" in Tap mode, short enough to clear the End button at
+390 px, and that is the only text change.
+
+**UX.** The three methods now compose without special cases: Belly is a
+sensor, Tap is a finger, Ears is a speaker, and the pacer is the same fixed
+pattern under all of them. There is no mode where the app is waiting for
+you, no calibration to get wrong, and no session that ends on its own.
+The Tap beat is the weakest link and is honestly labelled as such above.
+
+**Architecture.** The session is a flat step array again with nothing
+spliced into it at run time; the only run-time mutations are Lift's
+sync re-anchor and the rest skip. Touch is three numbers on the frame
+state (a decaying poke, a pin) that both engines read; the audio graph
+owns the beat. The mirror keeps its estimator but nothing drives the
+timeline from it. Storage migrates a saved Follow pattern to 4 · 7 · 8 and
+a saved Sync or Inhale to Tap on.
+
+Still to do on a phone: the Ears level balance in real earbuds, the tick
+level against the tone, and whether the ground pulse is visible in a lit
+room.
+
 ## Try it
 
 - `wind.html` home screen, Lift or Breathe, Start.
-- Breathe, pattern **Follow**, Start, allow motion, phone on your belly. Or Belly off and tap at the start of three breaths in.
-- Breathe, **Method** card: Belly on or off, Tap Sync or Inhale, Ears on with headphones. Any combination.
+- Breathe, **Method** card: Belly, Tap, Ears. Each is one toggle. Any combination.
 - `wind.html?perf=1` frame-time overlay.
 - `wind.html?eng=memory|still` forces a fallback engine, for testing.
 - `wind.html?auto=lift` starts a session on load (audio will be silent until a tap).

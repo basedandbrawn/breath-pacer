@@ -63,6 +63,13 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .seg button[disabled]{opacity:.35}
 .note{font-size:12px;line-height:1.45;color:var(--mute);min-height:2.9em;letter-spacing:.02em}
 .sub{text-align:center;font-size:12px;letter-spacing:.1em;color:var(--mute);padding-bottom:6px;line-height:1.5}
+.mrow{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
+.mrow:last-child{border-bottom:0}
+.mrow .mt{font-size:12px;letter-spacing:.24em;text-transform:uppercase;font-weight:700}
+.mrow .md{font-size:12px;line-height:1.45;color:var(--mute);margin-top:5px;letter-spacing:.02em}
+.mrow .pill{flex:0 0 auto;min-width:76px;padding:13px 0;border-radius:12px;border:1px solid var(--line);background:var(--ui);
+  font-size:11px;letter-spacing:.18em;font-weight:700;color:var(--mute);text-transform:uppercase;text-align:center}
+.mrow .pill.sel{color:var(--fg);border-color:rgba(238,243,247,.6);background:rgba(238,243,247,.14)}
 
 /* ---------- setup ---------- */
 .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;height:40px}
@@ -148,24 +155,18 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
     <div id="setup-breathe">
       <div class="card">
         <div class="row stack"><span class="lbl">Pattern</span>
-          <div class="seg" id="seg-pat"><button data-pat="478">4 · 7 · 8</button><button data-pat="coh">5.5 · 5.5</button><button data-pat="follow" id="b-follow">Follow</button></div>
+          <div class="seg" id="seg-pat"><button data-pat="478">4 · 7 · 8</button><button data-pat="coh">5.5 · 5.5</button></div>
           <div id="pat-sub" style="text-align:center;font-size:12px;letter-spacing:.1em;color:var(--mute);padding-bottom:6px;line-height:1.5"></div></div>
         <div class="row"><span class="lbl">Cycles</span><div class="step"><button data-s="cycles:-1">−</button><span class="v" id="v-cycles">8</span><button data-s="cycles:1">+</button></div></div>
       </div>
-      <!-- the three methods: ways the pacer couples to you beyond the screen -->
+      <!-- the three methods: how the pacer reaches you when you are not looking at it -->
       <div class="card" id="methods">
-        <div class="row stack"><span class="lbl">Method · Belly</span>
-          <div class="seg" id="seg-belly"><button data-belly="off">Off</button><button data-belly="on">On</button></div>
-          <div id="belly-sub" class="sub"></div></div>
-        <div class="row stack"><span class="lbl">Method · Tap</span>
-          <div class="seg" id="seg-tap"><button data-tap="off">Off</button><button data-tap="sync">Sync</button><button data-tap="lead">Inhale</button></div>
-          <div id="tap-sub" class="sub"></div></div>
-        <div class="row stack"><span class="lbl">Method · Ears</span>
-          <div class="seg" id="seg-ears"><button data-ears="off">Off</button><button data-ears="on">On</button></div>
-          <div id="ears-sub" class="sub"></div></div>
+        <div class="mrow"><div><div class="mt">Belly</div><div class="md" id="belly-sub"></div></div><button class="pill" data-m="belly">Off</button></div>
+        <div class="mrow"><div><div class="mt">Tap</div><div class="md" id="tap-sub"></div></div><button class="pill" data-m="tap">Off</button></div>
+        <div class="mrow"><div><div class="mt">Ears</div><div class="md" id="ears-sub"></div></div><button class="pill" data-m="ears">Off</button></div>
       </div>
     </div>
-    <div class="card"><div class="row stack"><span class="lbl">Sound</span><div class="seg" id="seg-sound"><button data-sound="tone">Tone</button><button data-sound="breath">Breath</button></div></div></div>
+    <div class="card"><div class="row stack"><span class="lbl">Sound</span><div class="seg" id="seg-sound"><button data-sound="tone">Tone</button><button data-sound="breath">Breath</button></div><div id="sound-sub" class="sub"></div></div></div>
     <div class="note" id="setupnote" style="padding:0 4px"></div>
   </div>
   <div class="foot"><button class="btn go" id="b-start">Start</button></div>
@@ -211,6 +212,8 @@ try{
     var L = raw.cfg.lift; if(L){ ["preset","reps","sets","holdSec","sound"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
       if(L.tune) for(var pk in DB.cfg.lift.tune){ if(L.tune[pk]) for(var tk in DB.cfg.lift.tune[pk]) if(L.tune[pk][tk]!==undefined) DB.cfg.lift.tune[pk][tk]=L.tune[pk][tk]; } }
     if(raw.cfg.breathe) for(var bk in DB.cfg.breathe) if(raw.cfg.breathe[bk]!==undefined) DB.cfg.breathe[bk]=raw.cfg.breathe[bk];
+    if(DB.cfg.breathe.pat!=="478" && DB.cfg.breathe.pat!=="coh") DB.cfg.breathe.pat="478";          /* Follow is gone */
+    if(DB.cfg.breathe.tap!=="off" && DB.cfg.breathe.tap!=="on") DB.cfg.breathe.tap="on";            /* Sync and Inhale became the one Tap */
   }
   if(raw && raw.stats){ DB.stats.sec = raw.stats.sec||0; DB.stats.log = raw.stats.log||[]; }
 }catch(e){}
@@ -303,31 +306,33 @@ function mkBreath(k){
    where the next inhale begins. Distance is lung volume, direction of travel is the phase.
    Eyes closed, headphones on, you hear where you are in the breath. */
 function mkEars(k){
-  var ctx=A.ctx, src=ctx.createBufferSource(); src.buffer=noiseBuffer(ctx,5,true); src.loop=true;
-  var bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=900; bp.Q.value=0.7;
+  /* white noise, not brown: a bandpass sweep over a flat spectrum is a clean whistle glide at any pitch */
+  var ctx=A.ctx, src=ctx.createBufferSource(); src.buffer=noiseBuffer(ctx,5,false); src.loop=true;
+  var bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=700; bp.Q.value=1.4;
   var lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=5200; lp.Q.value=0.4;
   var g=ctx.createGain(); g.gain.value=0.0001;
   var pan=ctx.createPanner(); try{ pan.panningModel="HRTF"; pan.distanceModel="inverse"; pan.refDistance=0.8; pan.maxDistance=30; pan.rolloffFactor=1; }catch(e){}
   var auto = !!(pan.positionX && pan.positionX.linearRampToValueAtTime);
-  var p0=earsPos(0,-90,-90,EARS_FAR,EARS_FAR);
-  if(auto){ pan.positionX.value=p0[0]; pan.positionZ.value=p0[1]; } else { try{ pan.setPosition(p0[0],0,p0[1]); }catch(e){} }
+  var p0=earsPos(0,-90,-90,EARS_FAR,EARS_FAR,0,0);
+  if(auto){ pan.positionX.value=p0[0]; pan.positionZ.value=p0[1]; pan.positionY.value=p0[2]; } else { try{ pan.setPosition(p0[0],p0[2],p0[1]); }catch(e){} }
   src.connect(bp); bp.connect(lp); lp.connect(g); g.connect(pan); pan.connect(A.wetIn); src.start(); keep(src);
   return {kind:"ears", g:g, bp:bp, lp:lp, pan:pan, k:k, auto:auto, motion:null};
 }
-var EARS_FAR=5, EARS_NEAR=0.8;
-function earsPos(p, th0, th1, r0, r1){ var th=(th0+(th1-th0)*p)*Math.PI/180, r=r0+(r1-r0)*easeIO(p); return [r*Math.sin(th), -r*Math.cos(th)]; }   /* listener faces -Z; +X is the right ear */
-function earsArc(s, at, dur, th0, th1, r0, r1){
-  if(!s.auto){ s.motion={at:at,dur:dur,th0:th0,th1:th1,r0:r0,r1:r1}; return; }       /* no position params: moved per frame instead */
-  var ctx=A.ctx, now=ctx.currentTime, t0=at<now?now:at, px=s.pan.positionX, pz=s.pan.positionZ, i, N=26;
-  [px,pz].forEach(function(q){ try{ if(q.cancelAndHoldAtTime) q.cancelAndHoldAtTime(t0); else q.cancelScheduledValues(t0); }catch(e){ try{ q.cancelScheduledValues(t0); }catch(e2){} } });
-  var q0=earsPos(0,th0,th1,r0,r1), near=at<=now+0.03, sx=near?px.value:q0[0], sz=near?pz.value:q0[1];
-  px.setValueAtTime(isFinite(sx)?sx:q0[0], t0); pz.setValueAtTime(isFinite(sz)?sz:q0[1], t0);
-  for(i=1;i<=N;i++){ var p=i/N, w=earsPos(p,th0,th1,r0,r1); px.linearRampToValueAtTime(w[0], t0+dur*p); pz.linearRampToValueAtTime(w[1], t0+dur*p); }
+var EARS_FAR=7, EARS_NEAR=0.8;
+/* listener faces -Z; +X is the right ear; +Y is up. The inhale rises as it comes in, the exhale sinks as it goes. */
+function earsPos(p, th0, th1, r0, r1, y0, y1){ var th=(th0+(th1-th0)*p)*Math.PI/180, r=r0+(r1-r0)*easeIO(p); return [r*Math.sin(th), -r*Math.cos(th), y0+(y1-y0)*p]; }
+function earsArc(s, at, dur, th0, th1, r0, r1, y0, y1){
+  if(!s.auto){ s.motion={at:at,dur:dur,th0:th0,th1:th1,r0:r0,r1:r1,y0:y0,y1:y1}; return; }       /* no position params: moved per frame instead */
+  var ctx=A.ctx, now=ctx.currentTime, t0=at<now?now:at, P=[s.pan.positionX,s.pan.positionZ,s.pan.positionY], i, j, N=26;
+  var q0=earsPos(0,th0,th1,r0,r1,y0,y1), near=at<=now+0.03;
+  for(j=0;j<3;j++){ var q=P[j]; try{ if(q.cancelAndHoldAtTime) q.cancelAndHoldAtTime(t0); else q.cancelScheduledValues(t0); }catch(e){ try{ q.cancelScheduledValues(t0); }catch(e2){} }
+    var sv=near?q.value:q0[j]; q.setValueAtTime(isFinite(sv)?sv:q0[j], t0); }
+  for(i=1;i<=N;i++){ var pp=i/N, w=earsPos(pp,th0,th1,r0,r1,y0,y1); for(j=0;j<3;j++) P[j].linearRampToValueAtTime(w[j], t0+dur*pp); }
 }
 function earsFrame(){   /* fallback for panners without AudioParam positions */
   if(!scheme || scheme.kind!=="ears" || scheme.auto || !scheme.motion || !A) return;
-  var m=scheme.motion, p=Math.max(0,Math.min(1,(A.ctx.currentTime-m.at)/Math.max(m.dur,0.01))), w=earsPos(p,m.th0,m.th1,m.r0,m.r1);
-  try{ scheme.pan.setPosition(w[0],0,w[1]); }catch(e){}
+  var m=scheme.motion, p=Math.max(0,Math.min(1,(A.ctx.currentTime-m.at)/Math.max(m.dur,0.01))), w=earsPos(p,m.th0,m.th1,m.r0,m.r1,m.y0,m.y1);
+  try{ scheme.pan.setPosition(w[0],w[2],w[1]); }catch(e){}
 }
 function makeScheme(name, dim){ if(!A) return null; var k=dim?0.7:1; A.roll.frequency.value=name==="ears"?7000:dim?2600:4200; return name==="ears"?mkEars(k):name==="breath"?mkBreath(k):mkTone(k); }
 function schemePhase(kind, at, dur){
@@ -341,10 +346,19 @@ function schemePhase(kind, at, dur){
     else { env(s.hi.gain,s.hi.gain.value,0.0001,at,0.4,easeIn); env(s.lo.gain,s.lo.gain.value,0.0001,at,0.4,easeIn); }
   }
   if(s.kind==="ears"){
-    var et=1.15*k;
-    if(kind==="in"){ env(s.g.gain,0.0001,et,at,g*0.55,easeIO); env(s.g.gain,et,et*0.75,at+g*0.55,g*0.4,easeIO); env(s.bp.frequency,600,1500,at,g,easeIO); earsArc(s,at,g,-90,90,EARS_FAR,EARS_NEAR); }
-    else if(kind==="hold"){ env(s.g.gain,s.g.gain.value,et*0.12,at,0.4,easeOut); earsArc(s,at,g,90,90,EARS_NEAR,EARS_NEAR); }      /* close, still, faint: air already in */
-    else if(kind==="out"){ env(s.g.gain,s.g.gain.value,et*0.95,at,g*0.15,easeOut); env(s.g.gain,et*0.95,et*0.2,at+g*0.15,g*0.8,easeIO); env(s.bp.frequency,1300,420,at,g,easeIO); earsArc(s,at,g,90,270,EARS_NEAR,EARS_FAR); }
+    /* Two different voices, not one voice moved about. IN is a thin, rising whistle that
+       swells all the way to the end and climbs overhead; OUT is a broad, low blow that
+       starts loud and sinks away, falling in pitch the whole time. Rising versus falling
+       pitch is the one cue nobody mishears. */
+    var et=1.2*k;
+    if(kind==="in"){ env(s.g.gain,0.0001,et*0.35,at,g*0.25,easeOut); env(s.g.gain,et*0.35,et,at+g*0.25,g*0.75,easeIn);
+      env(s.bp.frequency,450,2600,at,g,easeIO); env(s.bp.Q,1.2,3.0,at,g,easeIO); env(s.lp.frequency,3000,6500,at,g,easeIO);
+      earsArc(s,at,g,-90,90,EARS_FAR,EARS_NEAR,-0.4,1.1); }
+    else if(kind==="hold"){ env(s.g.gain,s.g.gain.value,et*0.14,at,0.4,easeOut); env(s.bp.frequency,s.bp.frequency.value,1100,at,0.4,easeOut); env(s.bp.Q,s.bp.Q.value,1.4,at,0.4,easeOut);
+      earsArc(s,at,g,90,90,EARS_NEAR,EARS_NEAR,1.1,1.1); }      /* close, overhead, still, faint: air already in */
+    else if(kind==="out"){ env(s.g.gain,s.g.gain.value,et,at,g*0.10,easeOut); env(s.g.gain,et,et*0.12,at+g*0.10,g*0.88,easeOut);
+      env(s.bp.frequency,1400,170,at,g,easeIO); env(s.bp.Q,1.0,0.7,at,g,easeIO); env(s.lp.frequency,5200,900,at,g,easeIO);
+      earsArc(s,at,g,90,270,EARS_NEAR,EARS_FAR,1.1,-0.9); }
     else { env(s.g.gain,s.g.gain.value,0.0001,at,0.3,easeOut); }
   }
   if(s.kind==="breath"){
@@ -355,6 +369,14 @@ function schemePhase(kind, at, dur){
     else { env(s.g.gain,s.g.gain.value,0.0001,at,0.25,easeOut); }
   }
 }
+/* the beat: a soft tick each second of an active phase, for Tap. The pacer cannot tap
+   your finger back on iOS Safari, so it ticks instead. */
+function tickAt(when){
+  if(!A) return; var ctx=A.ctx, o=ctx.createOscillator(), g=ctx.createGain();
+  o.type="sine"; o.frequency.value=1480; g.gain.setValueAtTime(0.0001,when); g.gain.exponentialRampToValueAtTime(0.10,when+0.004); g.gain.exponentialRampToValueAtTime(0.0001,when+0.055);
+  o.connect(g); g.connect(A.dryIn); o.start(when); o.stop(when+0.08); keep(o); o.onended=function(){ var i=A.nodes.indexOf(o); if(i>=0) A.nodes.splice(i,1); };
+}
+function scheduleTicks(at, dur){ var n=Math.floor(dur-0.01)+1, i; for(i=0;i<n;i++) tickAt(toCtx(Math.max(at+i, nowSec()+0.004))); }
 function audioStart(mode, sound){
   initAudio(); if(!A) return;
   try{ if(navigator.audioSession) navigator.audioSession.type = "playback"; }catch(e){}
@@ -458,7 +480,7 @@ function Field2D(cv, opt){
     var cx=W/2, cy=H*0.47, R=Math.max(W,H)*0.55;
     var gain = (90 + 240*st.amp) * st.flow;         /* the audible gust is the visible gust */
     var turb = st.turb, k=0.0045, e=6, tz=t*0.25;
-    var col = tint(st.temp), bright = 0.35 + 0.65*st.fill;
+    var col = tint(st.temp), bright = 0.35 + 0.65*st.fill, pokeR = Math.min(W,H)*0.11;
     ctx.lineCap="round";
     var i, p;
     for(i=0;i<P.length;i++){
@@ -471,8 +493,11 @@ function Field2D(cv, opt){
       var cs=(6+70*turb)*40;
       ax += (n3-n4)/(2*e)*cs; ay -= (n1-n2)/(2*e)*cs;
       if(st.idle){ ax += 60; }
+      /* the finger: a poke pushes particles out from the fingertip; a held finger pins them */
+      if(st.tapK>0.01){ var tx=p.x-st.tapX, ty=p.y-st.tapY, tr=Math.hypot(tx,ty)+1e-3, tf=st.tapK*Math.exp(-tr*tr/(pokeR*pokeR))*9000; ax += tx/tr*tf; ay += ty/tr*tf; }
       p.vx += ax*dt; p.vy += ay*dt;
       var drag = 1 - Math.min(1, 1.6*dt); p.vx*=drag; p.vy*=drag;
+      if(st.pinK>0){ var px_=p.x-st.pinX, py_=p.y-st.pinY, pf=1-st.pinK*0.25*Math.exp(-(px_*px_+py_*py_)/(pokeR*pokeR)); p.vx*=pf; p.vy*=pf; }
       /* obstacle: the word */
       if(maskAt(p.x,p.y) > 0.5){
         var gx = maskAt(p.x+4,p.y)-maskAt(p.x-4,p.y), gy = maskAt(p.x,p.y+4)-maskAt(p.x,p.y-4), gl=Math.hypot(gx,gy)+1e-4;
@@ -540,12 +565,15 @@ function FieldGL(cv){
   var HEAD = "#version 300 es\nprecision highp float;precision highp sampler2D;in vec2 vUv;out vec4 o;uniform vec2 uTexel;";
   var F = {
     advect: HEAD+"uniform sampler2D uVel,uSrc;uniform float uDt,uDiss;void main(){vec2 v=texture(uVel,vUv).xy;vec2 p=vUv-uDt*v*uTexel;o=texture(uSrc,p)*uDiss;}",
-    force: HEAD+"uniform sampler2D uVel,uMask;uniform vec2 uCenter,uAspect;uniform float uDt,uFlow,uSwirl,uWind,uTime,uMax;"+
+    force: HEAD+"uniform sampler2D uVel,uMask;uniform vec2 uCenter,uAspect,uTap,uPin;uniform float uDt,uFlow,uSwirl,uWind,uTime,uMax,uTapK,uPinK;"+
       "float ss(float a,float b,float x){return smoothstep(a,b,x);}"+
       "void main(){vec2 v=texture(uVel,vUv).xy;vec2 d=(vUv-uCenter)*uAspect;float r=length(d)+1e-4;vec2 n=d/r;float rn=r/0.5;"+
       "float rb=max(abs(d.x)/(0.5*uAspect.x),abs(d.y)/0.5);"+
       "float ring=ss(0.06,0.3,rn)*(1.0-ss(1.0,1.5,rb));vec2 f=-n*uFlow*ring*70.0;vec2 t=vec2(-n.y,n.x);"+
-      "f+=t*uSwirl*ring*30.0*sin(rn*9.0+uTime*1.7);f+=vec2(uWind*28.0,0.0);v+=f*uDt;"+
+      "f+=t*uSwirl*ring*30.0*sin(rn*9.0+uTime*1.7);f+=vec2(uWind*28.0,0.0);"+
+      /* the finger: a poke pushes air out from the fingertip; a held finger pins it */
+      "vec2 dt2=(vUv-uTap)*uAspect;float rt=length(dt2)+1e-4;f+=(dt2/rt)*uTapK*exp(-rt*rt/0.006)*520.0;v+=f*uDt;"+
+      "vec2 dp=(vUv-uPin)*uAspect;v*=1.0-uPinK*0.9*exp(-dot(dp,dp)/0.004);"+
       "float m=texture(uMask,vUv).a;v*=(1.0-m);float L=length(v);if(L>uMax)v*=uMax/L;o=vec4(v,0.0,1.0);}",
     curl: HEAD+"uniform sampler2D uVel;void main(){float L=texture(uVel,vUv-vec2(uTexel.x,0)).y,R=texture(uVel,vUv+vec2(uTexel.x,0)).y,B=texture(uVel,vUv-vec2(0,uTexel.y)).x,T=texture(uVel,vUv+vec2(0,uTexel.y)).x;o=vec4(0.5*((R-L)-(T-B)),0,0,1);}",
     vort: HEAD+"uniform sampler2D uVel,uCurl;uniform float uDt,uK;void main(){float L=texture(uCurl,vUv-vec2(uTexel.x,0)).x,R=texture(uCurl,vUv+vec2(uTexel.x,0)).x,B=texture(uCurl,vUv-vec2(0,uTexel.y)).x,T=texture(uCurl,vUv+vec2(0,uTexel.y)).x,C=texture(uCurl,vUv).x;"+
@@ -553,9 +581,10 @@ function FieldGL(cv){
     div: HEAD+"uniform sampler2D uVel;void main(){float L=texture(uVel,vUv-vec2(uTexel.x,0)).x,R=texture(uVel,vUv+vec2(uTexel.x,0)).x,B=texture(uVel,vUv-vec2(0,uTexel.y)).y,T=texture(uVel,vUv+vec2(0,uTexel.y)).y;o=vec4(0.5*(R-L+T-B),0,0,1);}",
     press: HEAD+"uniform sampler2D uP,uDiv;void main(){float L=texture(uP,vUv-vec2(uTexel.x,0)).x,R=texture(uP,vUv+vec2(uTexel.x,0)).x,B=texture(uP,vUv-vec2(0,uTexel.y)).x,T=texture(uP,vUv+vec2(0,uTexel.y)).x,d=texture(uDiv,vUv).x;o=vec4((L+R+B+T-d)*0.25,0,0,1);}",
     grad: HEAD+"uniform sampler2D uP,uVel;void main(){float L=texture(uP,vUv-vec2(uTexel.x,0)).x,R=texture(uP,vUv+vec2(uTexel.x,0)).x,B=texture(uP,vUv-vec2(0,uTexel.y)).x,T=texture(uP,vUv+vec2(0,uTexel.y)).x;vec2 v=texture(uVel,vUv).xy-0.5*vec2(R-L,T-B);o=vec4(v,0,1);}",
-    dye: HEAD+"uniform sampler2D uDye,uMask;uniform vec2 uCenter,uAspect;uniform float uDt,uIn,uOut,uIdle,uTime;uniform vec3 uColor;"+
+    dye: HEAD+"uniform sampler2D uDye,uMask;uniform vec2 uCenter,uAspect,uTap;uniform float uDt,uIn,uOut,uIdle,uTime,uTapK;uniform vec3 uColor;"+
       "void main(){vec4 d=texture(uDye,vUv);vec2 q=(vUv-uCenter)*uAspect;float rn=length(q)/0.5;float rb=max(abs(q.x)/(0.5*uAspect.x),abs(q.y)/0.5);"+
       "float edge=smoothstep(0.72,1.0,rb)*(0.55+0.45*sin(atan(q.y,q.x)*7.0+uTime*0.9));float core=1.0-smoothstep(0.0,0.28,rn);"+
+      "vec2 qt=(vUv-uTap)*uAspect;d.rgb+=uColor*uTapK*exp(-dot(qt,qt)/0.003)*9.0*uDt;"+      /* the puff at the fingertip */
       "d.rgb+=uColor*(uIn*edge*2.2+uOut*core*2.6)*uDt;d.rgb+=uColor*uIdle*(1.0-smoothstep(0.0,0.06,vUv.x))*(0.5+0.5*sin(vUv.y*34.0+uTime*1.3))*1.6*uDt;"+
       "d.rgb*=(1.0-texture(uMask,vUv).a*0.9);o=vec4(min(d.rgb,vec3(1.1)),1.0);}",
     show: HEAD+"uniform sampler2D uDye;uniform vec3 uGround;uniform float uGain;void main(){vec3 c=uGround+texture(uDye,vUv).rgb*uGain;o=vec4(c,1.0);}"
@@ -596,6 +625,7 @@ function FieldGL(cv){
     /* 3. the breath: inward divergence on IN, outward on OUT, nothing on HOLD */
     u=use("force"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
     gl.uniform1f(u.uFlow, st.flow*(0.5+1.4*st.amp)); gl.uniform1f(u.uSwirl, st.turb); gl.uniform1f(u.uWind, st.idle?1:0); gl.uniform1f(u.uTime,t); gl.uniform1f(u.uMax, 90);
+    gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK); gl.uniform2f(u.uPin, st.pinX/W, 1-st.pinY/H); gl.uniform1f(u.uPinK, st.pinK);
     bind(u,"uVel",vel,0); bind(u,"uMask",maskTex,1); draw(vel2); swapV();
     /* 4. project to divergence-free */
     u=use("div"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uVel",vel,0); draw(dv);
@@ -607,6 +637,7 @@ function FieldGL(cv){
     var c=tint(st.temp);
     u=use("dye"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
     gl.uniform1f(u.uIn, Math.max(0,st.flow)*(0.5+st.amp)); gl.uniform1f(u.uOut, Math.max(0,-st.flow)*(0.5+st.amp)); gl.uniform1f(u.uIdle, st.idle?1:0); gl.uniform1f(u.uTime,t);
+    gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK);
     gl.uniform3f(u.uColor,c[0],c[1],c[2]); bind(u,"uDye",dye,0); bind(u,"uMask",maskTex,1); draw(dye2); swapD();
     /* 6. show: ground luminance carries the phase; dye carries the motion */
     u=use("show"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform3f(u.uGround,st.ground[0],st.ground[1],st.ground[2]); gl.uniform1f(u.uGain, 0.36*st.dim); bind(u,"uDye",dye,0); draw(null);
@@ -638,10 +669,9 @@ function FieldGL(cv){
 var MIR = {on:false, supported:(typeof DeviceMotionEvent!=="undefined"), perm:"unknown", lastT:0, evt:0,
   dc:[0,0], lp:[0,0], vel:[0,0], env:[0,0], axis:-1, sign:1, dir:0, segT:0,
   rises:[], falls:[], troughs:[], peaks:[], starts:[], lastStartT:0, period:0, rate:0, conf:0,
-  moving:false, moveT:-9, fill:0.5, flow:0, armedAt:0, calmSince:0};
-var SLEEP_AFTER = 240;                                   /* seconds of calm, still breathing before the session ends itself */
+  moving:false, moveT:-9, fill:0.5, flow:0};
 function mirrorReset(){ MIR.lastT=0; MIR.evt=0; MIR.dc=[0,0]; MIR.lp=[0,0]; MIR.vel=[0,0]; MIR.env=[0,0]; MIR.axis=-1; MIR.sign=1; MIR.dir=0; MIR.segT=0;
-  MIR.rises=[]; MIR.falls=[]; MIR.troughs=[]; MIR.peaks=[]; MIR.starts=[]; MIR.lastStartT=0; MIR.period=0; MIR.rate=0; MIR.conf=0; MIR.moving=false; MIR.moveT=-9; MIR.fill=0.5; MIR.flow=0; MIR.armedAt=0; MIR.calmSince=0; }
+  MIR.rises=[]; MIR.falls=[]; MIR.troughs=[]; MIR.peaks=[]; MIR.starts=[]; MIR.lastStartT=0; MIR.period=0; MIR.rate=0; MIR.conf=0; MIR.moving=false; MIR.moveT=-9; MIR.fill=0.5; MIR.flow=0; }
 function motionRequest(){
   if(!MIR.supported) return Promise.resolve(false);
   if(typeof DeviceMotionEvent.requestPermission==="function"){
@@ -696,18 +726,6 @@ function onMotion(e){
   var nx=Math.max(-1,Math.min(1, x*MIR.sign/(env*1.1+1e-6))); MIR.fill=(nx+1)/2;
   MIR.flow=Math.max(-1,Math.min(1, v*MIR.sign/(env*0.9+1e-6)));
 }
-/* SENSE: the session opens listening. Three inhale starts give the period; the
-   first cycle begins on the next real inhale, so the pacer's first breath is yours. */
-function senseGo(pt){
-  S.period = Math.max(3, Math.min(15, MIR.period));
-  S.steps.splice(S.idx, 1); appendCycle(S.steps); reanchor(true);
-}
-function senseToTap(){ var st=S.steps[S.idx]; if(!st||st.k!=="sense") return; st.k="tap"; st.stage="tap"; S.taps=[]; lastKind=null; }
-function sleepEnd(){
-  if(S.sleeping) return; S.sleeping=true;
-  if(A){ env(A.master.gain, A.master.gain.value, 0.0001, A.ctx.currentTime, 8, easeIn); }
-  setTimeout(function(){ if(S.running) endSession(true); }, 8500);
-}
 /* the mirror voice: brown noise whose loudness is your actual airflow */
 var mirrorVoice=null;
 function mkMirror(){
@@ -720,7 +738,7 @@ function mkMirror(){
 }
 function mirrorVoiceFrame(){
   if(!mirrorVoice||!A||A.ctx.state!=="running") return;
-  var now=A.ctx.currentTime, lvl = (S.mirror && !S.sleeping) ? MIR.conf*Math.min(1,Math.abs(MIR.flow))*0.6 : 0;
+  var now=A.ctx.currentTime, lvl = S.mirror ? MIR.conf*Math.min(1,Math.abs(MIR.flow))*0.6 : 0;
   mirrorVoice.g.gain.setTargetAtTime(lvl+0.0001, now, 0.12);
   mirrorVoice.bp.frequency.setTargetAtTime(MIR.flow>0?1300:480, now, 0.25);
 }
@@ -729,8 +747,8 @@ function mirrorVoiceFrame(){
 var LEAD = 0.12;
 var S = {running:false, mode:"lift", sound:"tone", steps:[], idx:0, stepStart:0, schedIdx:-1,
          reps:10, sets:4, restDur:180, holdMode:0, holdSec:45, startedAt:0, recorded:{}, ended:false,
-         dyn:null, period:0, turb:0, follow:false, taps:[], mirror:false, sleeping:false, senseT:0,
-         tapMode:"sync", held:false, heldAt:0, gustT:-9, gustDir:0, gustK:0, ears:false};
+         turb:0, mirror:false, tapOn:false, ears:false,
+         poke:{x:0,y:0,k:0,t:-9}, pin:{x:0,y:0,on:false}};
 function ph(kind, dur, stage, setNo, rep){ return {k:kind, dur:dur, stage:stage, set:setNo, rep:rep}; }
 function pushCycle(arr, c, stage, setNo, rep){
   if(c["in"]>0) arr.push(ph("in",c["in"],stage,setNo,rep)); if(c.hold>0) arr.push(ph("hold",c.hold,stage,setNo,rep));
@@ -749,92 +767,42 @@ function buildSteps(){
       if(s<S.sets){ var rest=coherentSteps(S.restDur,"rest",s); for(i=0;i<rest.length;i++) st.push(rest[i]); }
     }
   }else{
-    var P=c.breathe;
-    if(S.follow){ S.dyn={left:P.cycles, rep:0}; S.taps=[]; st.push(S.mirror ? ph("sense",1e9,"sense",1,0) : ph("tap",1e9,"tap",1,0)); }   /* the sensor or three taps set the period, then the first cycle starts */
-    else { var cc = P.pat==="coh"?{"in":5.5,hold:0,out:5.5,empty:0}:{"in":4,hold:7,out:8,empty:0}; for(r=1;r<=P.cycles;r++) pushCycle(st,cc,"set",1,r); }
+    var P=c.breathe, cc = P.pat==="coh"?{"in":5.5,hold:0,out:5.5,empty:0}:{"in":4,hold:7,out:8,empty:0};
+    for(r=1;r<=P.cycles;r++) pushCycle(st,cc,"set",1,r);
   }
   st.push(ph("done",1e9,"done",0,0));
   return st;
 }
-/* FOLLOW: the user taps at the start of three breaths in. The mean gap is
-   their own period. Each cycle is then built when the previous one starts,
-   at a period that slides from theirs toward 11 s: 5.5 s in, 5.5 s out. */
-function tapCalibrate(){
-  var now=nowSec();
-  if(S.taps.length && now - S.taps[S.taps.length-1] > 20) S.taps=[];   /* a stale tap is a false start */
-  S.taps.push(now);
-  if(S.taps.length < 3) return;
-  var span = S.taps[S.taps.length-1] - S.taps[0];       /* mean gap: two gaps have no median */
-  S.period = Math.max(3, Math.min(15, span/(S.taps.length-1)));
-  S.steps.splice(S.idx, 1);          /* the tap step gives way to the first cycle, starting on this tap */
-  appendCycle(S.steps);
-  reanchor(true);
+/* TAP: you drum the breath. Inhale and exhale: tap once per second, on the count.
+   Hold: press and hold. Breath held, finger held. Each tap pushes the wind, a real
+   gust into the fluid at your fingertip, so the air moves because you moved it; a
+   held finger pins the air under it. The pacer gives the beat: a soft tick and a
+   pulse of the ground each second of an active phase. Taps never move the clock;
+   the gap between your tap and the beat becomes turbulence. No score.
+   The ideal version taps back. iOS Safari has no vibration API, so it cannot. */
+function poke(x,y,k){ S.poke={x:x,y:y,k:k,t:nowSec()}; }
+function tapDown(x,y){
+  if(!S.running) return false; var st=S.steps[S.idx]; if(!st || st.stage!=="set") return false;
+  if(S.mode==="lift"){ reanchor(false); poke(x,y,1); return true; }        /* Lift keeps the sync tap: this phase starts now */
+  if(!S.tapOn) return false;
+  poke(x,y,1); S.pin={x:x,y:y,on:true};
+  if(st.k!=="hold"){ var into=nowSec()-S.stepStart, f=into-Math.floor(into), miss=Math.min(f,1-f); S.turb=Math.min(1, S.turb + miss*0.5); }
+  return true;
 }
-/* TAP: two readings of the same gesture, chosen in Breathe setup. Lift keeps SYNC.
-   SYNC  a tap restarts the phase you are in. The pacer keeps its order; you set its timing.
-   LEAD  a tap means "breathing in now". During IN it restarts the inhale; anywhere else it
-         jumps to the next inhale. Keep the finger down and the hold lasts as long as you
-         hold it; let go and the exhale begins. A pattern with no hold gets one if you hold.
-   Either way the tap is a gust in the field and the miss becomes turbulence. No score. */
-function gust(dir, k){ S.gustT=nowSec(); S.gustDir=dir; S.gustK=k||1; }
-function leadIn(now){
-  var st=S.steps[S.idx]; if(!st || st.stage!=="set") return false;
-  if(st.k==="in"){ reanchor(false); return true; }                       /* the inhale starts again, now */
-  var j=S.idx+1; while(j<S.steps.length && S.steps[j].stage==="set" && S.steps[j].k!=="in") j++;
-  if(j>=S.steps.length || S.steps[j].k!=="in") return false;            /* no inhale left to jump to */
-  var early=S.stepStart+st.dur-now, k; for(k=S.idx+1;k<j;k++) early+=S.steps[k].dur;
-  S.turb=Math.min(1, S.turb + Math.max(0,early)/2.5);                    /* the miss becomes turbulence */
-  S.steps.splice(S.idx, j-S.idx); reanchor(true); return true;
-}
-function leadRelease(now){
-  if(!S.held) return; S.held=false;
-  var st=S.steps[S.idx]; if(!st || st.k!=="hold" || !st.held) return;
-  st.dur=Math.max(0.05, now-S.stepStart);                                 /* the hold ends where the finger lifts */
-  gust(-1, 1);
-}
-/* while the finger is down the hold cannot end: its length runs ahead of the clock.
-   An inhale about to end under a held finger gets a hold inserted after it, before the
-   exhale is scheduled (LEAD = 0.12 s, so 0.3 s is early enough). */
-function heldHold(now){
-  if(!S.held || S.tapMode!=="lead") return;
-  var st=S.steps[S.idx]; if(!st || st.stage!=="set") return;
-  if(st.k==="hold"){ st.held=true; st.dur=Math.max(st.dur, now-S.stepStart+0.6); return; }
-  if(st.k==="in" && now>=S.stepStart+st.dur-0.3){
-    var nx=S.steps[S.idx+1];
-    if(!nx || nx.k!=="hold"){ var h=ph("hold",0.6,"set",st.set,st.rep); h.held=true; S.steps.splice(S.idx+1,0,h); S.schedIdx=Math.min(S.schedIdx,S.idx); }
-  }
-}
-function tapDown(){
-  if(!S.running) return false;
-  var st=S.steps[S.idx]; if(!st) return false; var now=nowSec();
-  if(st.k==="sense"){ senseToTap(); tapCalibrate(); return true; }      /* a tap while sensing means: do it by hand */
-  if(st.k==="tap"){ tapCalibrate(); return true; }
-  if(st.stage!=="set") return false;
-  if(S.tapMode==="sync"){ reanchor(false); gust(st.k==="in"?1:st.k==="out"?-1:0, 1); return true; }
-  if(S.tapMode==="lead"){ if(S.held) return false; if(!leadIn(now)) return false; S.held=true; S.heldAt=now; gust(1,1); return true; }
-  return false;
-}
-function tapUp(){ if(S.held) leadRelease(nowSec()); }
-function appendCycle(st){
-  var d=S.dyn; if(!d || d.left<=0) return;
-  d.rep++; d.left--;
-  var p=S.period, half=p*0.5;
-  var at = st.length && st[st.length-1].k==="done" ? st.length-1 : st.length;
-  st.splice(at, 0, ph("in",half,"set",1,d.rep), ph("out",half,"set",1,d.rep));
-  var target=11.0, step=(target-p)*0.12;   /* 5.5 s in, 5.5 s out */ if(Math.abs(step)>1.0) step=Math.sign(step);
-  S.period = p + step;
-}
+function tapMove(x,y){ if(S.pin.on){ S.pin.x=x; S.pin.y=y; } }
+function tapUp(){ S.pin.on=false; }
 function startSession(mode){
-  var c=DB.cfg; S.mode=mode; S.sound=c[mode].sound; S.follow = mode==="breathe" && c.breathe.pat==="follow";
-  /* the three methods: belly (the accelerometer mirror), tap (sync or inhale), ears (spatial wind) */
-  S.mirror = mode==="breathe" && c.breathe.belly!=="off" && MIR.perm==="granted"; S.sleeping=false; S.senseT=performance.now()/1000;
-  S.tapMode = mode==="breathe" ? (c.breathe.tap||"off") : "sync"; S.held=false; S.gustT=-9;
+  var c=DB.cfg; S.mode=mode; S.sound=c[mode].sound;
+  /* the three methods: belly (the accelerometer mirror), tap (you drum the breath), ears (spatial wind) */
+  S.mirror = mode==="breathe" && c.breathe.belly!=="off" && MIR.perm==="granted";
+  S.tapOn = mode==="breathe" && c.breathe.tap==="on";
   S.ears = mode==="breathe" && c.breathe.ears==="on";
+  S.poke={x:0,y:0,k:0,t:-9}; S.pin={x:0,y:0,on:false};
   if(mode==="lift"){ S.reps=c.lift.reps; S.sets=c.lift.sets; S.restDur=c.lift.tune[c.lift.preset].rest; S.holdMode=c.lift.preset==="hold"?1:0; S.holdSec=c.lift.holdSec; }
   else { S.reps=c.breathe.cycles; S.sets=1; S.holdMode=0; }
   audioStart(mode, S.ears ? "ears" : S.mirror ? "tone" : S.sound);     /* ears: the spatial wind is the pacer; mirror: the tone leads and the noise is you */
   if(S.mirror){ mirrorStart(); if(A) mirrorVoice=mkMirror(); }
-  S.dyn=null; S.steps=buildSteps(); S.idx=0; S.schedIdx=-1; S.ended=false; S.recorded={}; S.turb=0;
+  S.steps=buildSteps(); S.idx=0; S.schedIdx=-1; S.ended=false; S.recorded={}; S.turb=0;
   S.stepStart=nowSec()+0.1; S.startedAt=nowSec(); S.running=true;
   lastKind=null;
   show("run"); wake(true);
@@ -842,7 +810,7 @@ function startSession(mode){
   MASK.dirty=true;
 }
 function endSession(natural){
-  if(!S.running) return; S.running=false; S.held=false;
+  if(!S.running) return; S.running=false; S.pin.on=false;
   DB.stats.sec += Math.max(0, nowSec()-S.startedAt); save();
   audioStop(); mirrorStop(); wake(false); S.ended=true;
   if(!natural){ show("home"); } else { paintDone(); }
@@ -867,7 +835,8 @@ function reanchor(hard){
 function startTimeOf(j){ var t=S.stepStart,k; for(k=S.idx;k<j;k++) t+=S.steps[k].dur; return t; }
 function scheduleAhead(now){
   if(!A||A.ctx.state!=="running") return; var guard=0;
-  while(S.schedIdx<S.steps.length-1&&guard++<6){ var j=S.schedIdx+1, t=startTimeOf(j); if(t>now+LEAD) break; var stp=S.steps[j]; if(stp.k!=="done") schemePhase(stp.k==="getset"?"getset":stp.k, toCtx(Math.max(t,now+0.004)), stp.dur); S.schedIdx=j; }
+  while(S.schedIdx<S.steps.length-1&&guard++<6){ var j=S.schedIdx+1, t=startTimeOf(j); if(t>now+LEAD) break; var stp=S.steps[j]; if(stp.k!=="done") schemePhase(stp.k==="getset"?"getset":stp.k, toCtx(Math.max(t,now+0.004)), stp.dur);
+    if(S.tapOn && stp.stage==="set" && (stp.k==="in"||stp.k==="out")) scheduleTicks(t, stp.dur); S.schedIdx=j; }
 }
 
 /* ============================ ENGINE MANAGER ============================ */
@@ -902,11 +871,11 @@ var elWord=document.getElementById("word"), elWordI=elWord.firstElementChild, el
     elEnd=document.getElementById("endbtn"), bSkip=document.getElementById("b-skip"), bSave=document.getElementById("b-save"), bBack=document.getElementById("b-back"),
     elMark=document.getElementById("mark"), rails=document.querySelectorAll(".rail .r"), elPerf=document.getElementById("perf");
 var lastWord=null, lastNum=null, lastMeta=null, lastKind=null, lastRail=null, lastFoot=null;
-var WORDS={"in":"IN",hold:"HOLD",out:"OUT",empty:"",getset:"READY",done:"DONE",rest:"REST",tap:"TAP",sense:"WAIT"};
+var WORDS={"in":"IN",hold:"HOLD",out:"OUT",empty:"",getset:"READY",done:"DONE",rest:"REST"};
 
 /* fitted ONCE for the widest word that can ever appear; never per word */
 function fitWordOnce(){
-  var words=["READY","HOLD","REST","DONE","TAP","WAIT"], size=Math.min(window.innerWidth*0.30, window.innerHeight*0.19), avail=window.innerWidth*0.84;
+  var words=["READY","HOLD","REST","DONE"], size=Math.min(window.innerWidth*0.30, window.innerHeight*0.19), avail=window.innerWidth*0.84;
   var keep=elWordI.textContent;
   document.documentElement.style.setProperty("--wordSize", size+"px");
   var maxW=0; for(var i=0;i<words.length;i++){ elWordI.textContent=words[i]; maxW=Math.max(maxW, elWordI.offsetWidth); }
@@ -920,7 +889,13 @@ function setFoot(which){ if(which===lastFoot) return; bSkip.classList.toggle("sh
 function setRail(k){ if(k===lastRail) return; for(var i=0;i<rails.length;i++) rails[i].classList.toggle("on", rails[i].getAttribute("data-k")===k); lastRail=k; }
 function paintDone(){ lastWord=txt(elWordI,"DONE",lastWord); lastNum=txt(elNum,"",lastNum); lastMeta=txt(elMeta,"",lastMeta); setFoot("back"); setRail(null); elEnd.classList.add("hid"); MASK.dirty=true; }
 
-var frameState = {phase:"idle", fill:0, prog:0, flow:0, amp:0, temp:0, turb:0, ground:[0,0,0], idle:true, stage:"", rep:0, reps:1, set:0, sets:1, dim:1};
+var frameState = {phase:"idle", fill:0, prog:0, flow:0, amp:0, temp:0, turb:0, ground:[0,0,0], idle:true, stage:"", rep:0, reps:1, set:0, sets:1, dim:1,
+                  tapX:0, tapY:0, tapK:0, pinX:0, pinY:0, pinK:0};
+/* the finger in the field: a decaying poke and a held pin, in canvas pixels for the 2D engine and uv for the GPU */
+function touchState(now, fs){
+  var pa=now-S.poke.t; fs.tapK = (pa>=0 && pa<0.6) ? S.poke.k*Math.exp(-pa/0.11) : 0; fs.tapX=S.poke.x; fs.tapY=S.poke.y;
+  fs.pinK = S.pin.on ? 1 : 0; fs.pinX=S.pin.x; fs.pinY=S.pin.y;
+}
 function render(now){
   var st=S.steps[S.idx], fs=frameState;
   fs.idle=false; fs.dim = S.mode==="breathe"?0.72:1;
@@ -930,7 +905,7 @@ function render(now){
     if(st.k==="in" && st.stage==="set" && ENG.inst && ENG.inst.addDebris) ENG.inst.addDebris(fs.temp); }
   /* the breath as numbers the field can use */
   fs.stage=st.stage; fs.phase=st.k; fs.prog=frac; fs.rep=st.rep; fs.reps=S.reps; fs.set=st.set; fs.sets=S.sets;
-  if(st.k==="in") fs.fill=easeIO(frac); else if(st.k==="hold") fs.fill=1; else if(st.k==="out") fs.fill=1-easeIO(frac); else if(st.k==="getset") fs.fill=0.15*(1-frac); else if(st.k==="tap") fs.fill=0.12; else if(st.k==="sense") fs.fill=0.12; else fs.fill=0;
+  if(st.k==="in") fs.fill=easeIO(frac); else if(st.k==="hold") fs.fill=1; else if(st.k==="out") fs.fill=1-easeIO(frac); else if(st.k==="getset") fs.fill=0.15*(1-frac); else fs.fill=0;
   var bell=Math.pow(Math.sin(frac*Math.PI),0.7);
   fs.flow = st.k==="in"?bell : st.k==="out"?-bell : 0;
   if(st.stage==="rest") fs.flow*=0.45;
@@ -938,43 +913,33 @@ function render(now){
   /* the mirror: when the sensor sees you, the wind is you and the tone is the pacer */
   var pt=performance.now()/1000, seeing = S.mirror && MIR.conf>0.35 && !MIR.moving;
   if(seeing){ fs.fill=MIR.fill; fs.flow=MIR.flow; fs.amp=Math.min(1,Math.abs(MIR.flow)); }
-  if(st.k==="sense"){
-    if(MIR.starts.length>=3 && MIR.conf>0.5 && !MIR.moving){ if(!MIR.armedAt) MIR.armedAt=pt; if(MIR.lastStartT>MIR.armedAt && pt-MIR.lastStartT<0.6){ senseGo(pt); return; } }
-    if(pt-S.senseT>45 && MIR.conf<0.3) senseToTap();
-  }
-  if(S.mirror && S.follow && st.stage==="set"){
-    var calm = seeing && MIR.rate<=12;
-    if(calm){ if(!MIR.calmSince) MIR.calmSince=pt; else if(pt-MIR.calmSince>SLEEP_AFTER) sleepEnd(); } else MIR.calmSince=0;
-  }
   mirrorVoiceFrame(); earsFrame();
   fs.temp = st.stage==="set" && !S.holdMode && S.reps>1 ? (st.rep-1)/(S.reps-1) : st.stage==="set" && S.holdMode ? Math.min(1,setProgress()/S.holdSec) : st.stage==="rest"?0.5:0.15;
   S.turb *= (1 - 0.12*Math.min(1, (now - (S._lt||now)))); S._lt=now;
   fs.turb=Math.min(1,S.turb);
-  /* the tap is a gust: a short shove in the field, inward on an inhale tap, outward on the release */
-  var gAge=now-S.gustT; if(gAge>=0 && gAge<0.7){ var gk=S.gustK*Math.exp(-gAge/0.22); fs.amp=Math.min(1,fs.amp+gk*0.9); fs.flow=Math.max(-1,Math.min(1,fs.flow+S.gustDir*gk)); if(!S.gustDir) fs.turb=Math.min(1,fs.turb+gk*0.5); }
-  fs.ground=ground(fs.fill, fs.temp, fs.dim);
+  touchState(now, fs);
+  /* the beat, in light: each second of an active phase the whole ground blinks up a step and settles */
+  var beat=0; if(S.tapOn && st.stage==="set" && (st.k==="in"||st.k==="out")){ var into=now-S.stepStart, bt=into-Math.floor(into); beat=Math.exp(-bt/0.10); }
+  fs.ground=ground(Math.min(1.1, fs.fill + 0.14*beat), fs.temp, fs.dim);
   if(st.k==="done"){ if(lastWord!=="DONE") paintDone(); return; }
   elEnd.classList.remove("hid");
   var isRest=st.stage==="rest", isSet=st.stage==="set";
   var word = isRest ? "REST" : WORDS[st.k];
   lastWord=txt(elWordI, word, lastWord);
   if(isRest){ var left=rem,i; for(i=S.idx+1;i<S.steps.length&&S.steps[i].stage==="rest"&&S.steps[i].set===st.set;i++) left+=S.steps[i].dur; lastNum=txt(elNum,fmtClock(left),lastNum); }
-  else if(st.held){ lastNum=txt(elNum, String(Math.max(1,Math.ceil(now-S.stepStart))), lastNum); }   /* a held hold counts up */
-  else { var shown=Math.min(Math.ceil(rem-0.001),Math.ceil(st.dur)); lastNum=txt(elNum, st.k==="empty"?"":st.k==="tap"?String(3-S.taps.length):st.k==="sense"?String(Math.max(0,3-MIR.starts.length)):String(shown||1), lastNum); }
+  else { var shown=Math.min(Math.ceil(rem-0.001),Math.ceil(st.dur)); lastNum=txt(elNum, st.k==="empty"?"":String(shown||1), lastNum); }
   setRail(st.k==="in"||st.k==="hold"||st.k==="out"?st.k:null);
   var meta;
-  if(st.k==="tap") meta="TAP EACH BREATH IN";
-  else if(st.k==="sense") meta = MIR.moving ? "HOLD STILL" : MIR.armedAt ? "ON YOUR NEXT BREATH IN" : MIR.conf>0.3 ? "BREATHING · "+MIR.rate.toFixed(1)+"/MIN" : "PHONE ON YOUR BELLY";
-  else if(isRest) meta="REST · SET "+st.set+"/"+S.sets;
+  if(isRest) meta="REST · SET "+st.set+"/"+S.sets;
   else if(S.holdMode && isSet){ var pr=setProgress(); meta="SET "+st.set+"/"+S.sets+" · "+Math.ceil(S.holdSec-pr)+"S"; }
-  else if(S.mode==="breathe"){ meta = isSet ? ("CYCLE "+st.rep+"/"+S.reps + (st.held ? " · HELD" : S.follow ? " · "+st.dur.toFixed(1)+"S" : "")) : ""; }
+  else if(S.mode==="breathe"){ meta = isSet ? ("CYCLE "+st.rep+"/"+S.reps + (S.tapOn ? (st.k==="hold" ? " · PRESS" : " · TAP") : "")) : ""; }
   else meta="SET "+st.set+"/"+S.sets+(isSet?" · "+st.rep+"/"+S.reps:"");
   lastMeta=txt(elMeta, meta, lastMeta);
   setFoot(isRest?"skip": (isSet && S.mode==="lift") ? "save" : null);
 }
 function idleRender(t){
   var fs=frameState; fs.idle=true; fs.phase="idle"; fs.stage=""; fs.flow=0; fs.amp=0.2; fs.turb=Math.max(0, fs.turb-0.01);
-  fs.fill = 0.28 + 0.12*Math.sin(t*0.35); fs.temp=0.1; fs.dim=1; fs.ground=ground(fs.fill, fs.temp, 1);
+  fs.fill = 0.28 + 0.12*Math.sin(t*0.35); fs.temp=0.1; fs.dim=1; fs.ground=ground(fs.fill, fs.temp, 1); fs.tapK=0; fs.pinK=0;
 }
 
 /* ============================ LOOP ============================ */
@@ -983,8 +948,6 @@ function tick(){
   raf=requestAnimationFrame(tick);
   var now=nowSec(), t=performance.now()/1000, dt=lastT?Math.min(1/30, t-lastT):1/60; lastT=t;
   if(S.running){
-    if(S.dyn && S.steps[S.idx] && S.steps[S.idx].k!=="tap" && S.steps[S.idx].k!=="sense"){ while(S.dyn.left>0 && S.steps.length-S.idx<=3) appendCycle(S.steps); }
-    heldHold(now);
     var guard=0;
     while(S.idx<S.steps.length-1 && now>=S.stepStart+S.steps[S.idx].dur && guard++<400){
       var prev=S.steps[S.idx]; S.stepStart+=prev.dur; S.idx++; var cur=S.steps[S.idx];
@@ -1011,15 +974,13 @@ function refresh(){
   document.getElementById("v-reps").textContent=L.reps; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-holdSec").textContent=L.holdSec; document.getElementById("v-cycles").textContent=P.cycles;
   document.getElementById("row-reps").classList.toggle("hid",isHold); document.getElementById("row-hsec").classList.toggle("hid",!isHold);
   document.getElementById("preset-sub").textContent = fmtN(T["in"])+(T.hold>0?" · "+fmtN(T.hold):"")+" · "+fmtN(T.out)+"   —   rest "+fmtClock(T.rest);
-  var belly=P.belly||"on", ears=P.ears||"off";
-  document.getElementById("pat-sub").textContent = P.pat==="follow" ? (belly!=="off" ? "Starts at your own pace and leads you down to 5.5 seconds each way. Belly finds the pace by itself; if it can't, three taps do." : "Tap at the start of three breaths in. It starts at that pace and leads you down to 5.5 seconds each way.") : P.pat==="coh" ? "Coherent breathing, 5.5 a minute." : "Relaxing breath. Long exhale.";
-  document.getElementById("belly-sub").textContent = belly!=="off" ? "Lie down, phone on your belly just below the navel, screen up. The wind and the breath noise are your actual breath; the tone is the pacer." : "The phone does not read your breath.";
-  document.getElementById("ears-sub").textContent = ears==="on" ? "Headphones. The wind circles your head once per breath: in from the left and closing across the front, still at the right ear on the hold, out round the back on the exhale. Eyes closed, you hear where you are." : "The sound stays in the middle of your head.";
-  var segB=document.querySelectorAll("#seg-belly button"); for(i=0;i<segB.length;i++) segB[i].classList.toggle("sel", segB[i].getAttribute("data-belly")===belly);
-  var segE=document.querySelectorAll("#seg-ears button"); for(i=0;i<segE.length;i++) segE[i].classList.toggle("sel", segE[i].getAttribute("data-ears")===ears);
-  var tapMode=P.tap||"off";
-  document.getElementById("tap-sub").textContent = tapMode==="sync" ? "A tap restarts the phase you are in. The pacer keeps its order; you set its timing." : tapMode==="lead" ? "A tap means: breathing in now. Keep your finger down to hold; let go to breathe out." : "Taps do nothing. The pacer leads; you follow.";
-  var segT=document.querySelectorAll("#seg-tap button"); for(i=0;i<segT.length;i++) segT[i].classList.toggle("sel", segT[i].getAttribute("data-tap")===tapMode);
+  var M={belly:P.belly!=="off", tap:P.tap==="on", ears:P.ears==="on"};
+  document.getElementById("pat-sub").textContent = P.pat==="coh" ? "Coherent breathing, 5.5 a minute." : "Relaxing breath. Long exhale.";
+  document.getElementById("belly-sub").textContent = "Lie down, phone on your belly, screen up. It reads your breath: the wind and the breath noise are you, the tone is the pacer.";
+  document.getElementById("tap-sub").textContent = "Drum the breath. Tap once a second on the count, in and out. Hold: press and hold. Every tap pushes the wind under your finger.";
+  document.getElementById("ears-sub").textContent = "Headphones. A rising whistle comes in from the left and climbs to your right ear; a low blow sinks away behind you. Eyes shut, you hear the breath.";
+  var pills=document.querySelectorAll("#methods .pill"); for(i=0;i<pills.length;i++){ var on=M[pills[i].getAttribute("data-m")]; pills[i].textContent=on?"On":"Off"; pills[i].classList.toggle("sel",!!on); }
+  var ears=P.ears||"off";
   document.getElementById("setup-lift").classList.toggle("hid", setupMode!=="lift"); document.getElementById("setup-breathe").classList.toggle("hid", setupMode!=="breathe");
   document.getElementById("setup-title").textContent = setupMode==="lift"?"Lift":"Breathe";
   document.getElementById("setupnote").textContent = ENG.name==="field" ? "The wind reads the sound it makes: the gust you hear is the gust you see." : "";
@@ -1027,7 +988,7 @@ function refresh(){
   var segPat=document.querySelectorAll("#seg-pat button"); for(i=0;i<segPat.length;i++) segPat[i].classList.toggle("sel", segPat[i].getAttribute("data-pat")===P.pat);
   var earsOn = setupMode==="breathe" && ears==="on";
   var snd=document.querySelectorAll("[data-sound]"); for(i=0;i<snd.length;i++){ snd[i].classList.toggle("sel", DB.cfg[setupMode].sound===snd[i].getAttribute("data-sound")); snd[i].disabled=earsOn; }
-  if(earsOn) document.getElementById("setupnote").textContent = "Ears is on: the spatial wind is the sound.";
+  document.getElementById("sound-sub").textContent = earsOn ? "Ears is on: the spatial wind is the sound." : "";
 }
 var LIM={reps:[1,60,1],sets:[1,20,1],holdSec:[5,300,5],cycles:[1,40,1]};
 function bump(key,delta){ var tgt=key==="cycles"?DB.cfg.breathe:DB.cfg.lift, lim=LIM[key], v=(+tgt[key])+delta; v=Math.max(lim[0],Math.min(lim[1],v)); tgt[key]=v; save(); refresh(); }
@@ -1037,14 +998,12 @@ function show(id){
   MASK.dirty=true;
 }
 document.addEventListener("click", function(ev){
-  var t=ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-preset],[data-pat],[data-sound],[data-tap],[data-belly],[data-ears]") : null; if(!t||t.disabled) return; var v;
+  var t=ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-preset],[data-pat],[data-sound],[data-m]") : null; if(!t||t.disabled) return; var v;
   if((v=t.getAttribute("data-go"))){ if(S.running) return; if(v==="lift"||v==="breathe"){ setupMode=v; show("setup"); } else show(v); return; }
   if((v=t.getAttribute("data-s"))){ var p=v.split(":"); bump(p[0],parseFloat(p[1])); return; }
   if((v=t.getAttribute("data-preset"))){ DB.cfg.lift.preset=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-pat"))){ DB.cfg.breathe.pat=v; save(); refresh(); return; }
-  if((v=t.getAttribute("data-tap"))){ DB.cfg.breathe.tap=v; save(); refresh(); return; }
-  if((v=t.getAttribute("data-belly"))){ DB.cfg.breathe.belly=v; save(); refresh(); return; }
-  if((v=t.getAttribute("data-ears"))){ DB.cfg.breathe.ears=v; save(); refresh(); return; }
+  if((v=t.getAttribute("data-m"))){ DB.cfg.breathe[v] = (v==="belly" ? DB.cfg.breathe[v]!=="off" : DB.cfg.breathe[v]==="on") ? "off" : "on"; save(); refresh(); return; }
   if((v=t.getAttribute("data-sound"))){ DB.cfg[setupMode].sound=v; save(); refresh(); return; }
 });
 document.getElementById("b-start").addEventListener("click", function(){
@@ -1058,14 +1017,15 @@ bSkip.addEventListener("click", function(e){ e.stopPropagation(); skipRest(); })
 bSave.addEventListener("click", function(e){ e.stopPropagation(); saveSet(); });
 bBack.addEventListener("click", function(e){ e.stopPropagation(); show("home"); });
 elEnd.addEventListener("click", function(e){ e.stopPropagation(); endSession(false); });
-/* the tap: SYNC or LEAD per the Breathe setting (see tapDown); the release ends a held hold */
+/* the finger on the wind (see tapDown) */
 var elFlash=document.getElementById("flash");
 elRun.addEventListener("pointerdown", function(ev){
   if(ev.target.closest && ev.target.closest("button")) return; if(!S.running) return;
   if(A&&A.ctx.state!=="running"){ try{A.ctx.resume();}catch(e){} }
-  if(!tapDown()) return;
-  elFlash.classList.remove("go"); void elFlash.offsetWidth; elFlash.classList.add("go");
+  if(!tapDown(ev.clientX, ev.clientY)) return;
+  if(S.mode==="lift"){ elFlash.classList.remove("go"); void elFlash.offsetWidth; elFlash.classList.add("go"); }   /* in Breathe the puff in the field is the confirmation */
 });
+elRun.addEventListener("pointermove", function(ev){ tapMove(ev.clientX, ev.clientY); });
 window.addEventListener("pointerup", tapUp);
 window.addEventListener("pointercancel", tapUp);
 document.addEventListener("gesturestart", function(e){ e.preventDefault(); });
@@ -1078,7 +1038,7 @@ window.WIND = {
   state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst?ENG.inst.info():""}; },
   probe:function(){ if(ENG.inst&&ENG.inst.probe) ENG.inst.probe(); },
   rects:function(){ var out={}, els=document.querySelectorAll("#s-run .slot, #word span, #num, .rail .r"); for(var i=0;i<els.length;i++){ var r=els[i].getBoundingClientRect(); out[(els[i].id||els[i].className)+"#"+i]=[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]; } out.wordSize=getComputedStyle(elWord).fontSize; return out; },
-  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, tap:tapCalibrate, down:tapDown, up:tapUp, setTap:function(m){ DB.cfg.breathe.tap=m; }, held:function(){ return S.held; }, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2)+(q.held?"*":""); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, pan:function(){ if(!scheme||scheme.kind!=="ears") return null; var p=scheme.pan; return {x:+(p.positionX?p.positionX.value:NaN).toFixed(2), z:+(p.positionZ?p.positionZ.value:NaN).toFixed(2), g:+scheme.g.gain.value.toFixed(3), auto:scheme.auto, model:p.panningModel, ctx:A.ctx.state}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ DB.cfg.breathe[k]=v; }, period:function(){ return S.period; }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,sleeping:S.sleeping,mirror:S.mirror}; }, sleepAfter:function(s){ SLEEP_AFTER=s; }
+  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, ticks:function(){ return A?A.nodes.filter(function(n){ return n.frequency && n.frequency.value===1480; }).length:0; }, pan:function(){ if(!scheme||scheme.kind!=="ears") return null; var p=scheme.pan; return {x:+(p.positionX?p.positionX.value:NaN).toFixed(2), y:+(p.positionY?p.positionY.value:NaN).toFixed(2), z:+(p.positionZ?p.positionZ.value:NaN).toFixed(2), g:+scheme.g.gain.value.toFixed(3), f:Math.round(scheme.bp.frequency.value), q:+scheme.bp.Q.value.toFixed(2), auto:scheme.auto, model:p.panningModel, ctx:A.ctx.state}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ DB.cfg.breathe[k]=v; }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
 };
 /* ---- boot ---- */
 fitWordOnce();

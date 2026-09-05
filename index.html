@@ -29,7 +29,7 @@
   --top:#3a1a10;
   --lift1:#1d2027; --lift2:#15161a; --liftline:#464647; --liftmc:#8fa9c4; --liftmcA:#8fa9c455; --liftmcB:#8fa9c422;
   --br1:#2e1410; --br2:#1e100e; --brline:#533d35; --brmc:#d84a12; --brmcA:#d84a1255; --brmcB:#d84a1222;
-  --bi:#8fa9c4; --bh:#b8963f; --bo:#d84a12; --be:#2e2c29;
+  --bi:#8fa9c4; --bh:#b8963f; --bo:#d84a12; --be:#a89e90;
   /* THEME END */
 }
 *{box-sizing:border-box}
@@ -123,7 +123,8 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 /* a breath drawn to scale: in, hold, out as the phase colours, widths in seconds */
 .bbar{display:flex;gap:3px;height:10px;width:100%}
 .bbar i{display:block;border-radius:99px;min-width:4px}
-.bbar .bi{background:var(--bi)}.bbar .bh{background:var(--bh)}.bbar .bo{background:var(--bo)}.bbar .be{background:var(--be)}
+.bbar .bi{background:var(--bi)}.bbar .bh{background:var(--bh)}.bbar .bo{background:var(--bo)}
+.bbar .be{background:transparent;box-shadow:inset 0 0 0 1.5px var(--be)}   /* empty lungs: an outline, visible on any ground */
 .seg button .bbar{height:6px;margin-top:8px;opacity:.55}
 .seg button.sel .bbar{opacity:1}
 .sub .chev{display:inline-block;width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
@@ -561,13 +562,14 @@ function nowPlaying(mode){
 function keep(n){ A.nodes.push(n); return n; }
 
 /* ---------- TONE — one steady note, 528 Hz, that never changes pitch,
-   in three timbres. IN is a pure, bright voice that grows to full. HOLD is
-   a hollow, softer voice of the same note that sits still. OUT is a warm,
-   dark voice that begins full and falls to almost nothing. The ear reads
-   the change of voice and the direction of loudness. ---------- */
+   in three voices, all soft. IN is a warm, round voice that swells gently.
+   HOLD is a hollow voice that breathes slowly in place, like a singing
+   bowl beating: the pulse is what makes it unmistakable with eyes closed.
+   OUT is a dark voice that settles gently to almost nothing. Nothing is
+   bright, nothing starts suddenly. ---------- */
 function mkTone(k){
   var ctx = A.ctx;
-  var lp = keep(ctx.createBiquadFilter()); lp.type = "lowpass"; lp.frequency.value = 1200; lp.Q.value = 0.5;
+  var lp = keep(ctx.createBiquadFilter()); lp.type = "lowpass"; lp.frequency.value = 1100; lp.Q.value = 0.3;
   function group(spec){
     var g = keep(ctx.createGain()); g.gain.value = 0.0001;
     for(var i=0;i<spec.length;i++) for(var d=0; d<2; d++){
@@ -579,27 +581,28 @@ function mkTone(k){
     g.connect(lp);
     return g;
   }
-  var vIn   = group([[528, 0.62, "sine"], [1056, 0.10, "sine"]]);        /* pure and bright */
-  var vHold = group([[528, 0.40, "triangle"]]);                           /* hollow, held */
-  var vOut  = group([[528, 0.58, "sine"], [264, 0.36, "sine"]]);         /* warm and dark */
+  var vIn   = group([[528, 0.60, "sine"], [264, 0.22, "sine"]]);         /* warm and round */
+  var vHold = group([[528, 0.34, "triangle"], [264, 0.10, "sine"]]);      /* hollow, and it will breathe */
+  var vOut  = group([[528, 0.46, "sine"], [264, 0.40, "sine"], [132, 0.16, "sine"]]);   /* dark, settling */
   lp.connect(A.wetIn);
   return {kind:"tone", vIn:vIn, vHold:vHold, vOut:vOut, lp:lp, k:k, st:{i:0.0001, h:0.0001, o:0.0001},
           params:[vIn.gain, vHold.gain, vOut.gain, lp.frequency], gains:[vIn.gain, vHold.gain, vOut.gain]};
 }
 
-/* ---------- BREATH — two different airs. The inhale is a thin, bright
-   hiss that rises and fills. The exhale is a dark, broad whoosh that
-   falls and empties, a little louder. The hold is silence. ---------- */
+/* ---------- BREATH — two soft airs at the same loudness. The inhale is
+   a rounded, mid air that fills gently. The exhale is a darker, broader
+   air that settles. Neither hisses, neither starts suddenly; both peaks
+   are set to the same measured level. The hold is silence. ---------- */
 function mkBreath(k){
   var ctx = A.ctx;
   var src = keep(ctx.createBufferSource()); src.buffer = noiseBuffer(ctx, 5, true); src.loop = true;
-  var hpI = keep(ctx.createBiquadFilter()); hpI.type = "highpass"; hpI.frequency.value = 600;
-  var bpI = keep(ctx.createBiquadFilter()); bpI.type = "bandpass"; bpI.frequency.value = 1400; bpI.Q.value = 1.6;
+  var bpI = keep(ctx.createBiquadFilter()); bpI.type = "bandpass"; bpI.frequency.value = 1100; bpI.Q.value = 0.9;
+  var lpI = keep(ctx.createBiquadFilter()); lpI.type = "lowpass"; lpI.frequency.value = 2400;   /* a lid on the hiss */
   var gI  = keep(ctx.createGain()); gI.gain.value = 0.0001;
-  var bpO = keep(ctx.createBiquadFilter()); bpO.type = "bandpass"; bpO.frequency.value = 420; bpO.Q.value = 0.7;
-  var lpO = keep(ctx.createBiquadFilter()); lpO.type = "lowpass"; lpO.frequency.value = 1400;
+  var bpO = keep(ctx.createBiquadFilter()); bpO.type = "bandpass"; bpO.frequency.value = 420; bpO.Q.value = 0.8;
+  var lpO = keep(ctx.createBiquadFilter()); lpO.type = "lowpass"; lpO.frequency.value = 1600;
   var gO  = keep(ctx.createGain()); gO.gain.value = 0.0001;
-  src.connect(hpI); hpI.connect(bpI); bpI.connect(gI); gI.connect(A.dryIn);
+  src.connect(bpI); bpI.connect(lpI); lpI.connect(gI); gI.connect(A.dryIn);
   src.connect(bpO); bpO.connect(lpO); lpO.connect(gO); gO.connect(A.dryIn);
   src.start();
   return {kind:"breath", gI:gI, gO:gO, bpI:bpI, bpO:bpO, lpO:lpO, k:k, st:{i:0.0001, o:0.0001},
@@ -634,33 +637,41 @@ function schemePhase(kind, at, dur){
 
   if(s.kind === "tone"){
     if(kind === "in"){
-      env(s.vIn.gain, st.i, 0.14*k, at, 0.2, easeOut);                    /* heard at once... */
-      env(s.vIn.gain, 0.14*k, 0.42*k, at + 0.2, Math.max(g - 0.2, 0.15), easeIO);   /* ...then grows to the top */
-      env(s.vHold.gain, st.h, Z, at, 0.2, easeIO);
-      env(s.vOut.gain, st.o, Z, at, 0.2, easeIO);
-      env(s.lp.frequency, 900, 2600, at, g, easeIO);
-      st.i = 0.42*k; st.h = Z; st.o = Z;
+      env(s.vIn.gain, st.i, 0.10*k, at, 0.25, easeIO);                    /* arrives softly, but at once... */
+      env(s.vIn.gain, 0.10*k, 0.30*k, at + 0.25, Math.max(g - 0.25, 0.15), easeIO);   /* ...then swells, gently, to a modest top */
+      env(s.vHold.gain, st.h, Z, at, 0.3, easeIO);
+      env(s.vOut.gain, st.o, Z, at, 0.3, easeIO);
+      env(s.lp.frequency, 1000, 1500, at, g, easeIO);                     /* opens a little; never bright */
+      st.i = 0.30*k; st.h = Z; st.o = Z;
     }else if(kind === "hold"){
-      env(s.vHold.gain, st.h, 0.20*k, at, 0.25, easeIO);                  /* the hollow voice, still */
-      env(s.vIn.gain, st.i, Z, at, 0.25, easeIO);
-      env(s.vOut.gain, st.o, Z, at, 0.25, easeIO);
-      env(s.lp.frequency, 1300, 1300, at, 0.25, easeIO);
-      st.h = 0.20*k; st.i = Z; st.o = Z;
+      /* the hollow voice breathes in place: a slow sway between two soft levels,
+         about one cycle a second, never to silence. A bowl beating, not a beep. */
+      var lo = 0.13*k, hi = 0.26*k, half = 0.55, tt = at, lev = st.h, up = true;
+      env(s.vIn.gain, st.i, Z, at, 0.3, easeIO);
+      env(s.vOut.gain, st.o, Z, at, 0.3, easeIO);
+      env(s.lp.frequency, 900, 900, at, 0.3, easeIO);                     /* darker than IN */
+      env(s.vHold.gain, lev, hi, tt, 0.3, easeIO); tt += 0.3; lev = hi; up = false;
+      while(tt < at + g - 0.05){
+        var seg = Math.min(half, at + g - tt);
+        env(s.vHold.gain, lev, up ? hi : lo, tt, seg, easeIO);
+        lev = up ? hi : lo; up = !up; tt += seg;
+      }
+      st.h = lev; st.i = Z; st.o = Z;
     }else if(kind === "out"){
-      env(s.vOut.gain, st.o, 0.38*k, at, 0.15, easeOut);                  /* full at once... */
-      env(s.vOut.gain, 0.38*k, 0.012*k, at + 0.15, Math.max(g - 0.15, 0.15), easeIO);   /* ...then falls to almost nothing */
-      env(s.vIn.gain, st.i, Z, at, 0.2, easeIO);
-      env(s.vHold.gain, st.h, Z, at, 0.2, easeIO);
-      env(s.lp.frequency, 2000, 380, at, g, easeIO);
-      st.o = 0.012*k; st.i = Z; st.h = Z;
+      env(s.vOut.gain, st.o, 0.28*k, at, 0.3, easeIO);                    /* rises into the exhale, no jolt... */
+      env(s.vOut.gain, 0.28*k, 0.02*k, at + 0.3, Math.max(g - 0.3, 0.15), easeIO);   /* ...then settles to almost nothing */
+      env(s.vIn.gain, st.i, Z, at, 0.3, easeIO);
+      env(s.vHold.gain, st.h, Z, at, 0.3, easeIO);
+      env(s.lp.frequency, 1100, 600, at, g, easeIO);                      /* darkening as it settles */
+      st.o = 0.02*k; st.i = Z; st.h = Z;
     }else if(kind === "getset"){
       env(s.vIn.gain, st.i, Z, at, 0.2, easeIO); env(s.vOut.gain, st.o, Z, at, 0.2, easeIO);
-      env(s.lp.frequency, 1200, 1200, at, 0.05, easeIO);
+      env(s.lp.frequency, 900, 900, at, 0.05, easeIO);
       n = Math.min(3, Math.floor(dur + 0.001)); from = st.h;
       for(i=0;i<n;i++){
         t = at + dur - n + i;
-        env(s.vHold.gain, from, 0.22*k, t, 0.2, easeIO);                  /* three soft hollow pulses */
-        env(s.vHold.gain, 0.22*k, Z, t + 0.2, 0.55, easeIO);
+        env(s.vHold.gain, from, 0.18*k, t, 0.25, easeIO);                 /* three soft hollow swells */
+        env(s.vHold.gain, 0.18*k, Z, t + 0.25, 0.6, easeIO);
         from = Z;
       }
       if(!n) env(s.vHold.gain, st.h, Z, at, 0.3, easeIO);
@@ -672,29 +683,31 @@ function schemePhase(kind, at, dur){
   }
 
   if(s.kind === "breath"){
-    var topI = 1.75*k, topO = 1.0*k;    /* measured: the in chain is 2.3x quieter at unity; in lands at ~3/4 of out */
+    /* measured on the filters above (RMS of the same brown noise): the in chain sits at
+       0.077 at unity and the out chain at 0.112, so these two peaks are the same loudness */
+    var topI = 1.02*k, topO = 0.70*k;
     if(kind === "in"){
-      env(s.gI.gain, st.i, topI*0.35, at, 0.2, easeOut);           /* heard at once... */
-      env(s.gI.gain, topI*0.35, topI, at + 0.2, Math.max(g*0.75 - 0.2, 0.15), easeIO);   /* ...fills, growing to the top */
-      env(s.gI.gain, topI, topI*0.7, at + g*0.75, g*0.25, easeIO);
-      env(s.gO.gain, st.o, Z, at, 0.2, easeIO);
-      env(s.bpI.frequency, 1000, 2100, at, g, easeIO);              /* and brightens as it rises */
-      st.i = topI*0.7; st.o = Z;
+      env(s.gI.gain, st.i, topI*0.3, at, 0.3, easeIO);             /* arrives softly, at once... */
+      env(s.gI.gain, topI*0.3, topI, at + 0.3, Math.max(g*0.7 - 0.3, 0.15), easeIO);   /* ...fills gently to the top */
+      env(s.gI.gain, topI, topI*0.8, at + g*0.7, g*0.3, easeIO);   /* and rests there, a little easier */
+      env(s.gO.gain, st.o, Z, at, 0.3, easeIO);
+      env(s.bpI.frequency, 900, 1300, at, g, easeIO);               /* opens a little; never bright */
+      st.i = topI*0.8; st.o = Z;
     }else if(kind === "out"){
-      env(s.gO.gain, st.o, topO, at, 0.15, easeOut);               /* releases at once... */
-      env(s.gO.gain, topO, topO*0.06, at + 0.15, Math.max(g - 0.15, 0.15), easeIO);   /* ...and empties over the whole exhale */
-      env(s.gI.gain, st.i, Z, at, 0.2, easeIO);
-      env(s.bpO.frequency, 650, 240, at, g, easeIO);                /* darkening as it falls */
-      env(s.lpO.frequency, 1800, 700, at, g, easeIO);
-      st.o = topO*0.06; st.i = Z;
+      env(s.gO.gain, st.o, topO, at, 0.3, easeIO);                 /* releases softly, no jolt... */
+      env(s.gO.gain, topO, topO*0.08, at + 0.3, Math.max(g - 0.3, 0.15), easeIO);   /* ...and settles over the whole exhale */
+      env(s.gI.gain, st.i, Z, at, 0.3, easeIO);
+      env(s.bpO.frequency, 500, 350, at, g, easeIO);                /* darkening as it settles */
+      env(s.lpO.frequency, 1600, 900, at, g, easeIO);
+      st.o = topO*0.08; st.i = Z;
     }else if(kind === "getset"){
       env(s.gI.gain, st.i, Z, at, 0.25, easeIO);
-      env(s.bpO.frequency, 500, 500, at, 0.05, easeIO); env(s.lpO.frequency, 1400, 1400, at, 0.05, easeIO);
+      env(s.bpO.frequency, 450, 450, at, 0.05, easeIO); env(s.lpO.frequency, 1400, 1400, at, 0.05, easeIO);
       n = Math.min(3, Math.floor(dur + 0.001)); from = st.o;
       for(i=0;i<n;i++){
         t = at + dur - n + i;
-        env(s.gO.gain, from, 0.5*topO, t, 0.15, easeIO);
-        env(s.gO.gain, 0.5*topO, Z, t + 0.15, 0.55, easeIO);
+        env(s.gO.gain, from, 0.4*topO, t, 0.25, easeIO);           /* three soft swells of air */
+        env(s.gO.gain, 0.4*topO, Z, t + 0.25, 0.6, easeIO);
         from = Z;
       }
       if(!n) env(s.gO.gain, st.o, Z, at, 0.3, easeIO);

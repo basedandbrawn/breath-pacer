@@ -37,7 +37,7 @@ npx http-server . -p 8080
 ## Publishing with GitHub Pages
 
 Settings → Pages → Source: **Deploy from a branch**, branch `main`, folder `/ (root)`.
-It goes live at `https://<user>.github.io/wind-aurora/` in a minute or two.
+It goes live at `https://basedandbrawn.github.io/Wind-aurora/` in a minute or two.
 
 ## Installing on iPhone
 

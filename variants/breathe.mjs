@@ -1,0 +1,12 @@
+import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+const v = process.argv[2];
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+const errs = []; p.on('pageerror', e => errs.push(e.message));
+await p.goto('file://' + process.cwd() + '/' + v + '/preview.html');
+await p.waitForTimeout(1200);
+await p.click('[data-go="breathe"]'); await p.waitForTimeout(400);
+await p.screenshot({ path: `${v}-b-setup.png` });
+const h = await p.evaluate(() => document.getElementById('seg-pat').getBoundingClientRect().height);
+console.log(v, 'pattern row height', Math.round(h), 'errors:', errs.length?errs.join('|'):'none');
+await b.close();

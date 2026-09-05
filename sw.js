@@ -1,9 +1,9 @@
-/* Breath — offline shell.
+/* The Wind — offline shell.
    Everything the pacer needs is cached on first load, so it opens in a
    basement gym or in airplane mode. Cached copies are served at once and
    refreshed quietly in the background; a new version is picked up on the
    next launch. */
-var CACHE = "breath-v4";
+var CACHE = "wind-v1";
 var SHELL = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icon-180.png", "./icon-192.png", "./icon-512.png",

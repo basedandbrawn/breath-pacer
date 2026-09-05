@@ -646,7 +646,7 @@ function schemePhase(kind, at, dur){
     }else if(kind === "hold"){
       /* the hollow voice breathes in place: a slow sway between two soft levels,
          about one cycle a second, never to silence. A bowl beating, not a beep. */
-      var lo = 0.13*k, hi = 0.26*k, half = 0.55, tt = at, lev = st.h, up = true;
+      var lo = 0.07*k, hi = 0.15*k, half = 0.55, tt = at, lev = st.h, up = true;   /* about half the level of IN and OUT */
       env(s.vIn.gain, st.i, Z, at, 0.3, easeIO);
       env(s.vOut.gain, st.o, Z, at, 0.3, easeIO);
       env(s.lp.frequency, 900, 900, at, 0.3, easeIO);                     /* darker than IN */

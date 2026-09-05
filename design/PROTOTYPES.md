@@ -29,7 +29,19 @@ Memory and Still exist only as automatic catches when the GPU cannot deliver.
 | **Memory** | The wind is the session data. Deterministic seed from date and config. Each rep releases a debris particle that the field carries for the rest of the set; a sync tap's miss becomes turbulence; on rest the debris settles into a pile. Momentum from drag, no solver. | Nothing | 99 | 1 to 2.5 ms | Automatic catch for no WebGL2, GPU context loss, low battery, or a blown frame budget. Particle count halves under budget pressure |
 | **Still** | Zero particles. The ground luminance ramp alone. | Nothing | 0 | 0.05 ms | Nothing. The floor, reachable now only via `?eng=still`. |
 
-## Follow: the breath mirror
+## Three methods
+
+The screen is the instrument, and the user is mostly not looking at it. So
+the pacer couples to the body three other ways. They live in one card on
+the Breathe setup, **Method**, and combine freely.
+
+| Method | Setting | What it is | Needs |
+|---|---|---|---|
+| **Belly** | Off · On (default On) | The phone on the abdomen reads the breath from the accelerometer. The wind and the breath noise become your actual breath; the tone is the pacer. With the Follow pattern it also finds your pace and leads you down to 5.5 s each way. | One motion-permission tap on iOS |
+| **Tap** | Off · Sync · Inhale (default Off) | Two readings of one gesture. Sync: a tap restarts the phase you are in. Inhale: a tap means *breathing in now*, and a held finger holds the hold. Both are gusts in the field. | Nothing |
+| **Ears** | Off · On (default Off) | Spatial wind. The breath noise is placed around the head with HRTF panning and circles it once per breath. Eyes closed, you hear where you are. | Headphones |
+
+## Belly: the breath mirror
 
 Breathe · Follow leads the user from their own breathing rate down to 5.5
 breaths a minute — 5.5 s in and 5.5 s out — near the resonance frequency where
@@ -38,8 +50,11 @@ It needs one trustworthy reading of the current pace, and asking someone to
 breathe normally while they are being measured does not give one: attending
 to the breath changes it. So the reading is passive.
 
-**Setup.** Lie down, phone on the belly just below the navel, screen up. Start
-asks once for motion access (iOS prompts; Android and desktop do not).
+**Setup.** Method · Belly on (the default). Lie down, phone on the belly just
+below the navel, screen up. Start asks once for motion access (iOS prompts;
+Android and desktop do not). Belly works with every pattern: on 4 · 7 · 8 and
+5.5 · 5.5 it is the mirror alone, the tone paces the fixed pattern and the
+wind and the noise are you; on Follow it also senses the starting pace.
 
 **Sensing.** The phone tilts a degree or two with each breath. The gravity
 vector is read at the sensor rate, the posture is removed with a 15 s
@@ -78,7 +93,7 @@ only the mirror is lost.
 
 ## Tap: two readings of one gesture
 
-Breathe setup has a **Tap** row: Off (default), Sync, Inhale. Both live
+Method · Tap: Off (default), Sync, Inhale. Both live
 versions are built so they can be compared in the hand rather than argued
 about. Lift keeps Sync and is not affected by the setting.
 
@@ -103,6 +118,47 @@ length is kept 0.6 s ahead of the clock so it cannot end; an inhale within
 0.3 s of ending under a held finger has a hold spliced in after it, before
 the exhale is scheduled (the audio lead is 0.12 s). Releasing sets the hold
 to end at that instant and the exhale is scheduled from there.
+
+## Ears: spatial wind
+
+Method · Ears on, headphones in. The sound scheme becomes the spatial wind
+and the Sound row is disabled: the wind is the sound.
+
+The breath noise (the same brown noise through a bandpass) is fed through a
+`PannerNode` with HRTF panning and an inverse distance model, and its
+position is scheduled with the same look-ahead as the envelopes, 26 linear
+ramps per phase on `positionX` and `positionZ`, so it survives dropped
+frames like the rest of the audio. Where a browser has no position
+AudioParams it falls back to `setPosition` once per frame.
+
+One breath is one circle around the head:
+
+- **Inhale.** The wind starts far away on the left (5 m), sweeps across the
+  front and closes in, arriving at the right ear (0.8 m) as the lungs fill.
+  Loudness rises from the approach and from the envelope; the bandpass
+  opens from 600 to 1500 Hz.
+- **Hold.** It stays at the right ear, close and faint (12% level). Air
+  already in, nothing new entering, but the presence is there so silence
+  is never mistaken for a dead headphone.
+- **Exhale.** It leaves from the right, round the back, out to the far
+  left, darkening from 1300 to 420 Hz, where the next inhale begins.
+
+Distance is lung volume, direction of travel is the phase. Front and back
+are the weakest cues in HRTF, so neither carries anything alone: the
+inhale is *approaching and brightening*, the exhale is *receding and
+darkening*, and left-right tells you how far through each you are. With
+Belly on as well, the pacer circles you while your own airflow stays in
+the centre of the head as the mirror voice.
+
+The output low-pass, 2600 Hz in Breathe for the other schemes, opens to
+7 kHz for Ears because the pinna cues live above 4 kHz.
+
+Verified headless with Chromium's HRTF: far left at the start of the
+inhale, in front at its middle, at the right ear on the hold and holding
+there, leaving to the right and louder at the start of the exhale, behind
+at its middle, far left again as the next inhale starts. Not yet heard on
+the phone: the level balance against the tone and whether iOS's HRTF
+externalises well enough are for a device pass.
 
 ### Why not the microphone
 
@@ -149,8 +205,8 @@ if it costs battery.
 ## Try it
 
 - `wind.html` home screen, Lift or Breathe, Start.
-- Breathe, pattern **Follow**, Start, allow motion, phone on your belly. Or tap at the start of three breaths in.
-- Breathe, **Tap** row: Sync or Inhale, then tap or press the wind during the session. Off is the default.
+- Breathe, pattern **Follow**, Start, allow motion, phone on your belly. Or Belly off and tap at the start of three breaths in.
+- Breathe, **Method** card: Belly on or off, Tap Sync or Inhale, Ears on with headphones. Any combination.
 - `wind.html?perf=1` frame-time overlay.
 - `wind.html?eng=memory|still` forces a fallback engine, for testing.
 - `wind.html?auto=lift` starts a session on load (audio will be silent until a tap).

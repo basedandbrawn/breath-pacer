@@ -62,6 +62,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .seg button.sel{color:var(--fg);border-color:rgba(238,243,247,.6);background:rgba(238,243,247,.14)}
 .seg button[disabled]{opacity:.35}
 .note{font-size:12px;line-height:1.45;color:var(--mute);min-height:2.9em;letter-spacing:.02em}
+.sub{text-align:center;font-size:12px;letter-spacing:.1em;color:var(--mute);padding-bottom:6px;line-height:1.5}
 
 /* ---------- setup ---------- */
 .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;height:40px}
@@ -150,9 +151,18 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
           <div class="seg" id="seg-pat"><button data-pat="478">4 · 7 · 8</button><button data-pat="coh">5.5 · 5.5</button><button data-pat="follow" id="b-follow">Follow</button></div>
           <div id="pat-sub" style="text-align:center;font-size:12px;letter-spacing:.1em;color:var(--mute);padding-bottom:6px;line-height:1.5"></div></div>
         <div class="row"><span class="lbl">Cycles</span><div class="step"><button data-s="cycles:-1">−</button><span class="v" id="v-cycles">8</span><button data-s="cycles:1">+</button></div></div>
-        <div class="row stack"><span class="lbl">Tap</span>
+      </div>
+      <!-- the three methods: ways the pacer couples to you beyond the screen -->
+      <div class="card" id="methods">
+        <div class="row stack"><span class="lbl">Method · Belly</span>
+          <div class="seg" id="seg-belly"><button data-belly="off">Off</button><button data-belly="on">On</button></div>
+          <div id="belly-sub" class="sub"></div></div>
+        <div class="row stack"><span class="lbl">Method · Tap</span>
           <div class="seg" id="seg-tap"><button data-tap="off">Off</button><button data-tap="sync">Sync</button><button data-tap="lead">Inhale</button></div>
-          <div id="tap-sub" style="text-align:center;font-size:12px;letter-spacing:.1em;color:var(--mute);padding-bottom:6px;line-height:1.5"></div></div>
+          <div id="tap-sub" class="sub"></div></div>
+        <div class="row stack"><span class="lbl">Method · Ears</span>
+          <div class="seg" id="seg-ears"><button data-ears="off">Off</button><button data-ears="on">On</button></div>
+          <div id="ears-sub" class="sub"></div></div>
       </div>
     </div>
     <div class="card"><div class="row stack"><span class="lbl">Sound</span><div class="seg" id="seg-sound"><button data-sound="tone">Tone</button><button data-sound="breath">Breath</button></div></div></div>
@@ -189,7 +199,7 @@ var DEF = {
       tune:{compound:{"in":4, hold:2, out:6, rest:180},
             isolation:{"in":2, hold:0, out:3, rest:90},
             hold:{"in":4, hold:0, out:8, rest:90}}},
-    breathe: {cycles:8, pat:"478", sound:"tone", tap:"off"}
+    breathe: {cycles:8, pat:"478", sound:"tone", belly:"on", tap:"off", ears:"off"}
   },
   stats: {sec:0, log:[]}
 };
@@ -286,7 +296,40 @@ function mkBreath(k){
   src.connect(bp); bp.connect(pk); pk.connect(lp); lp.connect(g); g.connect(A.dryIn); src.start(); keep(src);
   return {kind:"breath", g:g, bp:bp, lp:lp, k:k};
 }
-function makeScheme(name, dim){ if(!A) return null; var k=dim?0.7:1; A.roll.frequency.value=dim?2600:4200; return name==="breath"?mkBreath(k):mkTone(k); }
+/* EARS: spatial wind. The breath noise is placed around the head with HRTF panning and
+   travels one full circle per breath: the inhale comes in from the left, across the front,
+   closing in until it is at the right ear when the lungs are full; the hold sits there,
+   close and faint; the exhale leaves from the right, round the back, out to the far left,
+   where the next inhale begins. Distance is lung volume, direction of travel is the phase.
+   Eyes closed, headphones on, you hear where you are in the breath. */
+function mkEars(k){
+  var ctx=A.ctx, src=ctx.createBufferSource(); src.buffer=noiseBuffer(ctx,5,true); src.loop=true;
+  var bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=900; bp.Q.value=0.7;
+  var lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=5200; lp.Q.value=0.4;
+  var g=ctx.createGain(); g.gain.value=0.0001;
+  var pan=ctx.createPanner(); try{ pan.panningModel="HRTF"; pan.distanceModel="inverse"; pan.refDistance=0.8; pan.maxDistance=30; pan.rolloffFactor=1; }catch(e){}
+  var auto = !!(pan.positionX && pan.positionX.linearRampToValueAtTime);
+  var p0=earsPos(0,-90,-90,EARS_FAR,EARS_FAR);
+  if(auto){ pan.positionX.value=p0[0]; pan.positionZ.value=p0[1]; } else { try{ pan.setPosition(p0[0],0,p0[1]); }catch(e){} }
+  src.connect(bp); bp.connect(lp); lp.connect(g); g.connect(pan); pan.connect(A.wetIn); src.start(); keep(src);
+  return {kind:"ears", g:g, bp:bp, lp:lp, pan:pan, k:k, auto:auto, motion:null};
+}
+var EARS_FAR=5, EARS_NEAR=0.8;
+function earsPos(p, th0, th1, r0, r1){ var th=(th0+(th1-th0)*p)*Math.PI/180, r=r0+(r1-r0)*easeIO(p); return [r*Math.sin(th), -r*Math.cos(th)]; }   /* listener faces -Z; +X is the right ear */
+function earsArc(s, at, dur, th0, th1, r0, r1){
+  if(!s.auto){ s.motion={at:at,dur:dur,th0:th0,th1:th1,r0:r0,r1:r1}; return; }       /* no position params: moved per frame instead */
+  var ctx=A.ctx, now=ctx.currentTime, t0=at<now?now:at, px=s.pan.positionX, pz=s.pan.positionZ, i, N=26;
+  [px,pz].forEach(function(q){ try{ if(q.cancelAndHoldAtTime) q.cancelAndHoldAtTime(t0); else q.cancelScheduledValues(t0); }catch(e){ try{ q.cancelScheduledValues(t0); }catch(e2){} } });
+  var q0=earsPos(0,th0,th1,r0,r1), near=at<=now+0.03, sx=near?px.value:q0[0], sz=near?pz.value:q0[1];
+  px.setValueAtTime(isFinite(sx)?sx:q0[0], t0); pz.setValueAtTime(isFinite(sz)?sz:q0[1], t0);
+  for(i=1;i<=N;i++){ var p=i/N, w=earsPos(p,th0,th1,r0,r1); px.linearRampToValueAtTime(w[0], t0+dur*p); pz.linearRampToValueAtTime(w[1], t0+dur*p); }
+}
+function earsFrame(){   /* fallback for panners without AudioParam positions */
+  if(!scheme || scheme.kind!=="ears" || scheme.auto || !scheme.motion || !A) return;
+  var m=scheme.motion, p=Math.max(0,Math.min(1,(A.ctx.currentTime-m.at)/Math.max(m.dur,0.01))), w=earsPos(p,m.th0,m.th1,m.r0,m.r1);
+  try{ scheme.pan.setPosition(w[0],0,w[1]); }catch(e){}
+}
+function makeScheme(name, dim){ if(!A) return null; var k=dim?0.7:1; A.roll.frequency.value=name==="ears"?7000:dim?2600:4200; return name==="ears"?mkEars(k):name==="breath"?mkBreath(k):mkTone(k); }
 function schemePhase(kind, at, dur){
   if(!scheme || !A) return;
   var s=scheme, k=s.k, g=Math.max(dur,0.35);
@@ -296,6 +339,13 @@ function schemePhase(kind, at, dur){
     else if(kind==="hold"){ env(s.hi.gain,s.hi.gain.value,0.0001,at,Math.min(g*0.3,0.45),easeOut); env(s.lo.gain,s.lo.gain.value,0.0001,at,Math.min(g*0.3,0.45),easeOut); }
     else if(kind==="out"){ env(s.lo.gain,0.0001,lo,at,g*0.25,easeOut); env(s.lo.gain,lo,0.0003,at+g*0.25,g*0.72,easeIO); env(s.hi.gain,s.hi.gain.value,0.0001,at,g*0.4,easeIO); env(s.lp.frequency,1800,640,at,g,easeIO); }
     else { env(s.hi.gain,s.hi.gain.value,0.0001,at,0.4,easeIn); env(s.lo.gain,s.lo.gain.value,0.0001,at,0.4,easeIn); }
+  }
+  if(s.kind==="ears"){
+    var et=1.15*k;
+    if(kind==="in"){ env(s.g.gain,0.0001,et,at,g*0.55,easeIO); env(s.g.gain,et,et*0.75,at+g*0.55,g*0.4,easeIO); env(s.bp.frequency,600,1500,at,g,easeIO); earsArc(s,at,g,-90,90,EARS_FAR,EARS_NEAR); }
+    else if(kind==="hold"){ env(s.g.gain,s.g.gain.value,et*0.12,at,0.4,easeOut); earsArc(s,at,g,90,90,EARS_NEAR,EARS_NEAR); }      /* close, still, faint: air already in */
+    else if(kind==="out"){ env(s.g.gain,s.g.gain.value,et*0.95,at,g*0.15,easeOut); env(s.g.gain,et*0.95,et*0.2,at+g*0.15,g*0.8,easeIO); env(s.bp.frequency,1300,420,at,g,easeIO); earsArc(s,at,g,90,270,EARS_NEAR,EARS_FAR); }
+    else { env(s.g.gain,s.g.gain.value,0.0001,at,0.3,easeOut); }
   }
   if(s.kind==="breath"){
     var top=1.05*k;
@@ -680,7 +730,7 @@ var LEAD = 0.12;
 var S = {running:false, mode:"lift", sound:"tone", steps:[], idx:0, stepStart:0, schedIdx:-1,
          reps:10, sets:4, restDur:180, holdMode:0, holdSec:45, startedAt:0, recorded:{}, ended:false,
          dyn:null, period:0, turb:0, follow:false, taps:[], mirror:false, sleeping:false, senseT:0,
-         tapMode:"sync", held:false, heldAt:0, gustT:-9, gustDir:0, gustK:0};
+         tapMode:"sync", held:false, heldAt:0, gustT:-9, gustDir:0, gustK:0, ears:false};
 function ph(kind, dur, stage, setNo, rep){ return {k:kind, dur:dur, stage:stage, set:setNo, rep:rep}; }
 function pushCycle(arr, c, stage, setNo, rep){
   if(c["in"]>0) arr.push(ph("in",c["in"],stage,setNo,rep)); if(c.hold>0) arr.push(ph("hold",c.hold,stage,setNo,rep));
@@ -776,11 +826,13 @@ function appendCycle(st){
 }
 function startSession(mode){
   var c=DB.cfg; S.mode=mode; S.sound=c[mode].sound; S.follow = mode==="breathe" && c.breathe.pat==="follow";
-  S.mirror = S.follow && MIR.perm==="granted"; S.sleeping=false; S.senseT=performance.now()/1000;
+  /* the three methods: belly (the accelerometer mirror), tap (sync or inhale), ears (spatial wind) */
+  S.mirror = mode==="breathe" && c.breathe.belly!=="off" && MIR.perm==="granted"; S.sleeping=false; S.senseT=performance.now()/1000;
   S.tapMode = mode==="breathe" ? (c.breathe.tap||"off") : "sync"; S.held=false; S.gustT=-9;
+  S.ears = mode==="breathe" && c.breathe.ears==="on";
   if(mode==="lift"){ S.reps=c.lift.reps; S.sets=c.lift.sets; S.restDur=c.lift.tune[c.lift.preset].rest; S.holdMode=c.lift.preset==="hold"?1:0; S.holdSec=c.lift.holdSec; }
   else { S.reps=c.breathe.cycles; S.sets=1; S.holdMode=0; }
-  audioStart(mode, S.mirror ? "tone" : S.sound);     /* in the mirror the tone leads and the noise is you */
+  audioStart(mode, S.ears ? "ears" : S.mirror ? "tone" : S.sound);     /* ears: the spatial wind is the pacer; mirror: the tone leads and the noise is you */
   if(S.mirror){ mirrorStart(); if(A) mirrorVoice=mkMirror(); }
   S.dyn=null; S.steps=buildSteps(); S.idx=0; S.schedIdx=-1; S.ended=false; S.recorded={}; S.turb=0;
   S.stepStart=nowSec()+0.1; S.startedAt=nowSec(); S.running=true;
@@ -890,11 +942,11 @@ function render(now){
     if(MIR.starts.length>=3 && MIR.conf>0.5 && !MIR.moving){ if(!MIR.armedAt) MIR.armedAt=pt; if(MIR.lastStartT>MIR.armedAt && pt-MIR.lastStartT<0.6){ senseGo(pt); return; } }
     if(pt-S.senseT>45 && MIR.conf<0.3) senseToTap();
   }
-  if(S.mirror && st.stage==="set"){
+  if(S.mirror && S.follow && st.stage==="set"){
     var calm = seeing && MIR.rate<=12;
     if(calm){ if(!MIR.calmSince) MIR.calmSince=pt; else if(pt-MIR.calmSince>SLEEP_AFTER) sleepEnd(); } else MIR.calmSince=0;
   }
-  mirrorVoiceFrame();
+  mirrorVoiceFrame(); earsFrame();
   fs.temp = st.stage==="set" && !S.holdMode && S.reps>1 ? (st.rep-1)/(S.reps-1) : st.stage==="set" && S.holdMode ? Math.min(1,setProgress()/S.holdSec) : st.stage==="rest"?0.5:0.15;
   S.turb *= (1 - 0.12*Math.min(1, (now - (S._lt||now)))); S._lt=now;
   fs.turb=Math.min(1,S.turb);
@@ -959,7 +1011,12 @@ function refresh(){
   document.getElementById("v-reps").textContent=L.reps; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-holdSec").textContent=L.holdSec; document.getElementById("v-cycles").textContent=P.cycles;
   document.getElementById("row-reps").classList.toggle("hid",isHold); document.getElementById("row-hsec").classList.toggle("hid",!isHold);
   document.getElementById("preset-sub").textContent = fmtN(T["in"])+(T.hold>0?" · "+fmtN(T.hold):"")+" · "+fmtN(T.out)+"   —   rest "+fmtClock(T.rest);
-  document.getElementById("pat-sub").textContent = P.pat==="follow" ? "Lie down, phone on your belly just below the navel, screen up. It finds your breath by itself and leads you down to 5.5 seconds each way. If it can't, it asks for three taps." : P.pat==="coh" ? "Coherent breathing, 5.5 a minute." : "Relaxing breath. Long exhale.";
+  var belly=P.belly||"on", ears=P.ears||"off";
+  document.getElementById("pat-sub").textContent = P.pat==="follow" ? (belly!=="off" ? "Starts at your own pace and leads you down to 5.5 seconds each way. Belly finds the pace by itself; if it can't, three taps do." : "Tap at the start of three breaths in. It starts at that pace and leads you down to 5.5 seconds each way.") : P.pat==="coh" ? "Coherent breathing, 5.5 a minute." : "Relaxing breath. Long exhale.";
+  document.getElementById("belly-sub").textContent = belly!=="off" ? "Lie down, phone on your belly just below the navel, screen up. The wind and the breath noise are your actual breath; the tone is the pacer." : "The phone does not read your breath.";
+  document.getElementById("ears-sub").textContent = ears==="on" ? "Headphones. The wind circles your head once per breath: in from the left and closing across the front, still at the right ear on the hold, out round the back on the exhale. Eyes closed, you hear where you are." : "The sound stays in the middle of your head.";
+  var segB=document.querySelectorAll("#seg-belly button"); for(i=0;i<segB.length;i++) segB[i].classList.toggle("sel", segB[i].getAttribute("data-belly")===belly);
+  var segE=document.querySelectorAll("#seg-ears button"); for(i=0;i<segE.length;i++) segE[i].classList.toggle("sel", segE[i].getAttribute("data-ears")===ears);
   var tapMode=P.tap||"off";
   document.getElementById("tap-sub").textContent = tapMode==="sync" ? "A tap restarts the phase you are in. The pacer keeps its order; you set its timing." : tapMode==="lead" ? "A tap means: breathing in now. Keep your finger down to hold; let go to breathe out." : "Taps do nothing. The pacer leads; you follow.";
   var segT=document.querySelectorAll("#seg-tap button"); for(i=0;i<segT.length;i++) segT[i].classList.toggle("sel", segT[i].getAttribute("data-tap")===tapMode);
@@ -968,7 +1025,9 @@ function refresh(){
   document.getElementById("setupnote").textContent = ENG.name==="field" ? "The wind reads the sound it makes: the gust you hear is the gust you see." : "";
   var segP=document.querySelectorAll("#seg-preset button"); for(i=0;i<segP.length;i++) segP[i].classList.toggle("sel", segP[i].getAttribute("data-preset")===L.preset);
   var segPat=document.querySelectorAll("#seg-pat button"); for(i=0;i<segPat.length;i++) segPat[i].classList.toggle("sel", segPat[i].getAttribute("data-pat")===P.pat);
-  var snd=document.querySelectorAll("[data-sound]"); for(i=0;i<snd.length;i++) snd[i].classList.toggle("sel", DB.cfg[setupMode].sound===snd[i].getAttribute("data-sound"));
+  var earsOn = setupMode==="breathe" && ears==="on";
+  var snd=document.querySelectorAll("[data-sound]"); for(i=0;i<snd.length;i++){ snd[i].classList.toggle("sel", DB.cfg[setupMode].sound===snd[i].getAttribute("data-sound")); snd[i].disabled=earsOn; }
+  if(earsOn) document.getElementById("setupnote").textContent = "Ears is on: the spatial wind is the sound.";
 }
 var LIM={reps:[1,60,1],sets:[1,20,1],holdSec:[5,300,5],cycles:[1,40,1]};
 function bump(key,delta){ var tgt=key==="cycles"?DB.cfg.breathe:DB.cfg.lift, lim=LIM[key], v=(+tgt[key])+delta; v=Math.max(lim[0],Math.min(lim[1],v)); tgt[key]=v; save(); refresh(); }
@@ -978,18 +1037,20 @@ function show(id){
   MASK.dirty=true;
 }
 document.addEventListener("click", function(ev){
-  var t=ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-preset],[data-pat],[data-sound],[data-tap]") : null; if(!t||t.disabled) return; var v;
+  var t=ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-preset],[data-pat],[data-sound],[data-tap],[data-belly],[data-ears]") : null; if(!t||t.disabled) return; var v;
   if((v=t.getAttribute("data-go"))){ if(S.running) return; if(v==="lift"||v==="breathe"){ setupMode=v; show("setup"); } else show(v); return; }
   if((v=t.getAttribute("data-s"))){ var p=v.split(":"); bump(p[0],parseFloat(p[1])); return; }
   if((v=t.getAttribute("data-preset"))){ DB.cfg.lift.preset=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-pat"))){ DB.cfg.breathe.pat=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-tap"))){ DB.cfg.breathe.tap=v; save(); refresh(); return; }
+  if((v=t.getAttribute("data-belly"))){ DB.cfg.breathe.belly=v; save(); refresh(); return; }
+  if((v=t.getAttribute("data-ears"))){ DB.cfg.breathe.ears=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-sound"))){ DB.cfg[setupMode].sound=v; save(); refresh(); return; }
 });
 document.getElementById("b-start").addEventListener("click", function(){
   /* the audio graph must be born inside the tap; the motion prompt can come after */
   initAudio(); if(A){ try{ A.ctx.resume(); }catch(e){} try{ var p=audioEl.play(); if(p&&p.catch) p.catch(function(){}); }catch(e){} }
-  var wantMirror = setupMode==="breathe" && DB.cfg.breathe.pat==="follow";
+  var wantMirror = setupMode==="breathe" && DB.cfg.breathe.belly!=="off";
   if(!wantMirror){ startSession(setupMode); return; }
   motionRequest().then(function(ok){ MIR.perm = ok ? "granted" : "denied"; startSession(setupMode); });
 });
@@ -1017,7 +1078,7 @@ window.WIND = {
   state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst?ENG.inst.info():""}; },
   probe:function(){ if(ENG.inst&&ENG.inst.probe) ENG.inst.probe(); },
   rects:function(){ var out={}, els=document.querySelectorAll("#s-run .slot, #word span, #num, .rail .r"); for(var i=0;i<els.length;i++){ var r=els[i].getBoundingClientRect(); out[(els[i].id||els[i].className)+"#"+i]=[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]; } out.wordSize=getComputedStyle(elWord).fontSize; return out; },
-  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, tap:tapCalibrate, down:tapDown, up:tapUp, setTap:function(m){ DB.cfg.breathe.tap=m; }, held:function(){ return S.held; }, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2)+(q.held?"*":""); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, period:function(){ return S.period; }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,sleeping:S.sleeping,mirror:S.mirror}; }, sleepAfter:function(s){ SLEEP_AFTER=s; }
+  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, tap:tapCalibrate, down:tapDown, up:tapUp, setTap:function(m){ DB.cfg.breathe.tap=m; }, held:function(){ return S.held; }, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2)+(q.held?"*":""); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, pan:function(){ if(!scheme||scheme.kind!=="ears") return null; var p=scheme.pan; return {x:+(p.positionX?p.positionX.value:NaN).toFixed(2), z:+(p.positionZ?p.positionZ.value:NaN).toFixed(2), g:+scheme.g.gain.value.toFixed(3), auto:scheme.auto, model:p.panningModel, ctx:A.ctx.state}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ DB.cfg.breathe[k]=v; }, period:function(){ return S.period; }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,sleeping:S.sleeping,mirror:S.mirror}; }, sleepAfter:function(s){ SLEEP_AFTER=s; }
 };
 /* ---- boot ---- */
 fitWordOnce();

@@ -50,13 +50,12 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .mark{display:grid;justify-items:center;gap:6px;padding-top:min(9vh,70px)}
 .mark .s{font-size:12px;letter-spacing:.5em;color:var(--mute);font-weight:600;padding-left:.5em}
 .mark .w{font-weight:800;font-size:min(23vw,120px);line-height:.95;letter-spacing:.01em}
-.modes{display:grid;gap:12px}
+.modes{display:grid;gap:12px;margin-bottom:min(6vh,52px)}
 .mode{display:flex;justify-content:space-between;align-items:baseline;padding:22px 22px;border-radius:20px;
   background:var(--ui);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .mode:active{background:rgba(238,243,247,.12)}
 .mode .t{font-weight:800;font-size:min(9vw,40px);letter-spacing:.04em;line-height:1}
 .mode .d{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute);font-weight:600}
-.engrow{display:grid;gap:10px;margin-top:22px}
 .seg{display:flex;gap:6px}
 .seg button{flex:1 1 0;min-width:0;padding:13px 4px;border-radius:12px;background:var(--ui);border:1px solid var(--line);
   font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--mute);text-transform:uppercase;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
@@ -127,14 +126,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
     <button class="mode" data-go="lift"><span class="t">LIFT</span><span class="d">sets · reps · rest</span></button>
     <button class="mode" data-go="breathe"><span class="t">BREATHE</span><span class="d">cycles</span></button>
   </div>
-  <div class="engrow">
-    <span class="lbl">Wind engine</span>
-    <div class="seg" id="seg-eng">
-      <button data-eng="field">Field</button>
-      <button data-eng="memory">Memory</button><button data-eng="still">Still</button>
-    </div>
-    <div class="note" id="engnote"></div>
-  </div>
+
 </section>
 
 <!-- SETUP -->
@@ -190,7 +182,6 @@ var Q = {}; try{ location.search.slice(1).split("&").forEach(function(kv){ var p
 var KEY = "wind.v1";
 var DEF = {
   cfg: {
-    engine: "field",
     lift: {preset:"compound", reps:10, sets:4, holdSec:45, sound:"tone",
       tune:{compound:{"in":4, hold:2, out:6, rest:180},
             isolation:{"in":2, hold:0, out:3, rest:90},
@@ -204,9 +195,6 @@ var DB = clone(DEF);
 try{
   var raw = JSON.parse(localStorage.getItem(KEY) || "null");
   if(raw && raw.cfg){
-    if(raw.cfg.engine) DB.cfg.engine = raw.cfg.engine;
-    if(raw.cfg.chose) DB.cfg.chose = true;
-    if(!{field:1,memory:1,still:1}[DB.cfg.engine]) DB.cfg.engine = "field";
     var L = raw.cfg.lift; if(L){ ["preset","reps","sets","holdSec","sound"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
       if(L.tune) for(var pk in DB.cfg.lift.tune){ if(L.tune[pk]) for(var tk in DB.cfg.lift.tune[pk]) if(L.tune[pk][tk]!==undefined) DB.cfg.lift.tune[pk][tk]=L.tune[pk][tk]; } }
     if(raw.cfg.breathe) for(var bk in DB.cfg.breathe) if(raw.cfg.breathe[bk]!==undefined) DB.cfg.breathe[bk]=raw.cfg.breathe[bk];
@@ -716,7 +704,7 @@ function buildSteps(){
 }
 /* FOLLOW: the user taps at the start of three breaths in. The mean gap is
    their own period. Each cycle is then built when the previous one starts,
-   at a period that slides from theirs toward 10.9 s (5.5 breaths/min). */
+   at a period that slides from theirs toward 11 s: 5.5 s in, 5.5 s out. */
 function tapCalibrate(){
   var now=nowSec();
   if(S.taps.length && now - S.taps[S.taps.length-1] > 20) S.taps=[];   /* a stale tap is a false start */
@@ -731,10 +719,10 @@ function tapCalibrate(){
 function appendCycle(st){
   var d=S.dyn; if(!d || d.left<=0) return;
   d.rep++; d.left--;
-  var p=S.period, ins=p*0.45, outs=p*0.55;
+  var p=S.period, half=p*0.5;
   var at = st.length && st[st.length-1].k==="done" ? st.length-1 : st.length;
-  st.splice(at, 0, ph("in",ins,"set",1,d.rep), ph("out",outs,"set",1,d.rep));
-  var target=10.9, step=(target-p)*0.12; if(Math.abs(step)>1.0) step=Math.sign(step);
+  st.splice(at, 0, ph("in",half,"set",1,d.rep), ph("out",half,"set",1,d.rep));
+  var target=11.0, step=(target-p)*0.12;   /* 5.5 s in, 5.5 s out */ if(Math.abs(step)>1.0) step=Math.sign(step);
   S.period = p + step;
 }
 function startSession(mode){
@@ -782,19 +770,13 @@ function scheduleAhead(now){
 
 /* ============================ ENGINE MANAGER ============================ */
 var elGL=document.getElementById("gl"), elC2=document.getElementById("c2d");
-var ENG = {name:"still", inst:null, reason:""};
-var reduceMotion=false; try{ reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){}
+var ENG = {name:"field", inst:null, reason:""};
 var lowBattery=false; try{ if(navigator.getBattery) navigator.getBattery().then(function(b){ function u(){ lowBattery = b.level<0.15 && !b.charging; } u(); b.addEventListener("levelchange",u); b.addEventListener("chargingchange",u); }); }catch(e){}
-var NOTES = {
-  field:"GPU fluid. Real momentum: air keeps moving after the breath stops. The word is an obstacle. Loudest of the three on the battery.",
-  memory:"No GPU needed. The wind is your session data: reps become debris, pace error becomes turbulence, sets settle into a pile.",
-  still:"No motion. The whole screen still paces you: it brightens as you fill and dims as you empty. The floor of the ladder."
-};
 function pickEngine(want){
   var reason="";
   if(want!=="field"&&want!=="memory"&&want!=="still") want="field";
-  /* the OS reduce-motion hint picks the default only; a tap on an engine wins */
-  if(reduceMotion && want!=="still" && !DB.cfg.chose){ reason="reduced motion"; want="still"; }
+  /* No reduce-motion override: here the motion IS the pacing signal, not decoration.
+     Field always, and the ladder below catches it only when the GPU cannot. */
   if(lowBattery && want==="field"){ reason="low battery"; want="memory"; }
   if(ENG.inst){ try{ ENG.inst.destroy(); }catch(e){} ENG.inst=null; }
   var inst=null;
@@ -803,20 +785,12 @@ function pickEngine(want){
   if(want==="still"){ inst=Field2D(elC2,{name:"still",density:0,debris:false}); }
   ENG.name=want; ENG.inst=inst; ENG.reason=reason;
   elGL.hidden = want!=="field"; elC2.hidden = want==="field";
-  refreshEngineNote();
-}
-function refreshEngineNote(){
-  var n=document.getElementById("engnote"), want=DB.cfg.engine;
-  var txt = NOTES[ENG.name] || "";
-  if(ENG.name!==want) txt = (ENG.reason==="reduced motion" ? "Your phone has Reduce Motion on, so STILL was picked. Tap an engine to override. " : "Fell back to "+ENG.name.toUpperCase()+" ("+ENG.reason+"). ")+txt;
-  n.textContent = txt;
-  var segs=document.querySelectorAll("#seg-eng button"); for(var i=0;i<segs.length;i++) segs[i].classList.toggle("sel", segs[i].getAttribute("data-eng")===want);
 }
 /* frame budget: measure, then step down. */
 var cpuEMA=0, overSince=0;
 function budget(cpuMs, now){
   cpuEMA += (cpuMs-cpuEMA)*0.05;
-  if(cpuEMA > 13){ if(!overSince) overSince=now; if(now-overSince>3){ overSince=0; if(ENG.inst && ENG.inst.halve && ENG.inst.halve()){ } else if(ENG.name==="field"){ ENG.reason="frame budget"; var w=ENG.name; pickEngine("memory"); ENG.reason="frame budget"; refreshEngineNote(); } else if(ENG.inst && ENG.inst.halve) ENG.inst.halve(); } }
+  if(cpuEMA > 13){ if(!overSince) overSince=now; if(now-overSince>3){ overSince=0; if(ENG.inst && ENG.inst.halve && ENG.inst.halve()){ } else if(ENG.name==="field"){ pickEngine("memory"); ENG.reason="frame budget"; } } }
   else overSince=0;
 }
 
@@ -888,7 +862,7 @@ function render(now){
   else if(st.k==="sense") meta = MIR.moving ? "HOLD STILL" : MIR.armedAt ? "ON YOUR NEXT BREATH IN" : MIR.conf>0.3 ? "BREATHING · "+MIR.rate.toFixed(1)+"/MIN" : "PHONE ON YOUR BELLY";
   else if(isRest) meta="REST · SET "+st.set+"/"+S.sets;
   else if(S.holdMode && isSet){ var pr=setProgress(); meta="SET "+st.set+"/"+S.sets+" · "+Math.ceil(S.holdSec-pr)+"S"; }
-  else if(S.mode==="breathe"){ meta = isSet ? ("CYCLE "+st.rep+"/"+S.reps + (S.follow ? " · "+(60/(st.dur/(st.k==="in"?0.45:0.55))).toFixed(1)+"/MIN" : "")) : ""; }
+  else if(S.mode==="breathe"){ meta = isSet ? ("CYCLE "+st.rep+"/"+S.reps + (S.follow ? " · "+st.dur.toFixed(1)+"S" : "")) : ""; }
   else meta="SET "+st.set+"/"+S.sets+(isSet?" · "+st.rep+"/"+S.reps:"");
   lastMeta=txt(elMeta, meta, lastMeta);
   setFoot(isRest?"skip": (isSet && S.mode==="lift") ? "save" : null);
@@ -916,7 +890,7 @@ function tick(){
   if(elRun.classList.contains("on")) render(now); else idleRender(t);
   if(MASK.dirty){ buildMask(elRun.classList.contains("on") ? elWordI : (document.getElementById("s-home").classList.contains("on") ? elMark : null)); }
   var c0=performance.now();
-  if(ENG.inst){ if(ENG.inst.isLost && ENG.inst.isLost()){ pickEngine("memory"); ENG.reason="GPU context lost"; refreshEngineNote(); } else ENG.inst.frame(dt, frameState, t); }
+  if(ENG.inst){ if(ENG.inst.isLost && ENG.inst.isLost()){ pickEngine("memory"); ENG.reason="GPU context lost"; } else ENG.inst.frame(dt, frameState, t); }
   var cpu=performance.now()-c0; budget(cpu, t);
   frameNo++;
   if(Q.probe && ENG.inst && ENG.inst.probe && probeStage<PROBE_AT.length && t>=PROBE_AT[probeStage]){ probeStage++; console.log("PROBE t="+t.toFixed(1)+" frame "+frameNo+" phase="+frameState.phase+" fill="+frameState.fill.toFixed(2)+" flow="+frameState.flow.toFixed(2)+" amp="+frameState.amp.toFixed(2)+" vp="+window.innerWidth+"x"+window.innerHeight+" eng="+ENG.name+" reason="+ENG.reason+" dt="+dt.toFixed(4)); ENG.inst.probe(); }
@@ -931,7 +905,7 @@ function refresh(){
   document.getElementById("v-reps").textContent=L.reps; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-holdSec").textContent=L.holdSec; document.getElementById("v-cycles").textContent=P.cycles;
   document.getElementById("row-reps").classList.toggle("hid",isHold); document.getElementById("row-hsec").classList.toggle("hid",!isHold);
   document.getElementById("preset-sub").textContent = fmtN(T["in"])+(T.hold>0?" · "+fmtN(T.hold):"")+" · "+fmtN(T.out)+"   —   rest "+fmtClock(T.rest);
-  document.getElementById("pat-sub").textContent = P.pat==="follow" ? "Lie down, phone on your belly just below the navel, screen up. It finds your breath by itself and leads you down to 5.5 a minute. If it can't, it asks for three taps." : P.pat==="coh" ? "Coherent breathing, 5.5 a minute." : "Relaxing breath. Long exhale.";
+  document.getElementById("pat-sub").textContent = P.pat==="follow" ? "Lie down, phone on your belly just below the navel, screen up. It finds your breath by itself and leads you down to 5.5 seconds each way. If it can't, it asks for three taps." : P.pat==="coh" ? "Coherent breathing, 5.5 a minute." : "Relaxing breath. Long exhale.";
   document.getElementById("setup-lift").classList.toggle("hid", setupMode!=="lift"); document.getElementById("setup-breathe").classList.toggle("hid", setupMode!=="breathe");
   document.getElementById("setup-title").textContent = setupMode==="lift"?"Lift":"Breathe";
   document.getElementById("setupnote").textContent = ENG.name==="field" ? "The wind reads the sound it makes: the gust you hear is the gust you see." : "";
@@ -943,17 +917,16 @@ var LIM={reps:[1,60,1],sets:[1,20,1],holdSec:[5,300,5],cycles:[1,40,1]};
 function bump(key,delta){ var tgt=key==="cycles"?DB.cfg.breathe:DB.cfg.lift, lim=LIM[key], v=(+tgt[key])+delta; v=Math.max(lim[0],Math.min(lim[1],v)); tgt[key]=v; save(); refresh(); }
 function show(id){
   var ids=["home","setup","run"]; for(var i=0;i<ids.length;i++) document.getElementById("s-"+ids[i]).classList.toggle("on", ids[i]===id);
-  if(id==="setup") refresh(); if(id==="home") refreshEngineNote();
+  if(id==="setup") refresh();
   MASK.dirty=true;
 }
 document.addEventListener("click", function(ev){
-  var t=ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-preset],[data-pat],[data-sound],[data-eng]") : null; if(!t||t.disabled) return; var v;
+  var t=ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-preset],[data-pat],[data-sound]") : null; if(!t||t.disabled) return; var v;
   if((v=t.getAttribute("data-go"))){ if(S.running) return; if(v==="lift"||v==="breathe"){ setupMode=v; show("setup"); } else show(v); return; }
   if((v=t.getAttribute("data-s"))){ var p=v.split(":"); bump(p[0],parseFloat(p[1])); return; }
   if((v=t.getAttribute("data-preset"))){ DB.cfg.lift.preset=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-pat"))){ DB.cfg.breathe.pat=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-sound"))){ DB.cfg[setupMode].sound=v; save(); refresh(); return; }
-  if((v=t.getAttribute("data-eng"))){ DB.cfg.engine=v; DB.cfg.chose=true; save(); pickEngine(v); return; }
 });
 document.getElementById("b-start").addEventListener("click", function(){
   /* the audio graph must be born inside the tap; the motion prompt can come after */
@@ -991,8 +964,7 @@ window.WIND = {
 };
 /* ---- boot ---- */
 fitWordOnce();
-pickEngine(Q.eng || DB.cfg.engine);
-refreshEngineNote();
+pickEngine(Q.eng || "field");
 show("home");
 if(Q.auto){ setupMode = Q.auto==="breathe"?"breathe":"lift"; setTimeout(function(){ startSession(setupMode); }, 300); }
 raf=requestAnimationFrame(tick);

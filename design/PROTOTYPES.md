@@ -17,18 +17,23 @@ ground of the whole screen brightens as the lungs fill and dims as they empty
 exhale, and hue slides from cool to warm across the set. The word and count
 are a caption for the moments you look straight at it.
 
-## Two mechanisms and a floor
+## One engine, with a ladder under it
+
+Field is the engine. There is no picker: the motion is the pacing signal, not
+decoration, so the app does not fall back on the OS reduce-motion hint either.
+Memory and Still exist only as automatic catches when the GPU cannot deliver.
 
 | Engine | Mechanism | Needs | Lines | Cost per frame | What breaks |
 |---|---|---|---|---|---|
 | **Field** | Real fluid on the GPU: advect, vorticity confinement, divergence, 12 Jacobi pressure passes, dye. The breath injects divergence; the hold injects nothing and the field settles on its own. The phase word is a no-slip obstacle. The output analyser feeds the force, so the audible gust is the visible gust. | WebGL2 with float render targets | 104 | 0.1 ms JS, 60 fps held on an iPhone at 128×227 | No float render target, context loss, or a frame budget over 13 ms for 3 s steps down to Memory with a stated reason |
-| **Memory** | The wind is the session data. Deterministic seed from date and config. Each rep releases a debris particle that the field carries for the rest of the set; a sync tap's miss becomes turbulence; on rest the debris settles into a pile. Momentum from drag, no solver. | Nothing | 99 | 1 to 2.5 ms | Particle count halves under budget pressure |
-| **Still** | Zero particles. The ground luminance ramp alone. | Nothing | 0 | 0.05 ms | Nothing. This is the floor: `prefers-reduced-motion` and low battery land here by default. A tapped engine overrides it. |
+| **Memory** | The wind is the session data. Deterministic seed from date and config. Each rep releases a debris particle that the field carries for the rest of the set; a sync tap's miss becomes turbulence; on rest the debris settles into a pile. Momentum from drag, no solver. | Nothing | 99 | 1 to 2.5 ms | Automatic catch for no WebGL2, GPU context loss, low battery, or a blown frame budget. Particle count halves under budget pressure |
+| **Still** | Zero particles. The ground luminance ramp alone. | Nothing | 0 | 0.05 ms | Nothing. The floor, reachable now only via `?eng=still`. |
 
 ## Follow: the breath mirror
 
 Breathe · Follow leads the user from their own breathing rate down to 5.5
-breaths a minute, the resonance frequency where heart rate variability peaks.
+breaths a minute — 5.5 s in and 5.5 s out — near the resonance frequency where
+heart rate variability peaks.
 It needs one trustworthy reading of the current pace, and asking someone to
 breathe normally while they are being measured does not give one: attending
 to the breath changes it. So the reading is passive.
@@ -50,8 +55,10 @@ inhale.
 needed; the meta line reads PHONE ON YOUR BELLY, then BREATHING · x/MIN once
 the rate is known, HOLD STILL when the phone is moving, and ON YOUR NEXT
 BREATH IN once three starts are counted. The first cycle begins on the next
-real inhale, so the pacer's first breath is yours. Cycles then slide 12% per
-cycle toward 10.9 s as before.
+real inhale, so the pacer's first breath is yours. Each cycle is then built at
+even halves and the period slides 12% per cycle toward 11 s, so the destination
+is exactly the 5.5 · 5.5 pattern. The meta line shows the current half in
+seconds, climbing toward 5.5.
 
 **The mirror.** While the sensor sees you, the wind on the screen and the
 breath noise in the sound are driven by your actual breath: the noise is
@@ -98,24 +105,24 @@ rhythm, needs no quiet, and costs one permission tap.
 ## Fallback ladder, verified
 
 - No WebGL2: Field falls to Memory, note reads "Fell back to MEMORY (no WebGL2 float render)".
-- `prefers-reduced-motion`: the default is Still with a note saying so. A tap on an engine overrides it and is remembered. This mattered on the first device test, where Reduce Motion was on and the original ladder silently vetoed the tap.
-- A saved engine name that no longer exists resolves to Field.
+- `prefers-reduced-motion`: deliberately ignored. Field runs regardless. Verified with the hint forced on: the engine reports `field` with no fallback reason.
+- GPU context loss and a frame budget over 13 ms for 3 s both drop to Memory silently.
 
 ## What to ship
 
-Field as the default with Still as the floor, and Memory as the automatic
-fallback rather than a user choice. Field is the only one where the hold is
-legible for the right reason: air already in motion, slowing down, nothing
-new entering. Measured on an iPhone at 60 fps with negligible CPU.
+Shipped as described: Field only, no picker, Memory and Still as silent
+catches. Field is the one where the hold is legible for the right reason —
+air already in motion, slowing down, nothing new entering. Measured on an
+iPhone at 60 fps with negligible CPU.
 
-Cut from Field before shipping: the swirl term, the idle wind on the home
-screen if it costs battery, and the engine picker once one wins. Keep Follow.
+Still to cut from Field: the swirl term, and the idle wind on the home screen
+if it costs battery.
 
 ## Try it
 
-- `wind.html` home screen, pick an engine, Lift or Breathe, Start.
+- `wind.html` home screen, Lift or Breathe, Start.
 - Breathe, pattern **Follow**, Start, allow motion, phone on your belly. Or tap at the start of three breaths in.
 - `wind.html?perf=1` frame-time overlay.
-- `wind.html?eng=field|memory|still` forces an engine.
+- `wind.html?eng=memory|still` forces a fallback engine, for testing.
 - `wind.html?auto=lift` starts a session on load (audio will be silent until a tap).
 - Stats screen and the tune panel from `index.html` were left out of the prototype.

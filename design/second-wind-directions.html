@@ -1,0 +1,683 @@
+<title>Second Wind Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,900&family=Barlow+Condensed:wght@600;800&family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Unbounded:wght@900&display=swap">
+<style>
+/* ============ page tokens ============ */
+:root{
+  --bg:#ecedf0; --fg:#15161a; --mute:#5c606a; --line:#d3d6dd; --panel:#f6f6f8; --acc:#1f45ff; --guide:#ff2d9b;
+  --sans:'Instrument Sans',system-ui,-apple-system,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){ --bg:#0f1013; --fg:#e7e7ea; --mute:#8b8f9a; --line:#25272d; --panel:#16171b; --acc:#7a93ff; }
+}
+:root[data-theme="dark"]{ --bg:#0f1013; --fg:#e7e7ea; --mute:#8b8f9a; --line:#25272d; --panel:#16171b; --acc:#7a93ff; }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--acc)}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 24px 80px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.1}
+h1{font-size:44px;font-weight:600;letter-spacing:-.02em}
+h2{font-size:26px;font-weight:600;letter-spacing:-.01em}
+h3{font-size:15px;font-weight:600}
+p{margin:0;max-width:62ch}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.lede{font-size:17px;color:var(--fg);max-width:64ch}
+.mute{color:var(--mute)}
+header.hero{display:grid;gap:14px;padding-bottom:28px;border-bottom:1px solid var(--line)}
+
+/* controls */
+.controls{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;
+  padding:12px 0;margin:0 0 36px;background:var(--bg);border-bottom:1px solid var(--line)}
+.controls .grp{display:flex;align-items:center;gap:8px}
+.controls .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{font:inherit;font-family:var(--mono);font-size:12px;letter-spacing:.06em;padding:7px 12px;border:0;background:transparent;color:var(--mute);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.seg button:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.controls .hint{font-size:13px;color:var(--mute);flex:1 1 260px}
+
+/* direction sections */
+.dir{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:36px;padding:36px 0 44px;border-bottom:1px solid var(--line)}
+.dir .phones{display:flex;gap:28px;overflow-x:auto;padding:6px 2px 12px;align-items:flex-start}
+.dir .notes{display:grid;gap:18px;align-content:start}
+.dir .notes .k{display:grid;gap:6px}
+.dir .notes .k h3{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:500}
+.dir .notes ul{margin:0;padding-left:18px;display:grid;gap:5px}
+.dir .notes li{max-width:44ch}
+.dir .title{grid-column:1/-1;display:grid;gap:8px}
+.dir .title .n{font-family:var(--mono);font-size:12px;color:var(--mute);letter-spacing:.1em}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;color:var(--mute);padding:4px 8px 4px 4px;border:1px solid var(--line);border-radius:999px}
+.chip i{width:16px;height:16px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.15)}
+.type-sample{display:grid;gap:4px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.type-sample .big{font-size:30px;line-height:1.05}
+.type-sample .small{font-family:var(--mono);font-size:12px;color:var(--mute)}
+.cap{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);text-align:center;margin-top:10px}
+@media (max-width:900px){ .dir{grid-template-columns:1fr} }
+
+/* ============ phone frame ============ */
+.ph{flex:0 0 auto;display:grid;gap:0;justify-items:center}
+.phone{width:300px;height:640px;border-radius:44px;background:#0a0a0c;padding:9px;box-shadow:0 30px 60px -28px rgba(0,0,0,.55),inset 0 0 0 1px #34353a}
+.screen{position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;background:#000;color:#fff;font-family:var(--sans)}
+.screen canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ui{position:absolute;inset:0;display:flex;flex-direction:column;padding:14px 18px 16px}
+.sb{height:26px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;letter-spacing:.04em;opacity:.7}
+.sb i{width:64px;height:16px;border-radius:99px;background:#000;display:block;margin:0 auto}
+.sb b{font-weight:500}
+.spacer{flex:1 1 auto}
+.screen button{font:inherit;color:inherit;background:transparent;border:0;margin:0;padding:0;cursor:pointer}
+
+/* --- session screen: the shared invariant slots --- */
+.run .top{height:40px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.75}
+.run .inst{height:230px;position:relative;flex:0 0 auto}
+.run .inst canvas{position:absolute;inset:0}
+.run .word{height:96px;display:flex;align-items:center;justify-content:center;line-height:1;white-space:nowrap}
+.run .count{height:64px;display:flex;align-items:center;justify-content:center;line-height:1;font-variant-numeric:tabular-nums;min-width:2ch}
+.run .rail{height:34px;display:flex;align-items:center;justify-content:center;gap:18px;font-family:var(--mono);font-size:11px;letter-spacing:.16em}
+.run .rail .r{opacity:.32;transition:opacity .4s,color .4s}
+.run[data-phase="in"] .r-in,.run[data-phase="hold"] .r-hold,.run[data-phase="out"] .r-out{opacity:1}
+.run .foot{height:56px;display:flex;align-items:stretch}
+.run .foot button{flex:1;border-radius:14px;font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase}
+.run .bgfade{transition:background-color .5s cubic-bezier(.42,0,.25,1),color .5s cubic-bezier(.42,0,.25,1)}
+/* guides */
+.guides .run .slot{outline:1px dashed var(--guide);outline-offset:-1px;position:relative}
+.guides .run .slot::after{content:attr(data-slot);position:absolute;left:4px;top:2px;font:9px/1 var(--mono);letter-spacing:.08em;color:var(--guide);text-transform:uppercase;pointer-events:none}
+.still *{animation-play-state:paused !important}
+
+/* ============ A · Streamlines ============ */
+.A{--bg:#07141b;--fg:#dff7ff;--line:#9ff0d8}
+.A .screen{background:#07141b;color:#dff7ff}
+.A .mark{position:absolute;left:0;right:0;top:35.5%;display:grid;justify-items:center;gap:2px;transform:translateY(-50%)}
+.A .mark .s{font-family:var(--mono);font-size:11px;letter-spacing:.42em;color:#9ff0d8;opacity:.8}
+.A .mark .w{font-family:'Unbounded',sans-serif;font-weight:900;font-size:62px;line-height:1;letter-spacing:-.01em;color:#eafcff}
+.A .modes{display:grid;gap:10px;margin-top:auto}
+.A .mode{display:flex;justify-content:space-between;align-items:baseline;padding:16px 18px;border:1px solid rgba(159,240,216,.35);border-radius:16px;background:rgba(7,20,27,.72);backdrop-filter:blur(4px)}
+.A .mode .t{font-family:'Unbounded',sans-serif;font-weight:900;font-size:22px;letter-spacing:-.01em}
+.A .mode .d{font-family:var(--mono);font-size:10px;letter-spacing:.2em;opacity:.65;white-space:nowrap}
+.A .stats{text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.26em;opacity:.5;margin-top:14px}
+.A .run{background:#07141b;color:#dff7ff}
+.A .run[data-phase="hold"]{background:#0b1c26;color:#f1fbff}
+.A .run[data-phase="out"]{background:#1b1009;color:#ffe6d2}
+.A .run .word{font-family:'Unbounded',sans-serif;font-weight:900;font-size:54px;letter-spacing:-.01em}
+.A .run .count{font-family:var(--mono);font-size:40px;font-weight:500;opacity:.7}
+.A .run .foot button{border:1px solid currentColor;opacity:.75}
+.A .run .rail{color:#9ff0d8}
+.A .run[data-phase="out"] .rail{color:#ffb37a}
+
+/* ============ B · Windsock ============ */
+.B .screen{background:#16181d;color:#f2ece1}
+.B .home .inst{height:248px;position:relative;margin:0 -18px}
+.B .home .inst canvas{position:absolute;inset:0}
+.B .mark{display:grid;gap:0;padding-top:4px}
+.B .mark .s{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:30px;letter-spacing:.24em;line-height:1;color:#f2ece1;opacity:.85}
+.B .mark .w{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:116px;line-height:.86;letter-spacing:-.01em;color:#ff6a13}
+.B .kt{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:13px;letter-spacing:.14em;white-space:nowrap;color:#f2ece1;opacity:.6;margin-top:8px;font-variant-numeric:tabular-nums}
+.B .modes{display:grid;gap:8px;margin-top:auto}
+.B .mode{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:6px;background:#1f2229;
+  border-left:6px solid #ff6a13;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:28px;letter-spacing:.06em;line-height:1}
+.B .mode .d{font-weight:600;font-size:12px;letter-spacing:.16em;opacity:.55;white-space:nowrap}
+.B .mode.alt{border-left-color:#f2ece1}
+.B .stats{text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:14px;letter-spacing:.3em;opacity:.5;margin-top:12px}
+.B .run{background:#16181d;color:#f2ece1}
+.B .run[data-phase="in"]{background:#151c2a}
+.B .run[data-phase="hold"]{background:#1a1b22}
+.B .run[data-phase="out"]{background:#231a14}
+.B .run .word{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:104px;letter-spacing:.02em;color:#ff6a13}
+.B .run[data-phase="hold"] .word{color:#f2ece1}
+.B .run .count{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:48px;opacity:.8}
+.B .run .rail{gap:6px}
+.B .run .rail .r{width:64px;height:10px;border-radius:2px;background:#f2ece1;opacity:.18;font-size:0}
+.B .run[data-phase="in"] .r-in,.B .run[data-phase="hold"] .r-hold,.B .run[data-phase="out"] .r-out{opacity:1;background:#ff6a13}
+.B .run .foot button{border-radius:6px;background:#1f2229;border-left:6px solid #ff6a13;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;letter-spacing:.08em;text-transform:uppercase}
+.B .run .top{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:14px;letter-spacing:.2em}
+
+/* ============ C · Gust ============ */
+.C .screen{background:#f3f2ee;color:#111114}
+.C .mark{display:grid;gap:0;padding-top:64px;justify-items:start}
+.C .mark .s{font-family:var(--mono);font-size:12px;letter-spacing:.4em;color:#5b5e6b;margin-left:4px}
+.C .mark .w{font-family:'Anybody',sans-serif;font-weight:900;font-size:58px;line-height:.95;letter-spacing:-.03em;white-space:nowrap;margin-left:-2px}
+.C .mark .w span{display:inline-block;font-variation-settings:"wdth" 100;animation:gust 2.8s cubic-bezier(.45,0,.35,1) infinite alternate}
+.C .mark .w span:nth-child(1){animation-delay:-2.2s}
+.C .mark .w span:nth-child(2){animation-delay:-1.9s}
+.C .mark .w span:nth-child(3){animation-delay:-1.6s}
+.C .mark .w span:nth-child(4){animation-delay:-1.3s}
+@keyframes gust{from{font-variation-settings:"wdth" 55}to{font-variation-settings:"wdth" 150}}
+.C .tag{font-family:var(--mono);font-size:11px;color:#5b5e6b;letter-spacing:.12em;margin:10px 0 0 4px;max-width:200px;line-height:1.5}
+.C .modes{display:grid;margin-top:auto;border-top:2px solid #111114}
+.C .mode{display:flex;justify-content:space-between;align-items:baseline;padding:14px 4px;border-bottom:1px solid #c9cbd3;
+  font-family:'Anybody',sans-serif;font-weight:900;font-size:34px;line-height:1;letter-spacing:-.01em;font-variation-settings:"wdth" 110}
+.C .mode .d{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:#5b5e6b;font-weight:400}
+.C .stats{font-family:var(--mono);font-size:11px;letter-spacing:.26em;color:#5b5e6b;padding:14px 4px 0}
+.C .run{background:#f3f2ee;color:#111114}
+.C .run[data-phase="hold"]{background:#eceef6}
+.C .run[data-phase="out"]{background:#f6f3ec}
+.C .run .top{opacity:.6}
+.C .run .word{font-family:'Anybody',sans-serif;font-weight:900;font-size:64px;font-variation-settings:"wdth" 100;letter-spacing:-.01em}
+.C .run .count{font-family:var(--mono);font-size:44px;font-weight:500;color:#1f45ff}
+.C .run .inst{display:grid;align-content:end;gap:10px}
+.C .gauge{font-family:'Anybody',sans-serif;font-weight:900;font-size:56px;line-height:.95;letter-spacing:-.02em;text-align:center;white-space:nowrap;font-variation-settings:"wdth" 100}
+.C .bar{height:4px;background:#c9cbd3;position:relative;overflow:hidden;border-radius:2px}
+.C .bar i{position:absolute;inset:0;background:#1f45ff;transform-origin:left;transform:scaleX(0)}
+.C .run .rail{color:#111114}
+.C .run .rail .r{opacity:.3}
+.C .run[data-phase="in"] .r-in,.C .run[data-phase="hold"] .r-hold,.C .run[data-phase="out"] .r-out{opacity:1;color:#1f45ff}
+.C .run .foot button{background:#111114;color:#f3f2ee;border-radius:4px}
+
+/* ============ D · Vane ============ */
+.D .screen{background:#0d1512;color:#ece4d2}
+.D .home .inst{height:250px;position:relative;margin:0 -18px}
+.D .home .inst canvas{position:absolute;inset:0}
+.D .mark{display:grid;justify-items:center;gap:0;padding-top:2px}
+.D .mark .s{font-family:'DM Serif Display',serif;font-style:italic;font-size:28px;line-height:1;color:#ece4d2;opacity:.85}
+.D .mark .w{font-family:'DM Serif Display',serif;font-size:68px;line-height:1;letter-spacing:.06em;color:#d6aa5c;margin-left:.06em}
+.D .plate{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.26em;color:#d6aa5c;opacity:.6;text-align:center;margin-top:6px}
+.D .modes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:auto}
+.D .mode{display:grid;justify-items:center;gap:6px;padding:16px 10px 14px;border:1px solid #d6aa5c66;border-radius:14px;
+  font-family:'DM Serif Display',serif;font-size:26px;line-height:1;color:#ece4d2}
+.D .mode .d{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.2em;color:#d6aa5c;opacity:.8}
+.D .stats{text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.3em;opacity:.5;margin-top:12px}
+.D .run{background:#0d1512;color:#ece4d2}
+.D .run[data-phase="hold"]{background:#111a15}
+.D .run[data-phase="out"]{background:#16130f}
+.D .run .top{font-family:'JetBrains Mono',monospace}
+.D .run .word{font-family:'DM Serif Display',serif;font-size:76px;letter-spacing:.02em;color:#ece4d2}
+.D .run .count{font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:600;color:#d6aa5c}
+.D .run .rail{font-family:'JetBrains Mono',monospace;color:#d6aa5c}
+.D .run .rail .r{display:inline-flex;flex-direction:column;align-items:center;gap:4px}
+.D .run .rail .r::before{content:"";width:1px;height:8px;background:currentColor}
+.D .run .foot button{border:1px solid #d6aa5c99;color:#d6aa5c;border-radius:10px;font-family:'JetBrains Mono',monospace}
+
+/* ============ spec block ============ */
+.spec{display:grid;grid-template-columns:300px minmax(0,1fr);gap:36px;padding:44px 0;border-bottom:1px solid var(--line)}
+.spec .stack{display:grid;gap:4px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.spec .stack div{display:flex;justify-content:space-between;align-items:center;padding:0 12px;border:1px dashed var(--guide);border-radius:6px;font-family:var(--mono);font-size:11px;color:var(--fg)}
+.spec .stack div span:last-child{color:var(--mute)}
+.spec ol{margin:0;padding-left:20px;display:grid;gap:10px}
+.spec li{max-width:60ch}
+.spec code{font-family:var(--mono);font-size:12.5px;background:var(--panel);border:1px solid var(--line);padding:1px 5px;border-radius:4px}
+@media (max-width:900px){ .spec{grid-template-columns:1fr} }
+
+/* ============ comparison ============ */
+.cmp{padding:44px 0 0;display:grid;gap:18px}
+.cmp .tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:500}
+td:first-child{font-weight:600;white-space:nowrap}
+.rec{padding:18px 20px;border-left:3px solid var(--acc);background:var(--panel);border-radius:0 10px 10px 0;max-width:70ch}
+</style>
+
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">Breath pacer · design directions</div>
+  <h1>Second Wind</h1>
+  <p class="lede">The app is called Breath today. These four directions assume it becomes <strong>Second Wind</strong>, the breath you catch between sets, so the name says what the app is for and the word WIND can carry the whole identity. If you keep a different name, every treatment below works on any name that contains the word.</p>
+  <p class="mute">Each direction has a home screen and a live session screen. The session screens run a real 4 · 2 · 6 cycle. Pin all of them on one phase to compare, and switch on the guides to see the fixed slots that keep the layout from moving.</p>
+</header>
+
+<div class="controls" role="toolbar" aria-label="Mockup controls">
+  <div class="grp"><span class="lbl">Phase</span>
+    <div class="seg" id="phaseSeg">
+      <button data-mode="auto" aria-pressed="true">Auto</button>
+      <button data-mode="in" aria-pressed="false">In</button>
+      <button data-mode="hold" aria-pressed="false">Hold</button>
+      <button data-mode="out" aria-pressed="false">Out</button>
+    </div></div>
+  <div class="grp"><span class="lbl">Guides</span>
+    <div class="seg" id="guideSeg"><button data-g="0" aria-pressed="true">Off</button><button data-g="1" aria-pressed="false">On</button></div></div>
+  <div class="grp"><span class="lbl">Motion</span>
+    <div class="seg" id="motionSeg"><button data-m="1" aria-pressed="true">Live</button><button data-m="0" aria-pressed="false">Still</button></div></div>
+  <div class="hint">Pinning a phase freezes the countdown on a representative second while the wind keeps moving.</div>
+</div>
+
+<!-- ================= A ================= -->
+<section class="dir A">
+  <div class="title"><div class="n">DIRECTION A</div><h2>Streamlines</h2><p class="mute">Wind the way engineers see it: lines of air bending around an obstacle. The obstacle is the name.</p></div>
+  <div class="phones">
+    <div class="ph"><div class="phone"><div class="screen home">
+      <canvas data-r="aHome"></canvas>
+      <div class="ui">
+        <div class="sb"><b>9:41</b><i></i><span></span></div>
+        <div class="mark"><div class="s">SECOND</div><div class="w">WIND</div></div>
+        <div class="modes">
+          <button class="mode"><span class="t">LIFT</span><span class="d">SETS · REPS · REST</span></button>
+          <button class="mode"><span class="t">BREATHE</span><span class="d">CYCLES</span></button>
+        </div>
+        <div class="stats">STATS</div>
+      </div>
+    </div></div><div class="cap">Home</div></div>
+    <div class="ph"><div class="phone"><div class="screen run bgfade" data-phase="in">
+      <canvas data-r="aRun"></canvas>
+      <div class="ui">
+        <div class="sb"><b>9:41</b><i></i><span></span></div>
+        <div class="top slot" data-slot="meta"><span>SET 2/4 · 6/10</span><span>END</span></div>
+        <div class="spacer"></div>
+        <div class="word slot" data-slot="word · fixed 54px">IN</div>
+        <div class="count slot" data-slot="count">4</div>
+        <div class="rail slot" data-slot="phase rail"><span class="r r-in">IN</span><span class="r r-hold">HOLD</span><span class="r r-out">OUT</span></div>
+        <div class="spacer"></div>
+        <div class="foot slot" data-slot="action"><button>Save set</button></div>
+      </div>
+    </div></div><div class="cap">Session · Lift</div></div>
+  </div>
+  <div class="notes">
+    <div class="k"><h3>The wind</h3><p>On the home screen a laminar field flows left to right and parts around SECOND WIND, the way smoke parts around a wing in a wind tunnel. In a session the field turns radial: air pours into the center on the inhale, hangs suspended on the hold, and streams outward on the exhale. A soft halo at the center brightens as the lungs fill.</p></div>
+    <div class="k"><h3>Palette</h3><div class="chips"><span class="chip"><i style="background:#07141b"></i>Ink 07141B</span><span class="chip"><i style="background:#9ff0d8"></i>Mint line 9FF0D8</span><span class="chip"><i style="background:#dff7ff"></i>Ice DFF7FF</span><span class="chip"><i style="background:#ffb37a"></i>Ember (out) FFB37A</span></div></div>
+    <div class="k"><h3>Type</h3><div class="type-sample"><div class="big" style="font-family:'Unbounded',sans-serif;font-weight:900">WIND · HOLD</div><div class="small">Unbounded 900 for the name and phase words. IBM Plex Mono for counts and meta.</div></div></div>
+    <div class="k"><h3>Interactions</h3><ul>
+      <li>Tap anywhere to re-sync, as today. The field snaps to the new phase with one ripple from the center.</li>
+      <li>Rest between sets: the field slows to a drift and the rest clock takes the word slot at the same size.</li>
+      <li>The word slot never refits per word. HOLD sets the size once; IN and OUT sit in the same box.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ================= B ================= -->
+<section class="dir B">
+  <div class="title"><div class="n">DIRECTION B</div><h2>Windsock</h2><p class="mute">Airfield ground signage. The windsock is the oldest breath gauge there is: it fills with moving air and drops when the air stops.</p></div>
+  <div class="phones">
+    <div class="ph"><div class="phone"><div class="screen home">
+      <div class="ui">
+        <div class="sb"><b>9:41</b><i></i><span>RWY 27</span></div>
+        <div class="inst"><canvas data-r="bHome"></canvas></div>
+        <div class="mark"><div class="s">SECOND</div><div class="w">WIND</div><div class="kt" data-kt>WIND 270° · 09 KT · GUSTING</div></div>
+        <div class="modes">
+          <button class="mode"><span>LIFT</span><span class="d">SETS · REPS · REST</span></button>
+          <button class="mode alt"><span>BREATHE</span><span class="d">CYCLES</span></button>
+        </div>
+        <div class="stats">STATS</div>
+      </div>
+    </div></div><div class="cap">Home</div></div>
+    <div class="ph"><div class="phone"><div class="screen run bgfade" data-phase="in">
+      <div class="ui">
+        <div class="sb"><b>9:41</b><i></i><span></span></div>
+        <div class="top slot" data-slot="meta"><span>SET 2/4 · REP 6/10</span><span>END</span></div>
+        <div class="inst slot" data-slot="instrument · 230px"><canvas data-r="bRun"></canvas></div>
+        <div class="word slot" data-slot="word · fixed 104px">IN</div>
+        <div class="count slot" data-slot="count">4</div>
+        <div class="rail slot" data-slot="threshold rail"><span class="r r-in">IN</span><span class="r r-hold">HOLD</span><span class="r r-out">OUT</span></div>
+        <div class="spacer"></div>
+        <div class="foot slot" data-slot="action"><button>Save set</button></div>
+      </div>
+    </div></div><div class="cap">Session · Lift</div></div>
+  </div>
+  <div class="notes">
+    <div class="k"><h3>The wind</h3><p>On the home screen the sock flies in a gusting crosswind above the name, with a live wind report in knots. In a session the sock is the instrument: it fills band by band on the inhale, stands rigid on the hold, and drops on the exhale. The convention is real: a sock stands fully out at 15 knots, about 3 knots per band, so five bands and a full breath reads 15 KT.</p></div>
+    <div class="k"><h3>Palette</h3><div class="chips"><span class="chip"><i style="background:#16181d"></i>Tarmac 16181D</span><span class="chip"><i style="background:#ff6a13"></i>Safety orange FF6A13</span><span class="chip"><i style="background:#f2ece1"></i>Band white F2ECE1</span><span class="chip"><i style="background:#151c2a"></i>Night sky 151C2A</span></div></div>
+    <div class="k"><h3>Type</h3><div class="type-sample"><div class="big" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;letter-spacing:.02em">WIND · HOLD</div><div class="small">Barlow Condensed 800 for everything big, tight tracking. Barlow Condensed 600 for labels.</div></div></div>
+    <div class="k"><h3>Interactions</h3><ul>
+      <li>The sock is the only geometry that moves. Sky colour crossfades per phase; nothing else changes.</li>
+      <li>The rail under the count is a runway threshold: three stripes, the lit stripe is the phase.</li>
+      <li>Save set and Skip rest share one full-width bar. The slot is reserved even when empty.</li>
+      <li>Hold sets: the sock stays inflated and the bands count down seconds elapsed.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ================= C ================= -->
+<section class="dir C">
+  <div class="title"><div class="n">DIRECTION C</div><h2>Gust</h2><p class="mute">No illustration at all. The letters are the wind: a variable typeface whose width axis inflates and narrows like a ribcage.</p></div>
+  <div class="phones">
+    <div class="ph"><div class="phone"><div class="screen home">
+      <div class="ui">
+        <div class="sb"><b>9:41</b><i></i><span></span></div>
+        <div class="mark"><div class="s">SECOND</div><div class="w"><span>W</span><span>I</span><span>N</span><span>D</span></div><div class="tag">THE BREATH YOU CATCH BETWEEN SETS</div></div>
+        <div class="modes">
+          <button class="mode"><span>LIFT</span><span class="d">SETS · REPS · REST</span></button>
+          <button class="mode"><span>BREATHE</span><span class="d">CYCLES</span></button>
+        </div>
+        <div class="stats">STATS</div>
+      </div>
+    </div></div><div class="cap">Home</div></div>
+    <div class="ph"><div class="phone"><div class="screen run bgfade" data-phase="in">
+      <div class="ui">
+        <div class="sb"><b>9:41</b><i></i><span></span></div>
+        <div class="top slot" data-slot="meta"><span>SET 2/4 · 6/10</span><span>END</span></div>
+        <div class="word slot" data-slot="word · fixed 64px">IN</div>
+        <div class="count slot" data-slot="count">4</div>
+        <div class="inst slot" data-slot="instrument · the name"><div class="gauge" data-gauge>WIND</div><div class="bar"><i data-bar></i></div></div>
+        <div class="rail slot" data-slot="phase rail"><span class="r r-in">IN</span><span class="r r-hold">HOLD</span><span class="r r-out">OUT</span></div>
+        <div class="spacer"></div>
+        <div class="foot slot" data-slot="action"><button>Save set</button></div>
+      </div>
+    </div></div><div class="cap">Session · Lift</div></div>
+  </div>
+  <div class="notes">
+    <div class="k"><h3>The wind</h3><p>Anybody has a width axis from 50 to 150. On the home screen the four letters ripple one after another, a flag in a light gust. In a session the phase word and count sit still at the top; below them the name is the gauge, widening as you breathe in, holding wide, narrowing as you let go. The word grows from its own centre, so nothing around it shifts.</p></div>
+    <div class="k"><h3>Palette</h3><div class="chips"><span class="chip"><i style="background:#f3f2ee"></i>Paper F3F2EE</span><span class="chip"><i style="background:#111114"></i>Ink 111114</span><span class="chip"><i style="background:#1f45ff"></i>Signal blue 1F45FF</span><span class="chip"><i style="background:#c9cbd3"></i>Mist C9CBD3</span></div></div>
+    <div class="k"><h3>Type</h3><div class="type-sample"><div class="big" style="font-family:'Anybody',sans-serif;font-weight:900;font-variation-settings:'wdth' 125">WIND · HOLD</div><div class="small">Anybody 900, width 50 to 150. IBM Plex Mono for the count. The only light direction, and the most legible in a bright gym.</div></div></div>
+    <div class="k"><h3>Interactions</h3><ul>
+      <li>Tap to re-sync: the letters snap to their narrowest width and start filling again.</li>
+      <li>The blue bar under the name is phase progress. On rest it becomes the rest clock.</li>
+      <li>Sound picker on the setup screen previews as a width pulse on the name, no extra UI.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ================= D ================= -->
+<section class="dir D">
+  <div class="title"><div class="n">DIRECTION D</div><h2>Vane</h2><p class="mute">A weather station. A cup anemometer that spins with the flow, and a gauge marked in Beaufort numbers.</p></div>
+  <div class="phones">
+    <div class="ph"><div class="phone"><div class="screen home">
+      <div class="ui">
+        <div class="sb"><b>9:41</b><i></i><span>NW 4 Bft</span></div>
+        <div class="inst"><canvas data-r="dHome"></canvas></div>
+        <div class="mark"><div class="s">Second</div><div class="w">WIND</div><div class="plate">EST. 2026 · BREATH PACER</div></div>
+        <div class="modes">
+          <button class="mode"><span>Lift</span><span class="d">SETS · REPS · REST</span></button>
+          <button class="mode"><span>Breathe</span><span class="d">CYCLES</span></button>
+        </div>
+        <div class="stats">STATS</div>
+      </div>
+    </div></div><div class="cap">Home</div></div>
+    <div class="ph"><div class="phone"><div class="screen run bgfade" data-phase="in">
+      <div class="ui">
+        <div class="sb"><b>9:41</b><i></i><span></span></div>
+        <div class="top slot" data-slot="meta"><span>SET 2/4 · 6/10</span><span>END</span></div>
+        <div class="inst slot" data-slot="instrument · 230px"><canvas data-r="dRun"></canvas></div>
+        <div class="word slot" data-slot="word · fixed 76px">IN</div>
+        <div class="count slot" data-slot="count">4</div>
+        <div class="rail slot" data-slot="phase rail"><span class="r r-in">IN</span><span class="r r-hold">HOLD</span><span class="r r-out">OUT</span></div>
+        <div class="spacer"></div>
+        <div class="foot slot" data-slot="action"><button>Save set</button></div>
+      </div>
+    </div></div><div class="cap">Session · Lift</div></div>
+  </div>
+  <div class="notes">
+    <div class="k"><h3>The wind</h3><p>On the home screen the anemometer idles and gusts inside a compass ring; the name sits below it like an engraved nameplate. In a session the needle climbs to 12 on the inhale, holds at 12 while the cups stop, and falls back on the exhale. The cups spin fastest mid-inhale, when the air moves most.</p></div>
+    <div class="k"><h3>Palette</h3><div class="chips"><span class="chip"><i style="background:#0d1512"></i>Slate green 0D1512</span><span class="chip"><i style="background:#d6aa5c"></i>Brass D6AA5C</span><span class="chip"><i style="background:#ece4d2"></i>Dial ECE4D2</span><span class="chip"><i style="background:#c2372b"></i>Needle C2372B</span></div></div>
+    <div class="k"><h3>Type</h3><div class="type-sample"><div class="big" style="font-family:'DM Serif Display',serif;letter-spacing:.03em">WIND · HOLD</div><div class="small">DM Serif Display for the name and phase words. JetBrains Mono for the dial and count.</div></div></div>
+    <div class="k"><h3>Interactions</h3><ul>
+      <li>Needle sweep is eased at both ends, so the inhale starts and finishes softly.</li>
+      <li>On hold the needle quivers at 12, a one pixel tremble, so the screen never reads as frozen.</li>
+      <li>Rest between sets: the dial becomes a 3:00 countdown with the same needle.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ================= spec ================= -->
+<section class="spec">
+  <div>
+    <div class="eyebrow" style="margin-bottom:12px">Shared session layout</div>
+    <div class="stack" aria-label="Fixed slot stack">
+      <div style="height:34px"><span>meta</span><span>40 px</span></div>
+      <div style="height:120px"><span>instrument</span><span>230 px · fixed box</span></div>
+      <div style="height:60px"><span>word</span><span>96 px · one font size</span></div>
+      <div style="height:44px"><span>count</span><span>64 px · tabular</span></div>
+      <div style="height:30px"><span>phase rail</span><span>34 px · always 3 items</span></div>
+      <div style="height:24px;border-style:dotted;opacity:.6"><span>flex</span><span></span></div>
+      <div style="height:40px"><span>action</span><span>56 px · reserved</span></div>
+    </div>
+  </div>
+  <div style="display:grid;gap:14px;align-content:start">
+    <h2>Why nothing moves between IN, HOLD and OUT</h2>
+    <p>Every direction uses the same slot stack. Only colour and the instrument animate; every box keeps its height and position for the whole session.</p>
+    <ol>
+      <li><strong>One font size for the phase word.</strong> Today <code>fitWord()</code> in index.html refits the size for each word, so IN renders larger than HOLD and the ring contents jump. Fit once for the longest word (HOLD, or GET SET), then leave the size alone.</li>
+      <li><strong>Fixed-height slots.</strong> Word, count, rail and action each have a set height. Content is centred inside, so a two-letter word and a four-letter word share the same baseline.</li>
+      <li><strong>Tabular numerals with reserved width.</strong> The count uses <code>font-variant-numeric: tabular-nums</code> and a two-character minimum, so 10 and 4 occupy the same space.</li>
+      <li><strong>All three phase labels always render.</strong> The rail shows IN · HOLD · OUT the whole time and only changes emphasis. No label appears or disappears.</li>
+      <li><strong>Hidden controls keep their slot.</strong> Save set, Skip rest and Back share one reserved footer. Use <code>visibility: hidden</code>, never <code>display: none</code>, so the footer height is constant.</li>
+      <li><strong>Colour crossfades, geometry does not.</strong> Background and text colour ease over 500 ms per phase. The instrument lives inside a fixed box; the halo, sock, letters or needle move within it.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================= comparison ================= -->
+<section class="cmp">
+  <h2>Side by side</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Direction</th><th>Feel</th><th>Motion cost</th><th>Readable at arm's length</th><th>Best fit</th></tr></thead>
+    <tbody>
+      <tr><td>A · Streamlines</td><td>Atmospheric, technical, quiet</td><td>Canvas particles all session. Moderate battery.</td><td>Good. Word floats on a dark field.</td><td>Breathe mode, evenings, sleep wind-down.</td></tr>
+      <tr><td>B · Windsock</td><td>Literal, industrial, loud</td><td>One small canvas. Low.</td><td>Best. Huge condensed word, orange on black.</td><td>Lift mode under gym lighting.</td></tr>
+      <tr><td>C · Gust</td><td>Typographic, bright, modern</td><td>Variable font axis only. Lowest.</td><td>Very good. The only light theme.</td><td>Daylight, outdoor sessions, marketing screenshots.</td></tr>
+      <tr><td>D · Vane</td><td>Crafted, instrument-like, calm</td><td>One small canvas. Low.</td><td>Good. Serif word needs the dark ground.</td><td>Users who want a keepsake object rather than a tool.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="rec"><strong>If one has to ship first: Windsock.</strong> It is the only direction where the wind metaphor is literal enough to read instantly mid-set, its inflation is exactly the inhale, and it costs almost nothing to animate. Gust is the runner-up and could become the light theme of whichever direction you choose.</div>
+</section>
+</div>
+
+<script>
+(function(){
+"use strict";
+var DUR={in:4,hold:2,out:6}, ORDER=["in","hold","out"];
+var PIN_PROG={in:.6,hold:.5,out:.4}, PIN_COUNT={in:2,hold:1,out:4};
+var reduce=false; try{ reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){}
+var ctl={mode:"auto",motion:!reduce,guides:false};
+var phase="in", prog=0, phaseT0=performance.now(), last=performance.now(), raf=0;
+
+function fillOf(ph,p){ return ph==="in"?p:ph==="hold"?1:1-p; }
+function ease(p){ return p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2; }
+function lerp(a,b,t){ return a+(b-a)*t; }
+function mixRGB(c,tgt,k){ c[0]=lerp(c[0],tgt[0],k); c[1]=lerp(c[1],tgt[1],k); c[2]=lerp(c[2],tgt[2],k); }
+function rgba(c,a){ return "rgba("+(c[0]|0)+","+(c[1]|0)+","+(c[2]|0)+","+a+")"; }
+
+/* ---------- canvases ---------- */
+var R={};
+function fit(cv){
+  var r=cv.getBoundingClientRect(), d=Math.min(2,window.devicePixelRatio||1);
+  if(r.width<2||r.height<2) return;
+  cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); cv._w=r.width; cv._h=r.height; cv._d=d;
+}
+var canvases=[].slice.call(document.querySelectorAll("canvas[data-r]"));
+canvases.forEach(fit);
+window.addEventListener("resize",function(){ canvases.forEach(fit); if(!ctl.motion) frame(performance.now(),true); });
+
+/* A · home: streamlines around the name */
+R.aHome=function(cx,w,h,t){
+  cx.clearRect(0,0,w,h);
+  var ox=w/2, oy=h*0.355, hw=w*0.45, hh=h*0.075, m=8, N=34, i, x, y;
+  for(i=0;i<N;i++){
+    var y0=(i+0.5)/N*h, d=y0-oy, ad=Math.abs(d), s=d<0?-1:1, yc;
+    if(ad<hh+m) yc=s*(hh+m+ad*0.25); else yc=d+s*(hh+m)*0.55*Math.exp(-(ad-hh-m)/(hh*1.1));
+    var near=Math.exp(-Math.pow((ad-hh)/(hh*1.3),2));
+    cx.beginPath();
+    for(x=-12;x<=w+12;x+=6){
+      var bb=Math.exp(-Math.pow((x-ox)/(hw*1.15),4));
+      y=y0+(yc-d)*bb+Math.sin(x*0.028-t*2.6+i*0.9)*1.1;
+      if(x===-12) cx.moveTo(x,y); else cx.lineTo(x,y);
+    }
+    cx.strokeStyle="rgba(159,240,216,"+(0.12+0.42*near).toFixed(3)+")";
+    cx.lineWidth=1;
+    cx.setLineDash([16,20]); cx.lineDashOffset=-((t*70+i*11)%36);
+    cx.stroke();
+  }
+  cx.setLineDash([]);
+};
+
+/* A · run: radial particle field */
+var AP=[], AC=[159,240,216], ABG=[7,20,27];
+for(var i0=0;i0<240;i0++) AP.push({a:Math.random()*Math.PI*2, r:0.08+Math.random()*0.92, s:0.6+Math.random()*0.9, j:Math.random()*6.28});
+R.aRun=function(cx,w,h,t,dt,S){
+  cx.clearRect(0,0,w,h);
+  var cxp=w/2, cyp=h*0.47, U=Math.max(w,h)*0.6;
+  var tgt=S.phase==="in"?[159,240,216]:S.phase==="hold"?[223,247,255]:[255,179,122];
+  mixRGB(AC,tgt,Math.min(1,dt*4));
+  var v=S.phase==="in"?-0.34:S.phase==="out"?0.26:0;
+  if(S.phase==="in") v*=0.6+0.8*Math.sin(S.prog*Math.PI);
+  if(S.phase==="out") v*=0.5+0.9*Math.sin(S.prog*Math.PI);
+  var halo=cx.createRadialGradient(cxp,cyp,0,cxp,cyp,U*0.42);
+  halo.addColorStop(0,rgba(AC,0.05+0.20*S.fill)); halo.addColorStop(1,rgba(AC,0));
+  cx.fillStyle=halo; cx.fillRect(0,0,w,h);
+  cx.lineCap="round";
+  for(var i=0;i<AP.length;i++){
+    var p=AP[i], vr=v*p.s;
+    if(S.phase==="hold"){ p.a+=Math.sin(t*1.3+p.j)*0.0009; p.r+=Math.sin(t*2.1+p.j)*0.00025; }
+    p.r+=vr*dt;
+    if(p.r<0.06){ p.r=1.0; p.a=Math.random()*6.283; }
+    if(p.r>1.0){ p.r=0.06; p.a=Math.random()*6.283; }
+    var len=Math.abs(vr)*0.1+0.006;
+    var r1=p.r*U, r2=(p.r-vr*0.0+ (vr<0?len:-len))*U;
+    var x1=cxp+Math.cos(p.a)*r1, y1=cyp+Math.sin(p.a)*r1, x2=cxp+Math.cos(p.a)*r2, y2=cyp+Math.sin(p.a)*r2;
+    var a=0.14+0.5*Math.min(1,Math.max(0,(p.r-0.14)/0.16))*(S.phase==="hold"?0.55+0.25*Math.sin(t*3+p.j):1);
+    cx.strokeStyle=rgba(AC,a); cx.lineWidth=S.phase==="hold"?1.6:1.1;
+    cx.beginPath(); cx.moveTo(x1,y1); cx.lineTo(x2,y2); cx.stroke();
+  }
+};
+
+/* B · windsock */
+function sock(cx,x0,y0,L,infl,t){
+  cx.strokeStyle="#6b6f78"; cx.lineWidth=3; cx.lineCap="round";
+  cx.beginPath(); cx.moveTo(x0,y0-22); cx.lineTo(x0,y0+L*0.95); cx.stroke();
+  cx.strokeStyle="#9a9ea8"; cx.lineWidth=2;
+  cx.beginPath(); cx.arc(x0,y0,7,0,6.283); cx.stroke();
+  var segs=36, pts=[], x=x0+8, y=y0, droop=(1-infl)*1.45, flap=0.05+0.14*(1-infl), i, s, a;
+  for(i=0;i<=segs;i++){
+    s=i/segs;
+    a=droop*Math.pow(s,1.7)+Math.sin(t*7-s*8)*flap*s+Math.sin(t*3.1)*0.03*s;
+    pts.push({x:x,y:y}); x+=Math.cos(a)*L/segs; y+=Math.sin(a)*L/segs;
+  }
+  var R0=L*0.15, R1=L*0.065, wf=0.55+0.45*infl, Lft=[], Rgt=[];
+  for(i=0;i<=segs;i++){
+    var p0=pts[Math.max(0,i-1)], p1=pts[Math.min(segs,i+1)], dx=p1.x-p0.x, dy=p1.y-p0.y, n=Math.hypot(dx,dy)||1;
+    var nx=-dy/n, ny=dx/n, wdt=(R0+(R1-R0)*(i/segs))*wf;
+    Lft.push({x:pts[i].x+nx*wdt,y:pts[i].y+ny*wdt}); Rgt.push({x:pts[i].x-nx*wdt,y:pts[i].y-ny*wdt});
+  }
+  var bands=5, k, i0, i1, j;
+  for(k=0;k<bands;k++){
+    i0=Math.round(k/bands*segs); i1=Math.round((k+1)/bands*segs);
+    cx.beginPath(); cx.moveTo(Lft[i0].x,Lft[i0].y);
+    for(j=i0+1;j<=i1;j++) cx.lineTo(Lft[j].x,Lft[j].y);
+    for(j=i1;j>=i0;j--) cx.lineTo(Rgt[j].x,Rgt[j].y);
+    cx.closePath();
+    cx.fillStyle=k%2?"#f2ece1":"#ff6a13"; cx.fill();
+    cx.strokeStyle="rgba(0,0,0,.28)"; cx.lineWidth=1; cx.stroke();
+  }
+  cx.beginPath(); cx.moveTo(x0+8,y0-R0*wf); cx.lineTo(x0+8,y0+R0*wf); cx.strokeStyle="#9a9ea8"; cx.lineWidth=2.5; cx.stroke();
+}
+var bGust=0;
+R.bHome=function(cx,w,h,t){
+  cx.clearRect(0,0,w,h);
+  var g=0.5+0.28*Math.sin(t*0.9)+0.14*Math.sin(t*2.7)+0.08*Math.sin(t*5.3);
+  bGust=Math.max(0.12,Math.min(1,g));
+  sock(cx,44,74,w*0.68,bGust,t);
+  cx.fillStyle="rgba(242,236,225,.35)"; cx.fillRect(0,h-1,w,1);
+  var kt=document.querySelector(".B [data-kt]"); if(kt){ var v=Math.round(3+bGust*14); kt.textContent="WIND 270° · "+(v<10?"0":"")+v+" KT · GUSTING"; }
+};
+R.bRun=function(cx,w,h,t,dt,S){
+  cx.clearRect(0,0,w,h);
+  sock(cx,40,64,w*0.72,ease(S.fill),t);
+  cx.font="600 12px 'Barlow Condensed',sans-serif"; cx.fillStyle="rgba(242,236,225,.55)"; cx.letterSpacing="2px";
+  cx.fillText((Math.round(S.fill*15)<10?"0":"")+Math.round(S.fill*15)+" KT",w-64,h-14);
+};
+
+/* D · anemometer + Beaufort gauge */
+var dAng=0, dOmega=2.4, dAng2=0, dOmega2=0;
+function cups(cx,x,y,arm,cr,ang){
+  cx.save(); cx.translate(x,y); cx.rotate(ang);
+  cx.strokeStyle="#d6aa5c"; cx.lineWidth=Math.max(1.2,arm*0.045); cx.lineCap="round";
+  for(var k=0;k<3;k++){
+    cx.save(); cx.rotate(k*2.0944);
+    cx.beginPath(); cx.moveTo(0,0); cx.lineTo(arm,0); cx.stroke();
+    cx.beginPath(); cx.arc(arm,0,cr,Math.PI*0.5,Math.PI*1.5); cx.closePath();
+    cx.fillStyle="#d6aa5c"; cx.fill();
+    cx.beginPath(); cx.arc(arm+cr*0.3,0,cr*0.62,Math.PI*0.5,Math.PI*1.5); cx.fillStyle="#0d1512"; cx.fill();
+    cx.restore();
+  }
+  cx.beginPath(); cx.arc(0,0,Math.max(2,arm*0.09),0,6.283); cx.fillStyle="#ece4d2"; cx.fill();
+  cx.restore();
+}
+R.dHome=function(cx,w,h,t,dt){
+  cx.clearRect(0,0,w,h);
+  var x=w/2, y=h*0.5, rr=Math.min(w,h)*0.43;
+  var tgt=2.2+1.7*Math.sin(t*0.7)+0.9*Math.sin(t*1.9);
+  dOmega+=(tgt-dOmega)*Math.min(1,dt*1.5); dAng+=dOmega*dt;
+  cx.strokeStyle="rgba(214,170,92,.35)"; cx.lineWidth=1; cx.beginPath(); cx.arc(x,y,rr,0,6.283); cx.stroke();
+  for(var i=0;i<36;i++){
+    var a=i/36*6.283, maj=i%9===0, l=maj?10:i%3===0?6:3;
+    cx.beginPath(); cx.moveTo(x+Math.cos(a)*(rr-l),y+Math.sin(a)*(rr-l)); cx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr);
+    cx.strokeStyle=maj?"#d6aa5c":"rgba(214,170,92,.5)"; cx.lineWidth=maj?1.5:1; cx.stroke();
+  }
+  cx.font="600 11px 'JetBrains Mono',monospace"; cx.fillStyle="#ece4d2"; cx.textAlign="center"; cx.textBaseline="middle";
+  var L=["N","E","S","W"]; for(var k=0;k<4;k++){ var a2=-Math.PI/2+k*Math.PI/2; cx.fillText(L[k],x+Math.cos(a2)*(rr-20),y+Math.sin(a2)*(rr-20)); }
+  cups(cx,x,y,rr*0.5,rr*0.15,dAng);
+};
+R.dRun=function(cx,w,h,t,dt,S){
+  cx.clearRect(0,0,w,h);
+  var x=w/2, y=h*0.72, Rr=Math.min(w*0.4,h*0.5), rad=Math.PI/180, a0=-120, a1=120, i;
+  cx.lineCap="round";
+  cx.beginPath(); cx.arc(x,y,Rr,(a0-90)*rad,(a1-90)*rad); cx.strokeStyle="rgba(214,170,92,.28)"; cx.lineWidth=3; cx.stroke();
+  var f=ease(S.fill), na=a0+(a1-a0)*f;
+  if(S.phase==="hold") na+=Math.sin(t*28)*0.35;
+  if(f>0.005){ cx.beginPath(); cx.arc(x,y,Rr,(a0-90)*rad,(na-90)*rad); cx.strokeStyle="#d6aa5c"; cx.lineWidth=3; cx.stroke(); }
+  cx.font="400 10px 'JetBrains Mono',monospace"; cx.textAlign="center"; cx.textBaseline="middle";
+  for(i=0;i<=12;i++){
+    var a=(a0+(a1-a0)*i/12-90)*rad, maj=i%3===0, l=maj?12:6;
+    cx.beginPath(); cx.moveTo(x+Math.cos(a)*(Rr-8),y+Math.sin(a)*(Rr-8)); cx.lineTo(x+Math.cos(a)*(Rr-8-l),y+Math.sin(a)*(Rr-8-l));
+    cx.strokeStyle=maj?"#ece4d2":"rgba(236,228,210,.5)"; cx.lineWidth=maj?1.5:1; cx.stroke();
+    if(maj){ cx.fillStyle="#ece4d2"; cx.fillText(String(i),x+Math.cos(a)*(Rr-32),y+Math.sin(a)*(Rr-32)); }
+  }
+  var an=(na-90)*rad;
+  cx.beginPath(); cx.moveTo(x-Math.cos(an)*10,y-Math.sin(an)*10); cx.lineTo(x+Math.cos(an)*(Rr-18),y+Math.sin(an)*(Rr-18));
+  cx.strokeStyle="#c2372b"; cx.lineWidth=2.5; cx.stroke();
+  cx.beginPath(); cx.arc(x,y,6,0,6.283); cx.fillStyle="#ece4d2"; cx.fill();
+  cx.beginPath(); cx.arc(x,y,2.5,0,6.283); cx.fillStyle="#0d1512"; cx.fill();
+  cx.font="400 9px 'JetBrains Mono',monospace"; cx.fillStyle="rgba(214,170,92,.7)"; cx.letterSpacing="2px";
+  cx.fillText("BFT",x,y+22);
+  var tgt=S.phase==="hold"?0:(S.phase==="in"?9:6)*(0.25+Math.sin(S.prog*Math.PI));
+  dOmega2+=(tgt-dOmega2)*Math.min(1,dt*3); dAng2+=dOmega2*dt;
+  cups(cx,34,34,15,5,dAng2);
+};
+
+/* ---------- DOM ---------- */
+var runs=[].slice.call(document.querySelectorAll(".run"));
+var words=[].slice.call(document.querySelectorAll(".run .word"));
+var counts=[].slice.call(document.querySelectorAll(".run .count"));
+var gauge=document.querySelector("[data-gauge]"), bar=document.querySelector("[data-bar]");
+var lastPhase=null, lastCount=null, lastFill=-1;
+var WORD={in:"IN",hold:"HOLD",out:"OUT"};
+function updateDom(ph,count,fill){
+  var i;
+  if(ph!==lastPhase){ for(i=0;i<runs.length;i++) runs[i].setAttribute("data-phase",ph); for(i=0;i<words.length;i++) words[i].textContent=WORD[ph]; lastPhase=ph; }
+  if(count!==lastCount){ for(i=0;i<counts.length;i++) counts[i].textContent=String(count); lastCount=count; }
+  if(Math.abs(fill-lastFill)>0.002){
+    if(gauge) gauge.style.fontVariationSettings='"wdth" '+(50+100*ease(fill)).toFixed(1);
+    if(bar) bar.style.transform="scaleX("+fill.toFixed(3)+")";
+    lastFill=fill;
+  }
+}
+
+function frame(now,once){
+  var dt=once?0:Math.min(0.05,(now-last)/1000); last=now; var t=now/1000;
+  if(ctl.mode==="auto"){
+    var el=(now-phaseT0)/1000;
+    while(el>=DUR[phase]){ phaseT0+=DUR[phase]*1000; el-=DUR[phase]; phase=ORDER[(ORDER.indexOf(phase)+1)%3]; }
+    prog=el/DUR[phase];
+  }else{ phase=ctl.mode; prog=PIN_PROG[phase]; }
+  var S={phase:phase,prog:prog,fill:fillOf(phase,prog)};
+  var count=ctl.mode==="auto"?Math.max(1,Math.ceil(DUR[phase]*(1-prog)-0.001)):PIN_COUNT[phase];
+  updateDom(phase,count,S.fill);
+  for(var i=0;i<canvases.length;i++){
+    var cv=canvases[i], fn=R[cv.getAttribute("data-r")]; if(!fn||!cv._w) continue;
+    var cx=cv.getContext("2d"); cx.setTransform(cv._d,0,0,cv._d,0,0);
+    fn(cx,cv._w,cv._h,t,dt,S);
+  }
+  if(ctl.motion&&!once) raf=requestAnimationFrame(frame);
+}
+function start(){ if(raf) cancelAnimationFrame(raf); raf=0; last=performance.now(); if(ctl.motion) raf=requestAnimationFrame(frame); else frame(performance.now(),true); }
+
+/* controls */
+function seg(id,attr,fn){
+  var box=document.getElementById(id), btns=box.querySelectorAll("button");
+  box.addEventListener("click",function(e){
+    var b=e.target.closest("button"); if(!b) return;
+    for(var i=0;i<btns.length;i++) btns[i].setAttribute("aria-pressed",btns[i]===b?"true":"false");
+    fn(b.getAttribute(attr));
+  });
+  return btns;
+}
+seg("phaseSeg","data-mode",function(v){ if(v==="auto"){ phaseT0=performance.now(); } ctl.mode=v; if(!ctl.motion) frame(performance.now(),true); });
+seg("guideSeg","data-g",function(v){ ctl.guides=v==="1"; document.documentElement.classList.toggle("guides",ctl.guides); });
+var mBtns=seg("motionSeg","data-m",function(v){ ctl.motion=v==="1"; document.documentElement.classList.toggle("still",!ctl.motion); if(ctl.motion) phaseT0=performance.now()-prog*DUR[phase]*1000; start(); });
+if(!ctl.motion){ mBtns[0].setAttribute("aria-pressed","false"); mBtns[1].setAttribute("aria-pressed","true"); document.documentElement.classList.add("still"); }
+
+try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ if(!ctl.motion) frame(performance.now(),true); }); }catch(e){}
+start();
+})();
+</script>

@@ -5,7 +5,7 @@ no network requests at all: the fonts ship with the app and a service worker cac
 the shell, so it opens in a basement gym or in airplane mode. Installs to the home
 screen as a standalone app.
 
-**Look:** Aurora is the soft, luminous face: drifting light behind frosted glass, a cyan-to-violet palette that shifts with each phase, and a breathing orb that swells on the inhale, holds full, and settles on the exhale. Type is Unbounded and Manrope (SIL Open Font License, see `fonts/`).
+**Look:** Aurora is the soft, luminous face: two drifting lights behind frosted glass that take on the colour of each phase, and a breathing orb that swells on the inhale, holds full at its ring, and settles on the exhale. Manrope carries everything you read or tap; Unbounded is reserved for the brand, the values, the count and the phase word. Type is Unbounded and Manrope (SIL Open Font License, see `fonts/`).
 
 This is a restyle of [breath-pacer](https://github.com/basedandbrawn/breath-pacer):
 every screen, control, preset, sound and behaviour is the same, and the session

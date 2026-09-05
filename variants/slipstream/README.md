@@ -5,7 +5,7 @@ no network requests at all: the fonts ship with the app and a service worker cac
 the shell, so it opens in a basement gym or in airplane mode. Installs to the home
 screen as a standalone app.
 
-**Look:** Slipstream is the editorial face: gold lines drifting across slate, a palette that warms through the exhale, and a single gold rule that fills and empties with the breath under a phase word set large enough to read from across the rack. Type is Syne and IBM Plex Mono (SIL Open Font License, see `fonts/`).
+**Look:** Slipstream is the wind, literally. Two sets of gold lines drift across slate at rest; during a session they follow the lungs, rushing in on the inhale, going still on the hold, and flowing back out on the exhale. The phase word arrives on the wind and a gold rule fills and empties with the breath. Syne carries the headlines, titles and the phase word; IBM Plex Mono carries labels and readouts. Type is Syne and IBM Plex Mono (SIL Open Font License, see `fonts/`).
 
 This is a restyle of [breath-pacer](https://github.com/basedandbrawn/breath-pacer):
 every screen, control, preset, sound and behaviour is the same, and the session

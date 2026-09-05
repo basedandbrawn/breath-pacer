@@ -52,11 +52,20 @@ SLIP_RINGIN_END = '''      <div id="ringin">
     <div id="below">'''
 
 WIND_SVG = '''<svg id="wind" viewBox="0 0 390 844" preserveAspectRatio="none" aria-hidden="true">
-  <path d="M-40 180 C 80 150, 160 250, 260 200 S 420 140, 460 190" stroke-width="1.2" stroke-opacity=".5" style="animation-delay:-1s"/>
-  <path d="M-40 262 C 100 242, 180 332, 280 282 S 420 232, 460 272" stroke-width="1" stroke-opacity=".3" style="animation-delay:-4s"/>
-  <path d="M-40 372 C 60 352, 200 432, 300 382 S 420 342, 460 372" stroke-width="1.6" stroke-opacity=".62" style="animation-delay:-2.4s"/>
-  <path d="M-40 486 C 120 466, 200 546, 320 496 S 420 456, 460 486" stroke-width=".9" stroke-opacity=".26" style="animation-delay:-6.2s"/>
-  <path d="M-40 604 C 80 584, 220 654, 320 614 S 420 574, 460 604" stroke-width="1.2" stroke-opacity=".4" style="animation-delay:-7.6s"/>
+  <g class="wa">
+    <path d="M-40 128 C 80 98, 160 198, 260 148 S 420 88, 460 138" stroke-width="1.2" stroke-opacity=".55" style="animation-delay:-1s"/>
+    <path d="M-40 196 C 100 176, 180 266, 280 216 S 420 166, 460 206" stroke-width=".9" stroke-opacity=".32" style="animation-delay:-3.2s"/>
+    <path d="M-40 262 C 60 242, 200 322, 300 272 S 420 232, 460 262" stroke-width="1.6" stroke-opacity=".6" style="animation-delay:-2.1s"/>
+    <path d="M-40 640 C 120 620, 200 700, 320 650 S 420 610, 460 640" stroke-width=".9" stroke-opacity=".3" style="animation-delay:-4.4s"/>
+    <path d="M-40 706 C 80 686, 220 756, 320 716 S 420 676, 460 706" stroke-width="1.3" stroke-opacity=".45" style="animation-delay:-.6s"/>
+    <path d="M-40 772 C 100 752, 180 822, 300 782 S 420 742, 460 772" stroke-width="1" stroke-opacity=".3" style="animation-delay:-3.7s"/>
+  </g>
+  <g class="wb">
+    <path d="M-40 160 C 100 190, 180 100, 280 150 S 420 210, 460 160" stroke-width="1.1" stroke-opacity=".5" style="animation-delay:-2s"/>
+    <path d="M-40 230 C 60 250, 200 170, 300 220 S 420 260, 460 230" stroke-width="1.4" stroke-opacity=".55" style="animation-delay:-5.1s"/>
+    <path d="M-40 672 C 120 692, 200 612, 320 662 S 420 702, 460 672" stroke-width="1" stroke-opacity=".35" style="animation-delay:-1.4s"/>
+    <path d="M-40 740 C 80 760, 220 690, 320 730 S 420 770, 460 740" stroke-width="1.3" stroke-opacity=".45" style="animation-delay:-6.3s"/>
+  </g>
 </svg>'''
 
 # ---------- the three small logic touches ----------
@@ -69,14 +78,37 @@ SETRING_NEW = '''  elRingFill.style.strokeDashoffset = elRingGlow.style.strokeDa
   if(elOrb) elOrb.style.transform = "scale(" + (0.42 + 0.36*p).toFixed(4) + ")";
   if(elWbar) elWbar.style.width = (p*100).toFixed(2) + "%";
 '''
-FIT_OLD = '''function fitWord(w){
-  var avail = elRingWrap.clientWidth * 0.5;
-  if(!w || avail < 60) return;
-  var size = Math.min(window.innerWidth*0.25, window.innerHeight*0.165);'''
-FIT_NEW = '''function fitWord(w){
+FIT_OLD_RE = re.compile(r'function fitWord\(w\)\{\n.*?\n\}\n', re.S)
+FIT_NEW = '''function fitTo(txt, size, avail){
+  elWordI.textContent = txt;
+  elWord.style.fontSize = size + "px";
+  var wd = elWordI.offsetWidth, pass = 0;
+  while(wd > avail && wd > 0 && pass++ < 3){
+    size = size * (avail / wd);
+    elWord.style.fontSize = size + "px";
+    wd = elWordI.offsetWidth;
+  }
+  return size;
+}
+/* One size for IN, HOLD and OUT, fitted to the widest of them, so the word never
+   changes size between phases; the line box is fixed to it so nothing below moves.
+   Longer transitional words (GET SET, READY) shrink to fit inside that same box. */
+function fitWord(w){
   var avail = elRingWrap.clientWidth * WORDFIT.avail;
   if(!w || avail < 60) return;
-  var size = Math.min(window.innerWidth*WORDFIT.w, window.innerHeight*WORDFIT.h);'''
+  var base = Math.min(window.innerWidth*WORDFIT.w, window.innerHeight*WORDFIT.h);
+  var ref = fitTo(WORDFIT.ref, base, avail);
+  elWord.style.lineHeight = (ref * WORDFIT.lh).toFixed(2) + "px";
+  fitTo(w, ref, avail);
+}
+'''
+PAINT_OLD = '''function paint(kind){
+  var p = PAL[kind] || PAL.done;'''
+PAINT_NEW = '''var lastPhase = null;
+function paint(kind){
+  if(kind !== lastPhase){ document.body.setAttribute("data-phase", kind); lastPhase = kind; }   /* the faces animate against this */
+  var p = PAL[kind] || PAL.done;'''
+
 SHOW_OLD = '''  for(var i=0;i<ids.length;i++) document.getElementById("s-"+ids[i]).classList.toggle("on", ids[i] === id);
   if(id !== "run"){'''
 SHOW_NEW = '''  for(var i=0;i<ids.length;i++) document.getElementById("s-"+ids[i]).classList.toggle("on", ids[i] === id);
@@ -93,7 +125,7 @@ THEMES = {
  'aurora': dict(
    bg='#0a0918', brand=AURORA_BRAND, modes=AURORA_MODES, wind=False,
    ringwrap=(RINGWRAP_OLD, AURORA_RINGWRAP), ringin=None,
-   fit='var WORDFIT = {avail:0.62, w:0.20, h:0.14};',
+   fit='var WORDFIT = {ref:"HOLD", lh:1.15, avail:0.66, w:0.21, h:0.145};',
    pal=pal({"in":["#0d1130","#ffffff","#7ff0ff"], "hold":["#171043","#ffffff","#9f70ff"],
             "out":["#23101c","#fff0e6","#ffb38a"], "empty":["#07060f","#8d86a8","#3a3352"],
             "getset":["#0a0918","#f3efff","#7ff0ff"], "ready":["#0a0918","#f3efff","#7ff0ff"],
@@ -104,7 +136,7 @@ THEMES = {
  'slipstream': dict(
    bg='#0b1016', brand=SLIP_BRAND, modes=SLIP_MODES, wind=True,
    ringwrap=None, ringin=(RINGIN_END_OLD, SLIP_RINGIN_END),
-   fit='var WORDFIT = {avail:0.70, w:0.24, h:0.17};',
+   fit='var WORDFIT = {ref:"HOLD", lh:1.04, avail:0.98, w:0.30, h:0.19};',
    pal=pal({"in":["#101a24","#eef0e9","#e8c872"], "hold":["#16202a","#eef0e9","#f0dca0"],
             "out":["#1a1410","#f4ece0","#d99b5a"], "empty":["#070b10","#6d7a85","#2c3742"],
             "getset":["#0b1016","#eef0e9","#e8c872"], "ready":["#0b1016","#eef0e9","#e8c872"],
@@ -132,8 +164,9 @@ def build(name, t):
     if t['wind']:     sub('<div id="bg"></div>', '<div id="bg"></div>\n' + WIND_SVG)
     sub(VARS_OLD, VARS_NEW)
     sub(SETRING_OLD, SETRING_NEW)
-    sub(FIT_OLD, t['fit'] + '\n' + FIT_NEW)
+    s, n = FIT_OLD_RE.subn(lambda m: t['fit'] + '\n' + FIT_NEW, s, count=1); assert n == 1
     sub(SHOW_OLD, SHOW_NEW)
+    sub(PAINT_OLD, PAINT_NEW)
     s, n = re.subn(r'var PAL = \{.*?\};', lambda m: t['pal'], s, count=1, flags=re.S); assert n == 1
     for bad in ('#0d0c0d', 'Rajdhani', 'Space Grotesk', 'class="mark"', 'class="bez"'):
         assert bad not in s, 'leftover from the source theme: ' + bad

@@ -76,6 +76,34 @@ start of three breaths in). No breath found within 45 s: drops to taps. A
 tap while sensing: taps, immediately. Everything works with the sensor off;
 only the mirror is lost.
 
+## Tap: two readings of one gesture
+
+Breathe setup has a **Tap** row: Off (default), Sync, Inhale. Both live
+versions are built so they can be compared in the hand rather than argued
+about. Lift keeps Sync and is not affected by the setting.
+
+| | Sync | Inhale |
+|---|---|---|
+| A tap means | *this phase starts now* | *I am breathing in now* |
+| During IN | restarts the inhale | restarts the inhale |
+| During HOLD or OUT | restarts that hold or exhale | jumps to the next inhale; the rest of the cycle is dropped |
+| Press and hold | nothing | the hold lasts as long as the finger is down; letting go starts the exhale. A pattern with no hold (5.5 · 5.5, Follow) gets one if you hold |
+| The pacer's order | kept; you set its timing | yours; the pacer keeps the durations |
+| Last cycle, no inhale left | restarts the phase | ignored |
+
+In both, the tap is a gust: a short inward shove in the field on an inhale
+tap, outward on the release, and the miss between where you tapped and
+where the pacer was becomes turbulence. There is no score and nothing is
+counted against you. A held hold shows HELD on the meta line and the count
+climbs instead of falling. The layout does not move in either: the same
+slot rectangles as before, measured during IN and during a held HOLD.
+
+Mechanics of the held hold: while the finger is down the current hold's
+length is kept 0.6 s ahead of the clock so it cannot end; an inhale within
+0.3 s of ending under a held finger has a hold spliced in after it, before
+the exhale is scheduled (the audio lead is 0.12 s). Releasing sets the hold
+to end at that instant and the exhale is scheduled from there.
+
 ### Why not the microphone
 
 The first version listened for the breath and was cut after a device test:
@@ -122,6 +150,7 @@ if it costs battery.
 
 - `wind.html` home screen, Lift or Breathe, Start.
 - Breathe, pattern **Follow**, Start, allow motion, phone on your belly. Or tap at the start of three breaths in.
+- Breathe, **Tap** row: Sync or Inhale, then tap or press the wind during the session. Off is the default.
 - `wind.html?perf=1` frame-time overlay.
 - `wind.html?eng=memory|still` forces a fallback engine, for testing.
 - `wind.html?auto=lift` starts a session on load (audio will be silent until a tap).

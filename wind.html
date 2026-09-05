@@ -150,6 +150,9 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
           <div class="seg" id="seg-pat"><button data-pat="478">4 · 7 · 8</button><button data-pat="coh">5.5 · 5.5</button><button data-pat="follow" id="b-follow">Follow</button></div>
           <div id="pat-sub" style="text-align:center;font-size:12px;letter-spacing:.1em;color:var(--mute);padding-bottom:6px;line-height:1.5"></div></div>
         <div class="row"><span class="lbl">Cycles</span><div class="step"><button data-s="cycles:-1">−</button><span class="v" id="v-cycles">8</span><button data-s="cycles:1">+</button></div></div>
+        <div class="row stack"><span class="lbl">Tap</span>
+          <div class="seg" id="seg-tap"><button data-tap="off">Off</button><button data-tap="sync">Sync</button><button data-tap="lead">Inhale</button></div>
+          <div id="tap-sub" style="text-align:center;font-size:12px;letter-spacing:.1em;color:var(--mute);padding-bottom:6px;line-height:1.5"></div></div>
       </div>
     </div>
     <div class="card"><div class="row stack"><span class="lbl">Sound</span><div class="seg" id="seg-sound"><button data-sound="tone">Tone</button><button data-sound="breath">Breath</button></div></div></div>
@@ -186,7 +189,7 @@ var DEF = {
       tune:{compound:{"in":4, hold:2, out:6, rest:180},
             isolation:{"in":2, hold:0, out:3, rest:90},
             hold:{"in":4, hold:0, out:8, rest:90}}},
-    breathe: {cycles:8, pat:"478", sound:"tone"}
+    breathe: {cycles:8, pat:"478", sound:"tone", tap:"off"}
   },
   stats: {sec:0, log:[]}
 };
@@ -676,7 +679,8 @@ function mirrorVoiceFrame(){
 var LEAD = 0.12;
 var S = {running:false, mode:"lift", sound:"tone", steps:[], idx:0, stepStart:0, schedIdx:-1,
          reps:10, sets:4, restDur:180, holdMode:0, holdSec:45, startedAt:0, recorded:{}, ended:false,
-         dyn:null, period:0, turb:0, follow:false, taps:[], mirror:false, sleeping:false, senseT:0};
+         dyn:null, period:0, turb:0, follow:false, taps:[], mirror:false, sleeping:false, senseT:0,
+         tapMode:"sync", held:false, heldAt:0, gustT:-9, gustDir:0, gustK:0};
 function ph(kind, dur, stage, setNo, rep){ return {k:kind, dur:dur, stage:stage, set:setNo, rep:rep}; }
 function pushCycle(arr, c, stage, setNo, rep){
   if(c["in"]>0) arr.push(ph("in",c["in"],stage,setNo,rep)); if(c.hold>0) arr.push(ph("hold",c.hold,stage,setNo,rep));
@@ -716,6 +720,51 @@ function tapCalibrate(){
   appendCycle(S.steps);
   reanchor(true);
 }
+/* TAP: two readings of the same gesture, chosen in Breathe setup. Lift keeps SYNC.
+   SYNC  a tap restarts the phase you are in. The pacer keeps its order; you set its timing.
+   LEAD  a tap means "breathing in now". During IN it restarts the inhale; anywhere else it
+         jumps to the next inhale. Keep the finger down and the hold lasts as long as you
+         hold it; let go and the exhale begins. A pattern with no hold gets one if you hold.
+   Either way the tap is a gust in the field and the miss becomes turbulence. No score. */
+function gust(dir, k){ S.gustT=nowSec(); S.gustDir=dir; S.gustK=k||1; }
+function leadIn(now){
+  var st=S.steps[S.idx]; if(!st || st.stage!=="set") return false;
+  if(st.k==="in"){ reanchor(false); return true; }                       /* the inhale starts again, now */
+  var j=S.idx+1; while(j<S.steps.length && S.steps[j].stage==="set" && S.steps[j].k!=="in") j++;
+  if(j>=S.steps.length || S.steps[j].k!=="in") return false;            /* no inhale left to jump to */
+  var early=S.stepStart+st.dur-now, k; for(k=S.idx+1;k<j;k++) early+=S.steps[k].dur;
+  S.turb=Math.min(1, S.turb + Math.max(0,early)/2.5);                    /* the miss becomes turbulence */
+  S.steps.splice(S.idx, j-S.idx); reanchor(true); return true;
+}
+function leadRelease(now){
+  if(!S.held) return; S.held=false;
+  var st=S.steps[S.idx]; if(!st || st.k!=="hold" || !st.held) return;
+  st.dur=Math.max(0.05, now-S.stepStart);                                 /* the hold ends where the finger lifts */
+  gust(-1, 1);
+}
+/* while the finger is down the hold cannot end: its length runs ahead of the clock.
+   An inhale about to end under a held finger gets a hold inserted after it, before the
+   exhale is scheduled (LEAD = 0.12 s, so 0.3 s is early enough). */
+function heldHold(now){
+  if(!S.held || S.tapMode!=="lead") return;
+  var st=S.steps[S.idx]; if(!st || st.stage!=="set") return;
+  if(st.k==="hold"){ st.held=true; st.dur=Math.max(st.dur, now-S.stepStart+0.6); return; }
+  if(st.k==="in" && now>=S.stepStart+st.dur-0.3){
+    var nx=S.steps[S.idx+1];
+    if(!nx || nx.k!=="hold"){ var h=ph("hold",0.6,"set",st.set,st.rep); h.held=true; S.steps.splice(S.idx+1,0,h); S.schedIdx=Math.min(S.schedIdx,S.idx); }
+  }
+}
+function tapDown(){
+  if(!S.running) return false;
+  var st=S.steps[S.idx]; if(!st) return false; var now=nowSec();
+  if(st.k==="sense"){ senseToTap(); tapCalibrate(); return true; }      /* a tap while sensing means: do it by hand */
+  if(st.k==="tap"){ tapCalibrate(); return true; }
+  if(st.stage!=="set") return false;
+  if(S.tapMode==="sync"){ reanchor(false); gust(st.k==="in"?1:st.k==="out"?-1:0, 1); return true; }
+  if(S.tapMode==="lead"){ if(S.held) return false; if(!leadIn(now)) return false; S.held=true; S.heldAt=now; gust(1,1); return true; }
+  return false;
+}
+function tapUp(){ if(S.held) leadRelease(nowSec()); }
 function appendCycle(st){
   var d=S.dyn; if(!d || d.left<=0) return;
   d.rep++; d.left--;
@@ -728,6 +777,7 @@ function appendCycle(st){
 function startSession(mode){
   var c=DB.cfg; S.mode=mode; S.sound=c[mode].sound; S.follow = mode==="breathe" && c.breathe.pat==="follow";
   S.mirror = S.follow && MIR.perm==="granted"; S.sleeping=false; S.senseT=performance.now()/1000;
+  S.tapMode = mode==="breathe" ? (c.breathe.tap||"off") : "sync"; S.held=false; S.gustT=-9;
   if(mode==="lift"){ S.reps=c.lift.reps; S.sets=c.lift.sets; S.restDur=c.lift.tune[c.lift.preset].rest; S.holdMode=c.lift.preset==="hold"?1:0; S.holdSec=c.lift.holdSec; }
   else { S.reps=c.breathe.cycles; S.sets=1; S.holdMode=0; }
   audioStart(mode, S.mirror ? "tone" : S.sound);     /* in the mirror the tone leads and the noise is you */
@@ -740,7 +790,7 @@ function startSession(mode){
   MASK.dirty=true;
 }
 function endSession(natural){
-  if(!S.running) return; S.running=false;
+  if(!S.running) return; S.running=false; S.held=false;
   DB.stats.sec += Math.max(0, nowSec()-S.startedAt); save();
   audioStop(); mirrorStop(); wake(false); S.ended=true;
   if(!natural){ show("home"); } else { paintDone(); }
@@ -848,6 +898,8 @@ function render(now){
   fs.temp = st.stage==="set" && !S.holdMode && S.reps>1 ? (st.rep-1)/(S.reps-1) : st.stage==="set" && S.holdMode ? Math.min(1,setProgress()/S.holdSec) : st.stage==="rest"?0.5:0.15;
   S.turb *= (1 - 0.12*Math.min(1, (now - (S._lt||now)))); S._lt=now;
   fs.turb=Math.min(1,S.turb);
+  /* the tap is a gust: a short shove in the field, inward on an inhale tap, outward on the release */
+  var gAge=now-S.gustT; if(gAge>=0 && gAge<0.7){ var gk=S.gustK*Math.exp(-gAge/0.22); fs.amp=Math.min(1,fs.amp+gk*0.9); fs.flow=Math.max(-1,Math.min(1,fs.flow+S.gustDir*gk)); if(!S.gustDir) fs.turb=Math.min(1,fs.turb+gk*0.5); }
   fs.ground=ground(fs.fill, fs.temp, fs.dim);
   if(st.k==="done"){ if(lastWord!=="DONE") paintDone(); return; }
   elEnd.classList.remove("hid");
@@ -855,6 +907,7 @@ function render(now){
   var word = isRest ? "REST" : WORDS[st.k];
   lastWord=txt(elWordI, word, lastWord);
   if(isRest){ var left=rem,i; for(i=S.idx+1;i<S.steps.length&&S.steps[i].stage==="rest"&&S.steps[i].set===st.set;i++) left+=S.steps[i].dur; lastNum=txt(elNum,fmtClock(left),lastNum); }
+  else if(st.held){ lastNum=txt(elNum, String(Math.max(1,Math.ceil(now-S.stepStart))), lastNum); }   /* a held hold counts up */
   else { var shown=Math.min(Math.ceil(rem-0.001),Math.ceil(st.dur)); lastNum=txt(elNum, st.k==="empty"?"":st.k==="tap"?String(3-S.taps.length):st.k==="sense"?String(Math.max(0,3-MIR.starts.length)):String(shown||1), lastNum); }
   setRail(st.k==="in"||st.k==="hold"||st.k==="out"?st.k:null);
   var meta;
@@ -862,7 +915,7 @@ function render(now){
   else if(st.k==="sense") meta = MIR.moving ? "HOLD STILL" : MIR.armedAt ? "ON YOUR NEXT BREATH IN" : MIR.conf>0.3 ? "BREATHING · "+MIR.rate.toFixed(1)+"/MIN" : "PHONE ON YOUR BELLY";
   else if(isRest) meta="REST · SET "+st.set+"/"+S.sets;
   else if(S.holdMode && isSet){ var pr=setProgress(); meta="SET "+st.set+"/"+S.sets+" · "+Math.ceil(S.holdSec-pr)+"S"; }
-  else if(S.mode==="breathe"){ meta = isSet ? ("CYCLE "+st.rep+"/"+S.reps + (S.follow ? " · "+st.dur.toFixed(1)+"S" : "")) : ""; }
+  else if(S.mode==="breathe"){ meta = isSet ? ("CYCLE "+st.rep+"/"+S.reps + (st.held ? " · HELD" : S.follow ? " · "+st.dur.toFixed(1)+"S" : "")) : ""; }
   else meta="SET "+st.set+"/"+S.sets+(isSet?" · "+st.rep+"/"+S.reps:"");
   lastMeta=txt(elMeta, meta, lastMeta);
   setFoot(isRest?"skip": (isSet && S.mode==="lift") ? "save" : null);
@@ -879,6 +932,7 @@ function tick(){
   var now=nowSec(), t=performance.now()/1000, dt=lastT?Math.min(1/30, t-lastT):1/60; lastT=t;
   if(S.running){
     if(S.dyn && S.steps[S.idx] && S.steps[S.idx].k!=="tap" && S.steps[S.idx].k!=="sense"){ while(S.dyn.left>0 && S.steps.length-S.idx<=3) appendCycle(S.steps); }
+    heldHold(now);
     var guard=0;
     while(S.idx<S.steps.length-1 && now>=S.stepStart+S.steps[S.idx].dur && guard++<400){
       var prev=S.steps[S.idx]; S.stepStart+=prev.dur; S.idx++; var cur=S.steps[S.idx];
@@ -906,6 +960,9 @@ function refresh(){
   document.getElementById("row-reps").classList.toggle("hid",isHold); document.getElementById("row-hsec").classList.toggle("hid",!isHold);
   document.getElementById("preset-sub").textContent = fmtN(T["in"])+(T.hold>0?" · "+fmtN(T.hold):"")+" · "+fmtN(T.out)+"   —   rest "+fmtClock(T.rest);
   document.getElementById("pat-sub").textContent = P.pat==="follow" ? "Lie down, phone on your belly just below the navel, screen up. It finds your breath by itself and leads you down to 5.5 seconds each way. If it can't, it asks for three taps." : P.pat==="coh" ? "Coherent breathing, 5.5 a minute." : "Relaxing breath. Long exhale.";
+  var tapMode=P.tap||"off";
+  document.getElementById("tap-sub").textContent = tapMode==="sync" ? "A tap restarts the phase you are in. The pacer keeps its order; you set its timing." : tapMode==="lead" ? "A tap means: breathing in now. Keep your finger down to hold; let go to breathe out." : "Taps do nothing. The pacer leads; you follow.";
+  var segT=document.querySelectorAll("#seg-tap button"); for(i=0;i<segT.length;i++) segT[i].classList.toggle("sel", segT[i].getAttribute("data-tap")===tapMode);
   document.getElementById("setup-lift").classList.toggle("hid", setupMode!=="lift"); document.getElementById("setup-breathe").classList.toggle("hid", setupMode!=="breathe");
   document.getElementById("setup-title").textContent = setupMode==="lift"?"Lift":"Breathe";
   document.getElementById("setupnote").textContent = ENG.name==="field" ? "The wind reads the sound it makes: the gust you hear is the gust you see." : "";
@@ -921,11 +978,12 @@ function show(id){
   MASK.dirty=true;
 }
 document.addEventListener("click", function(ev){
-  var t=ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-preset],[data-pat],[data-sound]") : null; if(!t||t.disabled) return; var v;
+  var t=ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-preset],[data-pat],[data-sound],[data-tap]") : null; if(!t||t.disabled) return; var v;
   if((v=t.getAttribute("data-go"))){ if(S.running) return; if(v==="lift"||v==="breathe"){ setupMode=v; show("setup"); } else show(v); return; }
   if((v=t.getAttribute("data-s"))){ var p=v.split(":"); bump(p[0],parseFloat(p[1])); return; }
   if((v=t.getAttribute("data-preset"))){ DB.cfg.lift.preset=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-pat"))){ DB.cfg.breathe.pat=v; save(); refresh(); return; }
+  if((v=t.getAttribute("data-tap"))){ DB.cfg.breathe.tap=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-sound"))){ DB.cfg[setupMode].sound=v; save(); refresh(); return; }
 });
 document.getElementById("b-start").addEventListener("click", function(){
@@ -939,17 +997,16 @@ bSkip.addEventListener("click", function(e){ e.stopPropagation(); skipRest(); })
 bSave.addEventListener("click", function(e){ e.stopPropagation(); saveSet(); });
 bBack.addEventListener("click", function(e){ e.stopPropagation(); show("home"); });
 elEnd.addEventListener("click", function(e){ e.stopPropagation(); endSession(false); });
-/* sync tap: re-anchor the phase to this instant; the miss becomes turbulence */
+/* the tap: SYNC or LEAD per the Breathe setting (see tapDown); the release ends a held hold */
 var elFlash=document.getElementById("flash");
 elRun.addEventListener("pointerdown", function(ev){
   if(ev.target.closest && ev.target.closest("button")) return; if(!S.running) return;
   if(A&&A.ctx.state!=="running"){ try{A.ctx.resume();}catch(e){} }
-  var st=S.steps[S.idx]; if(!st) return;
-  if(st.k==="sense"){ senseToTap(); tapCalibrate(); }   /* a tap while sensing means: do it by hand */
-  else if(st.k==="tap"){ tapCalibrate(); }
-  else if(st.stage==="set"){ reanchor(false); }
-  else return; elFlash.classList.remove("go"); void elFlash.offsetWidth; elFlash.classList.add("go");
+  if(!tapDown()) return;
+  elFlash.classList.remove("go"); void elFlash.offsetWidth; elFlash.classList.add("go");
 });
+window.addEventListener("pointerup", tapUp);
+window.addEventListener("pointercancel", tapUp);
 document.addEventListener("gesturestart", function(e){ e.preventDefault(); });
 document.addEventListener("dblclick", function(e){ e.preventDefault(); });
 window.addEventListener("resize", function(){ fitWordOnce(); if(ENG.inst) ENG.inst.resize(); MASK.dirty=true; });
@@ -960,7 +1017,7 @@ window.WIND = {
   state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst?ENG.inst.info():""}; },
   probe:function(){ if(ENG.inst&&ENG.inst.probe) ENG.inst.probe(); },
   rects:function(){ var out={}, els=document.querySelectorAll("#s-run .slot, #word span, #num, .rail .r"); for(var i=0;i<els.length;i++){ var r=els[i].getBoundingClientRect(); out[(els[i].id||els[i].className)+"#"+i]=[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]; } out.wordSize=getComputedStyle(elWord).fontSize; return out; },
-  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, tap:tapCalibrate, period:function(){ return S.period; }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,sleeping:S.sleeping,mirror:S.mirror}; }, sleepAfter:function(s){ SLEEP_AFTER=s; }
+  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, tap:tapCalibrate, down:tapDown, up:tapUp, setTap:function(m){ DB.cfg.breathe.tap=m; }, held:function(){ return S.held; }, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2)+(q.held?"*":""); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, period:function(){ return S.period; }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,sleeping:S.sleeping,mirror:S.mirror}; }, sleepAfter:function(s){ SLEEP_AFTER=s; }
 };
 /* ---- boot ---- */
 fitWordOnce();

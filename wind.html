@@ -209,6 +209,7 @@ try{
   var raw = JSON.parse(localStorage.getItem(KEY) || "null");
   if(raw && raw.cfg){
     if(raw.cfg.engine) DB.cfg.engine = raw.cfg.engine;
+    if(raw.cfg.chose) DB.cfg.chose = true;
     var L = raw.cfg.lift; if(L){ ["preset","reps","sets","holdSec","sound"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
       if(L.tune) for(var pk in DB.cfg.lift.tune){ if(L.tune[pk]) for(var tk in DB.cfg.lift.tune[pk]) if(L.tune[pk][tk]!==undefined) DB.cfg.lift.tune[pk][tk]=L.tune[pk][tk]; } }
     if(raw.cfg.breathe) for(var bk in DB.cfg.breathe) if(raw.cfg.breathe[bk]!==undefined) DB.cfg.breathe[bk]=raw.cfg.breathe[bk];
@@ -743,7 +744,8 @@ var NOTES = {
 };
 function pickEngine(want){
   var reason="";
-  if(reduceMotion && want!=="still"){ reason="reduced motion"; want="still"; }
+  /* the OS reduce-motion hint picks the default only; a tap on an engine wins */
+  if(reduceMotion && want!=="still" && !DB.cfg.chose){ reason="reduced motion"; want="still"; }
   if(lowBattery && want==="field"){ reason="low battery"; want="memory"; }
   if(ENG.inst){ try{ ENG.inst.destroy(); }catch(e){} ENG.inst=null; }
   var inst=null;
@@ -758,7 +760,7 @@ function pickEngine(want){
 function refreshEngineNote(){
   var n=document.getElementById("engnote"), want=DB.cfg.engine;
   var txt = NOTES[ENG.name] || "";
-  if(ENG.name!==want) txt = "Fell back to "+ENG.name.toUpperCase()+" ("+ENG.reason+"). "+txt;
+  if(ENG.name!==want) txt = (ENG.reason==="reduced motion" ? "Your phone has Reduce Motion on, so STILL was picked. Tap an engine to override. " : "Fell back to "+ENG.name.toUpperCase()+" ("+ENG.reason+"). ")+txt;
   n.textContent = txt;
   var segs=document.querySelectorAll("#seg-eng button"); for(var i=0;i<segs.length;i++) segs[i].classList.toggle("sel", segs[i].getAttribute("data-eng")===want);
 }
@@ -895,7 +897,7 @@ document.addEventListener("click", function(ev){
   if((v=t.getAttribute("data-preset"))){ DB.cfg.lift.preset=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-pat"))){ DB.cfg.breathe.pat=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-sound"))){ DB.cfg[setupMode].sound=v; save(); refresh(); return; }
-  if((v=t.getAttribute("data-eng"))){ DB.cfg.engine=v; save(); pickEngine(v); return; }
+  if((v=t.getAttribute("data-eng"))){ DB.cfg.engine=v; DB.cfg.chose=true; save(); pickEngine(v); return; }
 });
 document.getElementById("b-start").addEventListener("click", function(){ startSession(setupMode); });
 bSkip.addEventListener("click", function(e){ e.stopPropagation(); skipRest(); });

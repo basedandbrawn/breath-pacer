@@ -93,10 +93,6 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .meta{height:44px;position:relative;display:flex;align-items:center;justify-content:center;gap:14px;
   font-size:min(3.6vw,14px);letter-spacing:.2em;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;
   color:var(--mute);padding:0 72px;font-variant-numeric:tabular-nums}
-.meta .chip{display:inline-block;min-width:9ch;text-align:center;letter-spacing:.14em;font-size:min(3vw,11px);
-  padding:3px 0;border-radius:6px;border:1px solid var(--line);visibility:hidden}
-.meta .chip.on{visibility:visible}
-.meta .chip.warn{border-color:rgba(255,190,120,.6);color:#ffd9b0}
 #endbtn{position:absolute;right:calc(env(safe-area-inset-right) + 12px);top:0;height:44px;padding:0 10px;
   font-size:12px;letter-spacing:.24em;color:var(--mute);font-weight:700;text-transform:uppercase}
 .word{height:calc(var(--wordSize) * 1.25);display:flex;align-items:center;justify-content:center;
@@ -134,7 +130,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   <div class="engrow">
     <span class="lbl">Wind engine</span>
     <div class="seg" id="seg-eng">
-      <button data-eng="field">Field</button><button data-eng="ear">Ear</button>
+      <button data-eng="field">Field</button>
       <button data-eng="memory">Memory</button><button data-eng="still">Still</button>
     </div>
     <div class="note" id="engnote"></div>
@@ -172,7 +168,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 
 <!-- RUN -->
 <section id="s-run" class="screen">
-  <div class="meta slot"><span id="rmeta"></span><span class="chip" id="chip"></span><button id="endbtn">End</button></div>
+  <div class="meta slot"><span id="rmeta"></span><button id="endbtn">End</button></div>
   <div class="spacer"></div>
   <div class="word slot" id="word"><span></span></div>
   <div class="count slot" id="num"></div>
@@ -210,6 +206,7 @@ try{
   if(raw && raw.cfg){
     if(raw.cfg.engine) DB.cfg.engine = raw.cfg.engine;
     if(raw.cfg.chose) DB.cfg.chose = true;
+    if(!{field:1,memory:1,still:1}[DB.cfg.engine]) DB.cfg.engine = "field";
     var L = raw.cfg.lift; if(L){ ["preset","reps","sets","holdSec","sound"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
       if(L.tune) for(var pk in DB.cfg.lift.tune){ if(L.tune[pk]) for(var tk in DB.cfg.lift.tune[pk]) if(L.tune[pk][tk]!==undefined) DB.cfg.lift.tune[pk][tk]=L.tune[pk][tk]; } }
     if(raw.cfg.breathe) for(var bk in DB.cfg.breathe) if(raw.cfg.breathe[bk]!==undefined) DB.cfg.breathe[bk]=raw.cfg.breathe[bk];
@@ -317,9 +314,9 @@ function schemePhase(kind, at, dur){
     else { env(s.g.gain,s.g.gain.value,0.0001,at,0.25,easeOut); }
   }
 }
-function audioStart(mode, sound, withMic){
+function audioStart(mode, sound){
   initAudio(); if(!A) return;
-  try{ if(navigator.audioSession) navigator.audioSession.type = withMic ? "play-and-record" : "playback"; }catch(e){}
+  try{ if(navigator.audioSession) navigator.audioSession.type = "playback"; }catch(e){}
   if(A.ctx.state!=="running"){ try{ A.ctx.resume(); }catch(e){} }
   try{ var _p=audioEl.play(); if(_p&&_p.catch) _p.catch(function(){}); }catch(e){}
   teardownScheme(); scheme = makeScheme(sound, mode==="breathe");
@@ -392,7 +389,7 @@ function maskAt(x,y){ if(!MASK.data) return 0; var i=((y*MASK.sc)|0)*MASK.w+((x*
 /* ============================ ENGINE: 2D FIELD ============================
    Particles with momentum: force from the breath, curl noise for texture,
    drag for decay. Hold = no force, velocity decays on its own.
-   Used by EAR (turbulence from drift), MEMORY (debris, deterministic seed)
+   Used by MEMORY (debris, deterministic seed)
    and STILL (zero particles: the ground colour alone paces). */
 function Field2D(cv, opt){
   var ctx = cv.getContext("2d", {alpha:false});
@@ -592,67 +589,11 @@ function FieldGL(cv){
   return {kind:"field", resize:resize, frame:frame, halve:halve, addDebris:function(){}, isLost:function(){ return lost; }, probe:function(){ probeReq=true; }, destroy:function(){ try{ gl.getExtension("WEBGL_lose_context").loseContext(); }catch(e){} }, info:function(){ return "GPU fluid · "+simW+"×"+simH+" sim · "+dyeW+"×"+dyeH+" dye"; }};
 }
 
-/* ============================ EAR ============================
-   The app listens. Breath noise is broadband and low; we track its
-   envelope, find the user's rhythm by autocorrelation, and measure how
-   far they drift from the pacer. Refusal and silence are states. */
-var EAR = {status:"off", env:0, rate:0, conf:0, drift:0, hist:[], lastT:0, floor:1e9, peak:-1e9, quietSince:0, stream:null, an:null, buf:null, src:null};
-function earStart(){
-  EAR.status="asking"; EAR.hist=[]; EAR.floor=1e9; EAR.peak=-1e9; EAR.rate=0; EAR.conf=0; EAR.drift=0;
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !A){ EAR.status="denied"; return; }
-  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:false}, video:false}).then(function(stream){
-    EAR.stream=stream;
-    var src=A.ctx.createMediaStreamSource(stream), an=A.ctx.createAnalyser(); an.fftSize=2048; an.smoothingTimeConstant=0.2;
-    src.connect(an); EAR.src=src; EAR.an=an; EAR.buf=new Float32Array(an.frequencyBinCount); EAR.status="on"; EAR.quietSince=nowSec();
-  }, function(){ EAR.status="denied"; });
-}
-function earStop(){ try{ if(EAR.stream) EAR.stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} try{ if(EAR.src) EAR.src.disconnect(); }catch(e){} EAR.stream=null; EAR.src=null; EAR.an=null; if(EAR.status!=="denied") EAR.status="off"; }
-function earSample(now){
-  if(EAR.status!=="on" && EAR.status!=="quiet") return;
-  if(now - EAR.lastT < 0.05) return;                      /* 20 Hz is plenty for a 0.1 Hz signal */
-  EAR.lastT = now;
-  var an=EAR.an, b=EAR.buf; an.getFloatFrequencyData(b);
-  var sr=A.ctx.sampleRate, binHz=sr/an.fftSize, i0=Math.floor(120/binHz), i1=Math.floor(1400/binHz), s=0, n=0;
-  for(var i=i0;i<i1;i++){ if(isFinite(b[i])){ s+=b[i]; n++; } }
-  var e = n? s/n : -100;                                   /* mean dB in the breath band */
-  if(e < EAR.floor) EAR.floor += (e-EAR.floor)*0.5; else EAR.floor += (e-EAR.floor)*0.0015;
-  if(e > EAR.peak) EAR.peak += (e-EAR.peak)*0.5; else EAR.peak += (e-EAR.peak)*0.004;
-  var span = EAR.peak - EAR.floor;
-  var env = span > 3 ? Math.max(0, Math.min(1, (e-EAR.floor)/span)) : 0;
-  EAR.env += (env-EAR.env)*0.35;
-  EAR.hist.push({t:now, e:EAR.env}); if(EAR.hist.length > 20*45) EAR.hist.shift();
-  if(span < 6){ if(now - EAR.quietSince > 8) EAR.status="quiet"; } else { EAR.quietSince = now; EAR.status="on"; }
-  if(EAR.hist.length % 20 === 0) earAnalyse(now);
-}
-function earAnalyse(now){
-  var h=EAR.hist; if(h.length < 20*18) return;
-  var N=h.length, mean=0, i, l; for(i=0;i<N;i++) mean+=h[i].e; mean/=N;
-  var x=new Float32Array(N); for(i=0;i<N;i++) x[i]=h[i].e-mean;
-  var v=0; for(i=0;i<N;i++) v+=x[i]*x[i]; if(v<1e-6){ EAR.conf=0; return; }
-  /* rhythm: autocorrelation, lags 2.5 s .. 15 s at 20 Hz */
-  var best=0, bestL=0;
-  for(l=50; l<=300 && l<N/2; l++){ var c=0; for(i=l;i<N;i++) c+=x[i]*x[i-l]; c/= v; if(c>best){ best=c; bestL=l; } }
-  if(bestL){ var period=bestL/20; EAR.rate = 60/period; EAR.conf = best; }
-  /* drift: where do the user's bursts sit against the pacer's phase starts? */
-  if(S.running && phaseLog.length){
-    var bestD=0, bestC=-1e9, lag;
-    for(lag=-60; lag<=60; lag+=2){
-      var cc=0; for(i=0;i<N;i++){ cc += x[i]*expected(h[i].t + lag/20); } if(cc>bestC){ bestC=cc; bestD=lag/20; }
-    }
-    EAR.drift = -bestD;
-  }
-}
-function expected(t){ /* 1 during the first 40% of an IN or OUT phase, else 0, from the phase log */
-  for(var i=phaseLog.length-1;i>=0;i--){ var p=phaseLog[i]; if(t>=p.t){ if((p.k==="in"||p.k==="out") && t < p.t + p.dur*0.4) return 1; return 0; } }
-  return 0;
-}
-
 /* ============================ SESSION ============================ */
 var LEAD = 0.12;
 var S = {running:false, mode:"lift", sound:"tone", steps:[], idx:0, stepStart:0, schedIdx:-1,
          reps:10, sets:4, restDur:180, holdMode:0, holdSec:45, startedAt:0, recorded:{}, ended:false,
-         dyn:null, period:0, turb:0, follow:false};
-var phaseLog = [];
+         dyn:null, period:0, turb:0, follow:false, taps:[]};
 function ph(kind, dur, stage, setNo, rep){ return {k:kind, dur:dur, stage:stage, set:setNo, rep:rep}; }
 function pushCycle(arr, c, stage, setNo, rep){
   if(c["in"]>0) arr.push(ph("in",c["in"],stage,setNo,rep)); if(c.hold>0) arr.push(ph("hold",c.hold,stage,setNo,rep));
@@ -672,14 +613,27 @@ function buildSteps(){
     }
   }else{
     var P=c.breathe;
-    if(S.follow){ S.period = (EAR.conf>0.25 && EAR.rate>=4 && EAR.rate<=24) ? 60/EAR.rate : 6.0; S.dyn={left:P.cycles, rep:0}; appendCycle(st); }
+    if(S.follow){ S.dyn={left:P.cycles, rep:0}; S.taps=[]; st.push(ph("tap",1e9,"tap",1,0)); }   /* three taps set the period, then the first cycle starts */
     else { var cc = P.pat==="coh"?{"in":5.5,hold:0,out:5.5,empty:0}:{"in":4,hold:7,out:8,empty:0}; for(r=1;r<=P.cycles;r++) pushCycle(st,cc,"set",1,r); }
   }
   st.push(ph("done",1e9,"done",0,0));
   return st;
 }
-/* FOLLOW: each cycle is built when the previous one starts, at a period that
-   slides from the user's own rhythm toward 10.9 s (5.5 breaths/min). */
+/* FOLLOW: the user taps at the start of three breaths in. The median gap is
+   their own period. Each cycle is then built when the previous one starts,
+   at a period that slides from theirs toward 10.9 s (5.5 breaths/min). */
+function tapCalibrate(){
+  var now=nowSec();
+  if(S.taps.length && now - S.taps[S.taps.length-1] > 20) S.taps=[];   /* a stale tap is a false start */
+  S.taps.push(now);
+  if(S.taps.length < 3) return;
+  var iv=[], i; for(i=1;i<S.taps.length;i++) iv.push(S.taps[i]-S.taps[i-1]);
+  iv.sort(function(a,b){ return a-b; });
+  S.period = Math.max(3, Math.min(15, iv[Math.floor(iv.length/2)]));
+  S.steps.splice(S.idx, 1);          /* the tap step gives way to the first cycle, starting on this tap */
+  appendCycle(S.steps);
+  reanchor(true);
+}
 function appendCycle(st){
   var d=S.dyn; if(!d || d.left<=0) return;
   d.rep++; d.left--;
@@ -690,14 +644,13 @@ function appendCycle(st){
   S.period = p + step;
 }
 function startSession(mode){
-  var c=DB.cfg; S.mode=mode; S.sound=c[mode].sound; S.follow = mode==="breathe" && c.breathe.pat==="follow" && ENG.name==="ear";
+  var c=DB.cfg; S.mode=mode; S.sound=c[mode].sound; S.follow = mode==="breathe" && c.breathe.pat==="follow";
   if(mode==="lift"){ S.reps=c.lift.reps; S.sets=c.lift.sets; S.restDur=c.lift.tune[c.lift.preset].rest; S.holdMode=c.lift.preset==="hold"?1:0; S.holdSec=c.lift.holdSec; }
   else { S.reps=c.breathe.cycles; S.sets=1; S.holdMode=0; }
-  audioStart(mode, S.sound, ENG.name==="ear");
-  if(ENG.name==="ear") earStart();
+  audioStart(mode, S.sound);
   S.dyn=null; S.steps=buildSteps(); S.idx=0; S.schedIdx=-1; S.ended=false; S.recorded={}; S.turb=0;
   S.stepStart=nowSec()+0.1; S.startedAt=nowSec(); S.running=true;
-  phaseLog=[]; lastKind=null;
+  lastKind=null;
   show("run"); wake(true);
   lastWord=lastNum=lastMeta=null;
   MASK.dirty=true;
@@ -705,7 +658,7 @@ function startSession(mode){
 function endSession(natural){
   if(!S.running) return; S.running=false;
   DB.stats.sec += Math.max(0, nowSec()-S.startedAt); save();
-  audioStop(); earStop(); wake(false); S.ended=true;
+  audioStop(); wake(false); S.ended=true;
   if(!natural){ show("home"); } else { paintDone(); }
 }
 function recordSet(setNo, done){
@@ -738,19 +691,18 @@ var reduceMotion=false; try{ reduceMotion = window.matchMedia("(prefers-reduced-
 var lowBattery=false; try{ if(navigator.getBattery) navigator.getBattery().then(function(b){ function u(){ lowBattery = b.level<0.15 && !b.charging; } u(); b.addEventListener("levelchange",u); b.addEventListener("chargingchange",u); }); }catch(e){}
 var NOTES = {
   field:"GPU fluid. Real momentum: air keeps moving after the breath stops. The word is an obstacle. Loudest of the three on the battery.",
-  ear:"Listens through the microphone. Drift from the pacer shows as turbulence. Breathe · Follow starts at your rhythm and leads you to 5.5/min.",
-  memory:"No GPU, no microphone. The wind is your session data: reps become debris, pace error becomes turbulence, sets settle into a pile.",
+  memory:"No GPU needed. The wind is your session data: reps become debris, pace error becomes turbulence, sets settle into a pile.",
   still:"No motion. The whole screen still paces you: it brightens as you fill and dims as you empty. The floor of the ladder."
 };
 function pickEngine(want){
   var reason="";
+  if(want!=="field"&&want!=="memory"&&want!=="still") want="field";
   /* the OS reduce-motion hint picks the default only; a tap on an engine wins */
   if(reduceMotion && want!=="still" && !DB.cfg.chose){ reason="reduced motion"; want="still"; }
   if(lowBattery && want==="field"){ reason="low battery"; want="memory"; }
   if(ENG.inst){ try{ ENG.inst.destroy(); }catch(e){} ENG.inst=null; }
   var inst=null;
   if(want==="field"){ try{ inst=FieldGL(elGL); }catch(e){ inst=null; } if(!inst){ reason="no WebGL2 float render"; want="memory"; } }
-  if(want==="ear"){ inst=Field2D(elC2,{name:"ear",density:1.1,debris:false,seed:7}); }
   if(want==="memory"){ var seed=hashStr(new Date().toDateString()+JSON.stringify(DB.cfg)); inst=Field2D(elC2,{name:"memory",density:1.0,debris:true,seed:seed,rnd:mulberry(seed)}); }
   if(want==="still"){ inst=Field2D(elC2,{name:"still",density:0,debris:false}); }
   ENG.name=want; ENG.inst=inst; ENG.reason=reason;
@@ -774,15 +726,15 @@ function budget(cpuMs, now){
 
 /* ============================ RENDER ============================ */
 var elWord=document.getElementById("word"), elWordI=elWord.firstElementChild, elNum=document.getElementById("num"),
-    elMeta=document.getElementById("rmeta"), elChip=document.getElementById("chip"), elRun=document.getElementById("s-run"),
+    elMeta=document.getElementById("rmeta"), elRun=document.getElementById("s-run"),
     elEnd=document.getElementById("endbtn"), bSkip=document.getElementById("b-skip"), bSave=document.getElementById("b-save"), bBack=document.getElementById("b-back"),
     elMark=document.getElementById("mark"), rails=document.querySelectorAll(".rail .r"), elPerf=document.getElementById("perf");
-var lastWord=null, lastNum=null, lastMeta=null, lastKind=null, lastChip=null, lastRail=null, lastFoot=null;
-var WORDS={"in":"IN",hold:"HOLD",out:"OUT",empty:"",getset:"READY",done:"DONE",rest:"REST"};
+var lastWord=null, lastNum=null, lastMeta=null, lastKind=null, lastRail=null, lastFoot=null;
+var WORDS={"in":"IN",hold:"HOLD",out:"OUT",empty:"",getset:"READY",done:"DONE",rest:"REST",tap:"TAP"};
 
 /* fitted ONCE for the widest word that can ever appear; never per word */
 function fitWordOnce(){
-  var words=["READY","HOLD","REST","DONE"], size=Math.min(window.innerWidth*0.30, window.innerHeight*0.19), avail=window.innerWidth*0.84;
+  var words=["READY","HOLD","REST","DONE","TAP"], size=Math.min(window.innerWidth*0.30, window.innerHeight*0.19), avail=window.innerWidth*0.84;
   var keep=elWordI.textContent;
   document.documentElement.style.setProperty("--wordSize", size+"px");
   var maxW=0; for(var i=0;i<words.length;i++){ elWordI.textContent=words[i]; maxW=Math.max(maxW, elWordI.offsetWidth); }
@@ -802,18 +754,17 @@ function render(now){
   fs.idle=false; fs.dim = S.mode==="breathe"?0.72:1;
   if(!st || !S.running){ return; }
   var rem=Math.max(0,S.stepStart+st.dur-now), frac=st.dur>0?Math.max(0,Math.min(1,(now-S.stepStart)/st.dur)):0;
-  if(st.k!==lastKind){ phaseLog.push({t:S.stepStart,k:st.k,dur:st.dur}); if(phaseLog.length>200) phaseLog.shift(); lastKind=st.k; MASK.dirty=true;
+  if(st.k!==lastKind){ lastKind=st.k; MASK.dirty=true;
     if(st.k==="in" && st.stage==="set" && ENG.inst && ENG.inst.addDebris) ENG.inst.addDebris(fs.temp); }
   /* the breath as numbers the field can use */
   fs.stage=st.stage; fs.phase=st.k; fs.prog=frac; fs.rep=st.rep; fs.reps=S.reps; fs.set=st.set; fs.sets=S.sets;
-  if(st.k==="in") fs.fill=easeIO(frac); else if(st.k==="hold") fs.fill=1; else if(st.k==="out") fs.fill=1-easeIO(frac); else if(st.k==="getset") fs.fill=0.15*(1-frac); else fs.fill=0;
+  if(st.k==="in") fs.fill=easeIO(frac); else if(st.k==="hold") fs.fill=1; else if(st.k==="out") fs.fill=1-easeIO(frac); else if(st.k==="getset") fs.fill=0.15*(1-frac); else if(st.k==="tap") fs.fill=0.12; else fs.fill=0;
   var bell=Math.pow(Math.sin(frac*Math.PI),0.7);
   fs.flow = st.k==="in"?bell : st.k==="out"?-bell : 0;
   if(st.stage==="rest") fs.flow*=0.45;
   var a=audioAmp(); if(a<0) a=bell*0.6; ampSm += (a-ampSm)*0.25; fs.amp=ampSm;
   fs.temp = st.stage==="set" && !S.holdMode && S.reps>1 ? (st.rep-1)/(S.reps-1) : st.stage==="set" && S.holdMode ? Math.min(1,setProgress()/S.holdSec) : st.stage==="rest"?0.5:0.15;
   S.turb *= (1 - 0.12*Math.min(1, (now - (S._lt||now)))); S._lt=now;
-  if(ENG.name==="ear"){ earSample(now); var dt = (EAR.status==="on") ? Math.min(1, Math.abs(EAR.drift)/2.2) : 0; S.turb = Math.max(S.turb, dt); }
   fs.turb=Math.min(1,S.turb);
   fs.ground=ground(fs.fill, fs.temp, fs.dim);
   if(st.k==="done"){ if(lastWord!=="DONE") paintDone(); return; }
@@ -822,17 +773,15 @@ function render(now){
   var word = isRest ? "REST" : WORDS[st.k];
   lastWord=txt(elWordI, word, lastWord);
   if(isRest){ var left=rem,i; for(i=S.idx+1;i<S.steps.length&&S.steps[i].stage==="rest"&&S.steps[i].set===st.set;i++) left+=S.steps[i].dur; lastNum=txt(elNum,fmtClock(left),lastNum); }
-  else { var shown=Math.min(Math.ceil(rem-0.001),Math.ceil(st.dur)); lastNum=txt(elNum, st.k==="empty"?"":String(shown||1), lastNum); }
+  else { var shown=Math.min(Math.ceil(rem-0.001),Math.ceil(st.dur)); lastNum=txt(elNum, st.k==="empty"?"":st.k==="tap"?String(3-S.taps.length):String(shown||1), lastNum); }
   setRail(st.k==="in"||st.k==="hold"||st.k==="out"?st.k:null);
   var meta;
-  if(isRest) meta="REST · SET "+st.set+"/"+S.sets;
+  if(st.k==="tap") meta="TAP EACH BREATH IN";
+  else if(isRest) meta="REST · SET "+st.set+"/"+S.sets;
   else if(S.holdMode && isSet){ var pr=setProgress(); meta="SET "+st.set+"/"+S.sets+" · "+Math.ceil(S.holdSec-pr)+"S"; }
   else if(S.mode==="breathe"){ meta = isSet ? ("CYCLE "+st.rep+"/"+S.reps + (S.follow ? " · "+(60/(st.dur/(st.k==="in"?0.45:0.55))).toFixed(1)+"/MIN" : "")) : ""; }
   else meta="SET "+st.set+"/"+S.sets+(isSet?" · "+st.rep+"/"+S.reps:"");
   lastMeta=txt(elMeta, meta, lastMeta);
-  var chip="", warn=false;
-  if(ENG.name==="ear"){ chip = EAR.status==="on" ? (Math.abs(EAR.drift)>0.35 ? ((EAR.drift>0?"LATE ":"EARLY ")+Math.abs(EAR.drift).toFixed(1)+"S") : "ON PACE") : EAR.status==="quiet" ? "QUIET" : EAR.status==="denied" ? "MIC OFF" : EAR.status==="asking" ? "MIC?" : ""; warn = EAR.status==="denied"||EAR.status==="quiet"; }
-  if(chip!==lastChip){ elChip.textContent=chip; elChip.classList.toggle("on",!!chip); elChip.classList.toggle("warn",warn); lastChip=chip; }
   setFoot(isRest?"skip": (isSet && S.mode==="lift") ? "save" : null);
 }
 function idleRender(t){
@@ -846,7 +795,7 @@ function tick(){
   raf=requestAnimationFrame(tick);
   var now=nowSec(), t=performance.now()/1000, dt=lastT?Math.min(1/30, t-lastT):1/60; lastT=t;
   if(S.running){
-    if(S.dyn){ while(S.dyn.left>0 && S.steps.length-S.idx<=3) appendCycle(S.steps); }
+    if(S.dyn && S.steps[S.idx] && S.steps[S.idx].k!=="tap"){ while(S.dyn.left>0 && S.steps.length-S.idx<=3) appendCycle(S.steps); }
     var guard=0;
     while(S.idx<S.steps.length-1 && now>=S.stepStart+S.steps[S.idx].dur && guard++<400){
       var prev=S.steps[S.idx]; S.stepStart+=prev.dur; S.idx++; var cur=S.steps[S.idx];
@@ -862,7 +811,7 @@ function tick(){
   var cpu=performance.now()-c0; budget(cpu, t);
   frameNo++;
   if(Q.probe && ENG.inst && ENG.inst.probe && probeStage<PROBE_AT.length && t>=PROBE_AT[probeStage]){ probeStage++; console.log("PROBE t="+t.toFixed(1)+" frame "+frameNo+" phase="+frameState.phase+" fill="+frameState.fill.toFixed(2)+" flow="+frameState.flow.toFixed(2)+" amp="+frameState.amp.toFixed(2)+" vp="+window.innerWidth+"x"+window.innerHeight+" eng="+ENG.name+" reason="+ENG.reason+" dt="+dt.toFixed(4)); ENG.inst.probe(); }
-  if(perfOn){ fpsEMA += (1/Math.max(dt,1e-3)-fpsEMA)*0.05; elPerf.style.display="block"; elPerf.textContent = ENG.name+"  "+(ENG.inst?ENG.inst.info():"")+"\n"+cpuEMA.toFixed(1)+" ms engine · "+fpsEMA.toFixed(0)+" fps"+(ENG.name==="ear"?"\near "+EAR.status+" · rate "+EAR.rate.toFixed(1)+"/min conf "+EAR.conf.toFixed(2)+" · drift "+EAR.drift.toFixed(2)+"s":""); }
+  if(perfOn){ fpsEMA += (1/Math.max(dt,1e-3)-fpsEMA)*0.05; elPerf.style.display="block"; elPerf.textContent = ENG.name+"  "+(ENG.inst?ENG.inst.info():"")+"\n"+cpuEMA.toFixed(1)+" ms engine · "+fpsEMA.toFixed(0)+" fps"; }
 }
 
 /* ============================ UI ============================ */
@@ -873,12 +822,10 @@ function refresh(){
   document.getElementById("v-reps").textContent=L.reps; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-holdSec").textContent=L.holdSec; document.getElementById("v-cycles").textContent=P.cycles;
   document.getElementById("row-reps").classList.toggle("hid",isHold); document.getElementById("row-hsec").classList.toggle("hid",!isHold);
   document.getElementById("preset-sub").textContent = fmtN(T["in"])+(T.hold>0?" · "+fmtN(T.hold):"")+" · "+fmtN(T.out)+"   —   rest "+fmtClock(T.rest);
-  var canFollow = ENG.name==="ear"; var bf=document.getElementById("b-follow"); bf.disabled=!canFollow;
-  if(!canFollow && P.pat==="follow"){ P.pat="478"; save(); }
-  document.getElementById("pat-sub").textContent = P.pat==="follow" ? "Starts at your own rhythm, leads you down to 5.5 breaths a minute." : P.pat==="coh" ? "Coherent breathing, 5.5 a minute." : "Relaxing breath. Long exhale.";
+  document.getElementById("pat-sub").textContent = P.pat==="follow" ? "Tap at the start of three breaths in. It starts at your pace and leads you down to 5.5 a minute." : P.pat==="coh" ? "Coherent breathing, 5.5 a minute." : "Relaxing breath. Long exhale.";
   document.getElementById("setup-lift").classList.toggle("hid", setupMode!=="lift"); document.getElementById("setup-breathe").classList.toggle("hid", setupMode!=="breathe");
   document.getElementById("setup-title").textContent = setupMode==="lift"?"Lift":"Breathe";
-  document.getElementById("setupnote").textContent = ENG.name==="ear" ? "The microphone is asked for when you press Start. Refusing it keeps the pacer working; only the drift readout is lost." : (ENG.name==="field" ? "The wind reads the sound it makes: the gust you hear is the gust you see." : "");
+  document.getElementById("setupnote").textContent = ENG.name==="field" ? "The wind reads the sound it makes: the gust you hear is the gust you see." : "";
   var segP=document.querySelectorAll("#seg-preset button"); for(i=0;i<segP.length;i++) segP[i].classList.toggle("sel", segP[i].getAttribute("data-preset")===L.preset);
   var segPat=document.querySelectorAll("#seg-pat button"); for(i=0;i<segPat.length;i++) segPat[i].classList.toggle("sel", segPat[i].getAttribute("data-pat")===P.pat);
   var snd=document.querySelectorAll("[data-sound]"); for(i=0;i<snd.length;i++) snd[i].classList.toggle("sel", DB.cfg[setupMode].sound===snd[i].getAttribute("data-sound"));
@@ -909,8 +856,10 @@ var elFlash=document.getElementById("flash");
 elRun.addEventListener("pointerdown", function(ev){
   if(ev.target.closest && ev.target.closest("button")) return; if(!S.running) return;
   if(A&&A.ctx.state!=="running"){ try{A.ctx.resume();}catch(e){} }
-  var st=S.steps[S.idx]; if(!st||st.stage!=="set") return;
-  reanchor(false); elFlash.classList.remove("go"); void elFlash.offsetWidth; elFlash.classList.add("go");
+  var st=S.steps[S.idx]; if(!st) return;
+  if(st.k==="tap"){ tapCalibrate(); }
+  else if(st.stage==="set"){ reanchor(false); }
+  else return; elFlash.classList.remove("go"); void elFlash.offsetWidth; elFlash.classList.add("go");
 });
 document.addEventListener("gesturestart", function(e){ e.preventDefault(); });
 document.addEventListener("dblclick", function(e){ e.preventDefault(); });
@@ -919,10 +868,10 @@ try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function
 
 /* debug handle for the probe harness; harmless in production */
 window.WIND = {
-  state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, ear:{status:EAR.status,rate:EAR.rate,conf:EAR.conf,drift:EAR.drift}, info:ENG.inst?ENG.inst.info():""}; },
+  state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst?ENG.inst.info():""}; },
   probe:function(){ if(ENG.inst&&ENG.inst.probe) ENG.inst.probe(); },
   rects:function(){ var out={}, els=document.querySelectorAll("#s-run .slot, #word span, #num, .rail .r"); for(var i=0;i<els.length;i++){ var r=els[i].getBoundingClientRect(); out[(els[i].id||els[i].className)+"#"+i]=[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]; } out.wordSize=getComputedStyle(elWord).fontSize; return out; },
-  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }
+  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, tap:tapCalibrate, period:function(){ return S.period; }
 };
 /* ---- boot ---- */
 fitWordOnce();

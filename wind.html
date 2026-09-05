@@ -619,7 +619,7 @@ function buildSteps(){
   st.push(ph("done",1e9,"done",0,0));
   return st;
 }
-/* FOLLOW: the user taps at the start of three breaths in. The median gap is
+/* FOLLOW: the user taps at the start of three breaths in. The mean gap is
    their own period. Each cycle is then built when the previous one starts,
    at a period that slides from theirs toward 10.9 s (5.5 breaths/min). */
 function tapCalibrate(){
@@ -627,9 +627,8 @@ function tapCalibrate(){
   if(S.taps.length && now - S.taps[S.taps.length-1] > 20) S.taps=[];   /* a stale tap is a false start */
   S.taps.push(now);
   if(S.taps.length < 3) return;
-  var iv=[], i; for(i=1;i<S.taps.length;i++) iv.push(S.taps[i]-S.taps[i-1]);
-  iv.sort(function(a,b){ return a-b; });
-  S.period = Math.max(3, Math.min(15, iv[Math.floor(iv.length/2)]));
+  var span = S.taps[S.taps.length-1] - S.taps[0];       /* mean gap: two gaps have no median */
+  S.period = Math.max(3, Math.min(15, span/(S.taps.length-1)));
   S.steps.splice(S.idx, 1);          /* the tap step gives way to the first cycle, starting on this tap */
   appendCycle(S.steps);
   reanchor(true);

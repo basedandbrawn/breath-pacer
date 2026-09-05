@@ -33,7 +33,7 @@ It needs one trustworthy reading of the user's current pace, and it gets it
 from the input the app already has: the tap.
 
 The session opens on a TAP screen. The user taps at the start of three
-breaths in. The median gap between taps is their period, clamped to 3 to 15
+breaths in. The mean gap between taps is their period, clamped to 3 to 15
 seconds, and the first cycle starts on the third tap. Each cycle after that
 is built when the previous one starts, 45% in and 55% out, at a period that
 moves 12% of the way toward 10.9 seconds (at most one second per cycle). The

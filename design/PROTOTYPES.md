@@ -115,47 +115,39 @@ that is the first real argument in this project for a native app.
 Method · Ears on, headphones in. The sound scheme becomes the spatial wind
 and the Sound row is disabled: the wind is the sound.
 
-The first version moved one voice around the head and it was not enough:
-in and out were hard to tell apart. Front and back are the weakest cues in
-HRTF, and a bandpass on brown noise barely changes character. This version
-uses **two different voices**, and the strongest cue in hearing, the
-direction of a pitch glide.
+Two earlier versions moved one voice round the head on a circle, then
+gave the inhale and exhale different voices. On the phone the circle was
+not what the breath feels like, and the second version was too sharp. This
+one works on a single axis, the one the body already knows: **in front of
+you, and into your head.**
 
-- **Inhale.** A thin, rising whistle. White noise through a bandpass that
-  sweeps 380 to 2900 Hz while its Q tightens from 1.2 to 3.2, so the pitch
-  climbs the whole way. It starts far (10 m) and muffled, the top end
-  shut at 700 Hz as if through air, and clears to 7.5 kHz as it nears. It
-  swells to full level only at the end, with a small overshoot. It comes
-  in from far left, across the front, to the right ear (0.5 m), rising
-  from below the ears to overhead. Over the last 40% it crossfades from
-  the spatial path to a dry path straight into the middle of the head, so
-  the air stops being out there and is suddenly inside you.
-- **Hold.** Inside the head, still, faint (14%). Air already in, nothing
-  new entering, but present, so silence is never mistaken for a dead
-  headphone.
-- **Exhale.** A broad, low blow. It bursts out at full level, hands itself
-  back to the world over the first 22%, then sinks away: bandpass falling
-  1500 to 140 Hz with Q loosening to 0.7, the top end closing from 7 kHz
-  to 450 Hz, level down to 5%. It leaves from the right ear, round the
-  back, out to 10 m on the far left, and sinks below.
+- **Inhale.** The wind is out in front, already audible on the count, and
+  comes back into the head. Level rises from half to full, the top end
+  clears from 1.5 to 4.2 kHz, the pitch centre lifts gently from 320 to
+  1300 Hz with a mild Q, never a whistle. Over the last 45% it crossfades
+  from the spatial path to a dry path straight into the middle of the
+  head, so the air stops being out there and is inside you.
+- **Hold.** The air held. A low, warm presence inside the head, bandpass
+  240 Hz, top end 700 Hz, a fifth of full level, with a soft throb once a
+  second from the second second on, so the hold can be counted with the
+  eyes shut. The drop into it marks the first.
+- **Exhale.** Out of the head at once, full level, handed back to the
+  spatial path within 0.6 s, then out to the front, falling from
+  1000 to 200 Hz, top end closing to 600 Hz, level down to 6%, until it
+  is far.
 
-The distance law is steep, inverse with rolloff 1.6 from a 0.5 m reference,
-so the far end is a tenth of the near level before the envelope even
-starts. The inhale is *rising, tightening, swelling, clearing, climbing,
-approaching, then inside* and the exhale is *out, falling, loosening,
-fading, muffling, sinking, receding*. Any one of those is enough with eyes
-shut; they all agree.
+The panner carries direction only: its distance law is switched off and
+distance is done by hand in the envelope, level and low-pass together, so
+the start of every phase is heard on the count instead of lost eight
+metres away. The voice is pink noise, the spectrum of real wind, soft at
+the top. Position is scheduled with the same look-ahead as the envelopes,
+26 linear ramps per phase, with a per-frame fallback where the params are
+missing. The output low-pass opens to 7 kHz for Ears. With Belly on as
+well, your own airflow stays in the head as the mirror voice.
 
 Ears is a Lift setting too, one Ears row under Sets. The rest breathing
 between sets is the same in and out, so the count is in your ears under
 the bar rather than on a screen across the gym.
-
-Position is scheduled with the same look-ahead as the envelopes, 26
-linear ramps per phase on `positionX`, `positionY` and `positionZ`, with a
-per-frame `setPosition` fallback where those params are missing. The
-output low-pass opens to 7 kHz for Ears because pinna cues live above
-4 kHz. With Belly on as well, the pacer circles you while your own airflow
-stays in the centre of the head as the mirror voice.
 
 ### Why not the microphone
 

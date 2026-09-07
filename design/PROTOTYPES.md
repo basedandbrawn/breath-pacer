@@ -115,35 +115,41 @@ that is the first real argument in this project for a native app.
 Method · Ears on, headphones in. The sound scheme becomes the spatial wind
 and the Sound row is disabled: the wind is the sound.
 
-Two earlier versions moved one voice round the head on a circle, then
-gave the inhale and exhale different voices. On the phone the circle was
-not what the breath feels like, and the second version was too sharp. This
-one works on a single axis, the one the body already knows: **in front of
-you, and into your head.**
+Three versions came before this: a voice on a circle round the head, two
+sharper voices on the same circle, and a single axis from far in front
+into the head. The one that matches what a breath feels like is a
+straight line **through the head, front to back**: the air is drawn in at
+the nose and travels to the back of the skull; it is held there; it leaves
+the back of the skull, passes the nose and goes out in front.
 
-- **Inhale.** The wind is out in front, already audible on the count, and
-  comes back into the head. Level rises from half to full, the top end
-  clears from 1.5 to 4.2 kHz, the pitch centre lifts gently from 320 to
-  1300 Hz with a mild Q, never a whistle. Over the last 45% it crossfades
-  from the spatial path to a dry path straight into the middle of the
-  head, so the air stops being out there and is inside you.
-- **Hold.** The air held. A low, warm presence inside the head, bandpass
-  240 Hz, top end 700 Hz, a fifth of full level, with a soft throb once a
-  second from the second second on, so the hold can be counted with the
-  eyes shut. The drop into it marks the first.
-- **Exhale.** Out of the head at once, full level, handed back to the
-  spatial path within 0.6 s, then out to the front, falling from
-  1000 to 200 Hz, top end closing to 600 Hz, level down to 6%, until it
-  is far.
+- **Inhale.** Heard the instant the count starts, just in front of the
+  nose, airy (top end 3.8 kHz). It rushes at the nostril (pitch centre up
+  to 950 Hz over the first 30%) and then goes deeper and darker as it
+  fills the back of the head: centre down to 420 Hz, top end down to
+  1.3 kHz, level up to full. As it passes the nose it crossfades from the
+  spatial path to a dry path in the middle of the head, so from there on
+  it is inside you. Position: 1.4 m in front, nose, middle, back of the
+  skull, slightly above the ears.
+- **Hold.** A different kind of sound, not wind: a low hum, the noise
+  through a narrow resonance at 120 Hz with the top shut at 500 Hz, held
+  at the back of the skull inside the head, with a soft throb once a
+  second from the second second on so the hold can be counted eyes shut.
+  The drop from the full inhale into the hum marks the first second.
+- **Exhale.** Full at once, from the back of the skull, still inside. It
+  opens up as it passes the nose (centre up to 1.1 kHz, top end to 4.2 kHz,
+  handed back to the spatial path between 12% and 35%), then goes out in
+  front, falling to 220 Hz, closing to 650 Hz, fading to 5%, eight metres
+  out by the end.
 
-The panner carries direction only: its distance law is switched off and
-distance is done by hand in the envelope, level and low-pass together, so
-the start of every phase is heard on the count instead of lost eight
-metres away. The voice is pink noise, the spectrum of real wind, soft at
-the top. Position is scheduled with the same look-ahead as the envelopes,
-26 linear ramps per phase, with a per-frame fallback where the params are
-missing. The output low-pass opens to 7 kHz for Ears. With Belly on as
-well, your own airflow stays in the head as the mirror voice.
+Every parameter starts a phase where the previous phase left it: level,
+both filters, the head blend and the position are all ramped from their
+current value, so the handoffs are continuous and the three phases are
+one motion. The panner carries direction only; its distance law is off and
+distance is done in the envelope. The voice is pink noise, soft at the top.
+Position is scheduled with the same look-ahead as the envelopes, 26 linear
+ramps per phase along the waypoints, with a per-frame fallback where the
+params are missing. The output low-pass opens to 7 kHz for Ears. With
+Belly on as well, your own airflow stays in the head as the mirror voice.
 
 Ears is a Lift setting too, one Ears row under Sets. The rest breathing
 between sets is the same in and out, so the count is in your ears under

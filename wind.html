@@ -321,8 +321,8 @@ function mkEars(k){
   var g=ctx.createGain(); g.gain.value=0.0001;
   var pan=ctx.createPanner(); try{ pan.panningModel="HRTF"; pan.distanceModel="inverse"; pan.refDistance=1; pan.maxDistance=40; pan.rolloffFactor=0; }catch(e){}
   var auto = !!(pan.positionX && pan.positionX.linearRampToValueAtTime);
-  var p0=earsPos(0,0,0,EARS_FAR,EARS_FAR,-0.3,-0.3);
-  if(auto){ pan.positionX.value=p0[0]; pan.positionZ.value=p0[1]; pan.positionY.value=p0[2]; } else { try{ pan.setPosition(p0[0],p0[2],p0[1]); }catch(e){} }
+  var p0=E_FRONT;
+  if(auto){ pan.positionX.value=p0[0]; pan.positionY.value=p0[1]; pan.positionZ.value=p0[2]; } else { try{ pan.setPosition(p0[0],p0[1],p0[2]); }catch(e){} }
   /* two paths out of the voice: the spatial one through the HRTF, and a dry one straight into the
      middle of the head. The inhale crossfades from the first to the second as it arrives, so the
      air stops being out there and is suddenly inside; the exhale hands it back out. */
@@ -330,23 +330,25 @@ function mkEars(k){
   src.connect(bp); bp.connect(lp); lp.connect(g); g.connect(spatial); spatial.connect(pan); pan.connect(A.wetIn); g.connect(inHead); inHead.connect(A.dryIn); src.start(); keep(src);
   return {kind:"ears", g:g, bp:bp, lp:lp, pan:pan, spatial:spatial.gain, inHead:inHead.gain, k:k, auto:auto, motion:null};
 }
-var EARS_FAR=8, EARS_NEAR=0.6;
-/* listener faces -Z; +X is the right ear; +Y is up. The inhale rises as it comes in, the exhale sinks as it goes. */
-function earsPos(p, th0, th1, r0, r1, y0, y1){ var th=(th0+(th1-th0)*p)*Math.PI/180, r=r0+(r1-r0)*easeIO(p); return [r*Math.sin(th), -r*Math.cos(th), y0+(y1-y0)*p]; }
-function earsArc(s, at, dur, th0, th1, r0, r1, y0, y1){
-  if(!s.auto){ s.motion={at:at,dur:dur,th0:th0,th1:th1,r0:r0,r1:r1,y0:y0,y1:y1}; return; }       /* no position params: moved per frame instead */
-  var ctx=A.ctx, now=ctx.currentTime, t0=at<now?now:at, P=[s.pan.positionX,s.pan.positionZ,s.pan.positionY], i, j, N=26;
-  var q0=earsPos(0,th0,th1,r0,r1,y0,y1), near=at<=now+0.03;
+/* The path is a straight line through the head, front to back. The listener faces -Z, so
+   the nose is at small negative Z and the back of the skull at positive Z; +Y is up. */
+var E_FRONT=[0,-0.3,-8], E_APPROACH=[0,-0.05,-1.4], E_NOSE=[0,0,-0.25], E_MID=[0,0.2,0.15], E_SKULL=[0,0.35,0.55];
+function lerp3(a,b,p){ return [a[0]+(b[0]-a[0])*p, a[1]+(b[1]-a[1])*p, a[2]+(b[2]-a[2])*p]; }
+function pathAt(pts, p){ var n=pts.length-1, f=Math.max(0,Math.min(1,p))*n, i=Math.min(n-1,Math.floor(f)); return lerp3(pts[i], pts[i+1], f-i); }
+function earsPath(s, at, dur, pts){
+  if(!s.auto){ s.motion={at:at,dur:dur,pts:pts}; return; }       /* no position params: moved per frame instead */
+  var ctx=A.ctx, now=ctx.currentTime, t0=at<now?now:at, P=[s.pan.positionX,s.pan.positionY,s.pan.positionZ], i, j, N=26;
+  var q0=pathAt(pts,0), near=at<=now+0.03;
   for(j=0;j<3;j++){ var q=P[j]; try{ if(q.cancelAndHoldAtTime) q.cancelAndHoldAtTime(t0); else q.cancelScheduledValues(t0); }catch(e){ try{ q.cancelScheduledValues(t0); }catch(e2){} }
     var sv=near?q.value:q0[j]; q.setValueAtTime(isFinite(sv)?sv:q0[j], t0); }
-  for(i=1;i<=N;i++){ var pp=i/N, w=earsPos(pp,th0,th1,r0,r1,y0,y1); for(j=0;j<3;j++) P[j].linearRampToValueAtTime(w[j], t0+dur*pp); }
+  for(i=1;i<=N;i++){ var w=pathAt(pts,i/N); for(j=0;j<3;j++) P[j].linearRampToValueAtTime(w[j], t0+dur*i/N); }
 }
 /* the hold's count: a soft swell once a second, from the second second on (the drop into the hold marks the first) */
-function earsThrobs(s, at, dur, base){ var n=Math.floor(dur-0.01), i; for(i=1;i<=n;i++){ env(s.g.gain,base,base*1.9,at+i,0.10,easeOut); env(s.g.gain,base*1.9,base,at+i+0.10,0.45,easeOut); } }
+function earsThrobs(s, at, dur, base){ var n=Math.floor(dur-0.01), i; for(i=1;i<=n;i++){ env(s.g.gain,base,base*1.8,at+i,0.10,easeOut); env(s.g.gain,base*1.8,base,at+i+0.10,0.45,easeOut); } }
 function earsFrame(){   /* fallback for panners without AudioParam positions */
   if(!scheme || scheme.kind!=="ears" || scheme.auto || !scheme.motion || !A) return;
-  var m=scheme.motion, p=Math.max(0,Math.min(1,(A.ctx.currentTime-m.at)/Math.max(m.dur,0.01))), w=earsPos(p,m.th0,m.th1,m.r0,m.r1,m.y0,m.y1);
-  try{ scheme.pan.setPosition(w[0],w[2],w[1]); }catch(e){}
+  var m=scheme.motion, p=(A.ctx.currentTime-m.at)/Math.max(m.dur,0.01), w=pathAt(m.pts,p);
+  try{ scheme.pan.setPosition(w[0],w[1],w[2]); }catch(e){}
 }
 function makeScheme(name, dim){ if(!A) return null; var k=dim?0.7:1; A.roll.frequency.value=name==="ears"?7000:dim?2600:4200; return name==="ears"?mkEars(k):name==="breath"?mkBreath(k):mkTone(k); }
 function schemePhase(kind, at, dur){
@@ -364,28 +366,35 @@ function schemePhase(kind, at, dur){
        swells all the way to the end and climbs overhead; OUT is a broad, low blow that
        starts loud and sinks away, falling in pitch the whole time. Rising versus falling
        pitch is the one cue nobody mishears. */
-    /* One axis: in front of you and into your head. The inhale starts out in front, already
-       audible on the count, and comes back into the head, growing and clearing, until it is
-       inside. The hold is the air held: a low, warm presence inside the head with a soft throb
-       once a second so the hold can be counted with the eyes shut. The exhale leaves the head
-       and goes out to the front, falling and fading until it is far. Soft voice throughout. */
-    var et=1.25*k;
+    /* IN: the air is drawn in at the nose and travels to the back of the skull. It is heard
+       the instant the count starts, rushes at the nostril, then goes deeper and darker as it
+       fills the back of the head. HOLD: the air held, at the back of the skull: a low hum, not
+       wind, so the still phase is a different kind of sound, with a soft throb each second.
+       OUT: the air leaves the back of the skull, opens up as it passes the nose, and goes out
+       in front until it is far and faint. Every value starts where the last phase left it. */
+    var et=1.25*k, bIn=et*0.55, bHold=et*0.42, bOut=et*1.05;
     if(kind==="in"){
-      env(s.g.gain,s.g.gain.value,et*0.5,at,0.08,easeOut); env(s.g.gain,et*0.5,et*1.1,at+0.08,g-0.08,easeIn);        /* heard at once, then it comes */
-      env(s.bp.frequency,320,1300,at,g,easeIO); env(s.bp.Q,0.9,1.5,at,g,easeIO); env(s.lp.frequency,1500,4200,at,g,easeIn);
-      env(s.spatial,s.spatial.value,1,at,g*0.55,easeIO); env(s.spatial,1,0.1,at+g*0.55,g*0.45,easeIO);
-      env(s.inHead,s.inHead.value,0.0001,at,g*0.55,easeIO); env(s.inHead,0.0001,1,at+g*0.55,g*0.45,easeIn);
-      earsArc(s,at,g,0,0,EARS_FAR,EARS_NEAR,-0.3,0.2); }
+      env(s.g.gain,s.g.gain.value,bIn,at,0.08,easeOut); env(s.g.gain,bIn,et*1.1,at+0.08,g-0.08,easeIO);
+      env(s.bp.frequency,s.bp.frequency.value,950,at,g*0.3,easeOut); env(s.bp.frequency,950,420,at+g*0.3,g*0.7,easeIO);      /* rush at the nostril, deep at the back */
+      env(s.bp.Q,s.bp.Q.value,1.3,at,g*0.3,easeOut); env(s.bp.Q,1.3,0.9,at+g*0.3,g*0.7,easeIO);
+      env(s.lp.frequency,s.lp.frequency.value,3800,at,0.15,easeOut); env(s.lp.frequency,3800,1300,at+0.15,g-0.15,easeIO);   /* darker as it goes back */
+      env(s.spatial,s.spatial.value,1,at,g*0.15,easeIO); env(s.spatial,1,0.15,at+g*0.15,g*0.3,easeIO);
+      env(s.inHead,s.inHead.value,0.0001,at,g*0.15,easeIO); env(s.inHead,0.0001,1,at+g*0.15,g*0.3,easeIO);                 /* inside once it passes the nose */
+      earsPath(s,at,g,[E_APPROACH,E_NOSE,E_MID,E_SKULL]); }
     else if(kind==="hold"){
-      env(s.g.gain,s.g.gain.value,et*0.22,at,0.25,easeOut); env(s.bp.frequency,s.bp.frequency.value,240,at,0.3,easeOut); env(s.bp.Q,s.bp.Q.value,0.9,at,0.3,easeOut); env(s.lp.frequency,s.lp.frequency.value,700,at,0.3,easeOut);
-      env(s.spatial,s.spatial.value,0.05,at,0.25,easeOut); env(s.inHead,s.inHead.value,1,at,0.25,easeOut);
-      earsArc(s,at,g,0,0,EARS_NEAR,EARS_NEAR,0.2,0.2);
-      earsThrobs(s,at,g,et*0.22); }
+      env(s.g.gain,s.g.gain.value,bHold,at,0.25,easeOut);
+      env(s.bp.frequency,s.bp.frequency.value,120,at,0.3,easeOut); env(s.bp.Q,s.bp.Q.value,7,at,0.3,easeOut); env(s.lp.frequency,s.lp.frequency.value,500,at,0.3,easeOut);   /* the hum */
+      env(s.spatial,s.spatial.value,0.08,at,0.25,easeOut); env(s.inHead,s.inHead.value,1,at,0.25,easeOut);
+      earsPath(s,at,g,[E_SKULL,E_SKULL]);
+      earsThrobs(s,at,g,bHold); }
     else if(kind==="out"){
-      env(s.g.gain,s.g.gain.value,et*1.05,at,0.1,easeOut); env(s.g.gain,et*1.05,et*0.06,at+0.1,g-0.1,easeIO);          /* out of the head at once, then away */
-      var ho=Math.min(g*0.2,0.6); env(s.spatial,s.spatial.value,1,at,ho,easeOut); env(s.inHead,s.inHead.value,0.0001,at,ho,easeOut);   /* leaves the head in 0.6 s, not a fifth of the phase */
-      env(s.bp.frequency,1000,200,at,g,easeIO); env(s.bp.Q,1.1,0.7,at,g,easeIO); env(s.lp.frequency,3800,600,at,g,easeIO);
-      earsArc(s,at,g,0,0,EARS_NEAR,EARS_FAR,0.2,-0.3); }
+      env(s.g.gain,s.g.gain.value,bOut,at,0.1,easeOut); env(s.g.gain,bOut,et*0.05,at+0.1,g-0.1,easeIO);
+      env(s.bp.frequency,s.bp.frequency.value,1100,at,g*0.3,easeIO); env(s.bp.frequency,1100,220,at+g*0.3,g*0.7,easeIO);    /* opens at the nose, then away */
+      env(s.bp.Q,s.bp.Q.value,1.0,at,g*0.3,easeOut); env(s.bp.Q,1.0,0.7,at+g*0.3,g*0.7,easeIO);
+      env(s.lp.frequency,s.lp.frequency.value,4200,at,g*0.3,easeIO); env(s.lp.frequency,4200,650,at+g*0.3,g*0.7,easeIO);
+      env(s.spatial,s.spatial.value,0.08,at,g*0.12,easeIO); env(s.spatial,0.08,1,at+g*0.12,g*0.23,easeIO);
+      env(s.inHead,s.inHead.value,1,at,g*0.12,easeIO); env(s.inHead,1,0.0001,at+g*0.12,g*0.23,easeIO);                     /* out of the head as it passes the nose */
+      earsPath(s,at,g,[E_SKULL,E_NOSE,E_APPROACH,E_FRONT]); }
     else { env(s.g.gain,s.g.gain.value,0.0001,at,0.3,easeOut); }
   }
   if(s.kind==="breath"){
@@ -1005,10 +1014,10 @@ function refresh(){
   document.getElementById("pat-sub").textContent = P.pat==="coh" ? "Coherent breathing, 5.5 a minute." : "Relaxing breath. Long exhale.";
   document.getElementById("belly-sub").textContent = "Lie down, phone on your belly, screen up. It reads your breath: the wind and the breath noise are you, the tone is the pacer.";
   document.getElementById("tap-sub").textContent = "Drum the breath. Tap once a second on the count, in and out. Hold: press and hold. Every tap pushes the wind under your finger.";
-  document.getElementById("ears-sub").textContent = "Headphones. The wind comes in from in front of you and into your head, rests there through the hold with a soft throb each second, and goes back out to the front. Eyes shut, you hear the breath.";
+  document.getElementById("ears-sub").textContent = "Headphones. The air comes in at your nose and travels to the back of your skull; the hold is a low hum held there, throbbing once a second; the out leaves the skull, passes the nose and goes out in front. Eyes shut, you hear the breath.";
   var pills=document.querySelectorAll("#methods .pill"); for(i=0;i<pills.length;i++){ var on=M[pills[i].getAttribute("data-m")]; pills[i].textContent=on?"On":"Off"; pills[i].classList.toggle("sel",!!on); }
   var lp=document.querySelector("#methods-lift .pill"), lOn=L.ears==="on"; lp.textContent=lOn?"On":"Off"; lp.classList.toggle("sel",lOn);
-  document.getElementById("ears-sub-lift").textContent = "Headphones under the bar. The breath comes in from in front of you into your head and goes back out to the front. The count is in your ears, not on the screen.";
+  document.getElementById("ears-sub-lift").textContent = "Headphones under the bar. The air comes in at your nose to the back of your skull and goes back out in front. The count is in your ears, not on the screen.";
   var ears=DB.cfg[setupMode].ears||"off";
   document.getElementById("setup-lift").classList.toggle("hid", setupMode!=="lift"); document.getElementById("setup-breathe").classList.toggle("hid", setupMode!=="breathe");
   document.getElementById("setup-title").textContent = setupMode==="lift"?"Lift":"Breathe";

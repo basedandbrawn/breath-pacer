@@ -151,6 +151,9 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
         <div class="row hid" id="row-hsec"><span class="lbl">Seconds</span><div class="step"><button data-s="holdSec:-5">−</button><span class="v" id="v-holdSec">45</span><button data-s="holdSec:5">+</button></div></div>
         <div class="row"><span class="lbl">Sets</span><div class="step"><button data-s="sets:-1">−</button><span class="v" id="v-sets">4</span><button data-s="sets:1">+</button></div></div>
       </div>
+      <div class="card" id="methods-lift">
+        <div class="mrow"><div><div class="mt">Ears</div><div class="md" id="ears-sub-lift"></div></div><button class="pill" data-m="ears">Off</button></div>
+      </div>
     </div>
     <div id="setup-breathe">
       <div class="card">
@@ -196,7 +199,7 @@ var Q = {}; try{ location.search.slice(1).split("&").forEach(function(kv){ var p
 var KEY = "wind.v1";
 var DEF = {
   cfg: {
-    lift: {preset:"compound", reps:10, sets:4, holdSec:45, sound:"tone",
+    lift: {preset:"compound", reps:10, sets:4, holdSec:45, sound:"tone", ears:"off",
       tune:{compound:{"in":4, hold:2, out:6, rest:180},
             isolation:{"in":2, hold:0, out:3, rest:90},
             hold:{"in":4, hold:0, out:8, rest:90}}},
@@ -209,7 +212,7 @@ var DB = clone(DEF);
 try{
   var raw = JSON.parse(localStorage.getItem(KEY) || "null");
   if(raw && raw.cfg){
-    var L = raw.cfg.lift; if(L){ ["preset","reps","sets","holdSec","sound"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
+    var L = raw.cfg.lift; if(L){ ["preset","reps","sets","holdSec","sound","ears"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
       if(L.tune) for(var pk in DB.cfg.lift.tune){ if(L.tune[pk]) for(var tk in DB.cfg.lift.tune[pk]) if(L.tune[pk][tk]!==undefined) DB.cfg.lift.tune[pk][tk]=L.tune[pk][tk]; } }
     if(raw.cfg.breathe) for(var bk in DB.cfg.breathe) if(raw.cfg.breathe[bk]!==undefined) DB.cfg.breathe[bk]=raw.cfg.breathe[bk];
     if(DB.cfg.breathe.pat!=="478" && DB.cfg.breathe.pat!=="coh") DB.cfg.breathe.pat="478";          /* Follow is gone */
@@ -311,14 +314,19 @@ function mkEars(k){
   var bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=700; bp.Q.value=1.4;
   var lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=5200; lp.Q.value=0.4;
   var g=ctx.createGain(); g.gain.value=0.0001;
-  var pan=ctx.createPanner(); try{ pan.panningModel="HRTF"; pan.distanceModel="inverse"; pan.refDistance=0.8; pan.maxDistance=30; pan.rolloffFactor=1; }catch(e){}
+  /* steep distance law: at EARS_FAR the wind is a tenth of its near level before the envelope */
+  var pan=ctx.createPanner(); try{ pan.panningModel="HRTF"; pan.distanceModel="inverse"; pan.refDistance=EARS_NEAR; pan.maxDistance=40; pan.rolloffFactor=1.6; }catch(e){}
   var auto = !!(pan.positionX && pan.positionX.linearRampToValueAtTime);
   var p0=earsPos(0,-90,-90,EARS_FAR,EARS_FAR,0,0);
   if(auto){ pan.positionX.value=p0[0]; pan.positionZ.value=p0[1]; pan.positionY.value=p0[2]; } else { try{ pan.setPosition(p0[0],p0[2],p0[1]); }catch(e){} }
-  src.connect(bp); bp.connect(lp); lp.connect(g); g.connect(pan); pan.connect(A.wetIn); src.start(); keep(src);
-  return {kind:"ears", g:g, bp:bp, lp:lp, pan:pan, k:k, auto:auto, motion:null};
+  /* two paths out of the voice: the spatial one through the HRTF, and a dry one straight into the
+     middle of the head. The inhale crossfades from the first to the second as it arrives, so the
+     air stops being out there and is suddenly inside; the exhale hands it back out. */
+  var spatial=ctx.createGain(); spatial.gain.value=1; var inHead=ctx.createGain(); inHead.gain.value=0.0001;
+  src.connect(bp); bp.connect(lp); lp.connect(g); g.connect(spatial); spatial.connect(pan); pan.connect(A.wetIn); g.connect(inHead); inHead.connect(A.dryIn); src.start(); keep(src);
+  return {kind:"ears", g:g, bp:bp, lp:lp, pan:pan, spatial:spatial.gain, inHead:inHead.gain, k:k, auto:auto, motion:null};
 }
-var EARS_FAR=7, EARS_NEAR=0.8;
+var EARS_FAR=10, EARS_NEAR=0.5;
 /* listener faces -Z; +X is the right ear; +Y is up. The inhale rises as it comes in, the exhale sinks as it goes. */
 function earsPos(p, th0, th1, r0, r1, y0, y1){ var th=(th0+(th1-th0)*p)*Math.PI/180, r=r0+(r1-r0)*easeIO(p); return [r*Math.sin(th), -r*Math.cos(th), y0+(y1-y0)*p]; }
 function earsArc(s, at, dur, th0, th1, r0, r1, y0, y1){
@@ -350,15 +358,23 @@ function schemePhase(kind, at, dur){
        swells all the way to the end and climbs overhead; OUT is a broad, low blow that
        starts loud and sinks away, falling in pitch the whole time. Rising versus falling
        pitch is the one cue nobody mishears. */
-    var et=1.2*k;
-    if(kind==="in"){ env(s.g.gain,0.0001,et*0.35,at,g*0.25,easeOut); env(s.g.gain,et*0.35,et,at+g*0.25,g*0.75,easeIn);
-      env(s.bp.frequency,450,2600,at,g,easeIO); env(s.bp.Q,1.2,3.0,at,g,easeIO); env(s.lp.frequency,3000,6500,at,g,easeIO);
-      earsArc(s,at,g,-90,90,EARS_FAR,EARS_NEAR,-0.4,1.1); }
+    var et=1.25*k;
+    if(kind==="in"){
+      /* far and muffled, then it clears, swells and lands inside the head with a small overshoot */
+      env(s.g.gain,0.0001,et*0.25,at,g*0.25,easeOut); env(s.g.gain,et*0.25,et*1.15,at+g*0.25,g*0.75,easeIn);
+      env(s.bp.frequency,380,2900,at,g,easeIO); env(s.bp.Q,1.2,3.2,at,g,easeIO); env(s.lp.frequency,700,7500,at,g,easeIn);
+      env(s.spatial,s.spatial.value,1,at,g*0.6,easeIO); env(s.spatial,1,0.12,at+g*0.6,g*0.4,easeIO);
+      env(s.inHead,s.inHead.value,0.0001,at,g*0.6,easeIO); env(s.inHead,0.0001,1,at+g*0.6,g*0.4,easeIn);
+      earsArc(s,at,g,-90,90,EARS_FAR,EARS_NEAR,-0.5,1.1); }
     else if(kind==="hold"){ env(s.g.gain,s.g.gain.value,et*0.14,at,0.4,easeOut); env(s.bp.frequency,s.bp.frequency.value,1100,at,0.4,easeOut); env(s.bp.Q,s.bp.Q.value,1.4,at,0.4,easeOut);
-      earsArc(s,at,g,90,90,EARS_NEAR,EARS_NEAR,1.1,1.1); }      /* close, overhead, still, faint: air already in */
-    else if(kind==="out"){ env(s.g.gain,s.g.gain.value,et,at,g*0.10,easeOut); env(s.g.gain,et,et*0.12,at+g*0.10,g*0.88,easeOut);
-      env(s.bp.frequency,1400,170,at,g,easeIO); env(s.bp.Q,1.0,0.7,at,g,easeIO); env(s.lp.frequency,5200,900,at,g,easeIO);
-      earsArc(s,at,g,90,270,EARS_NEAR,EARS_FAR,1.1,-0.9); }
+      env(s.spatial,s.spatial.value,0.12,at,0.3,easeOut); env(s.inHead,s.inHead.value,1,at,0.3,easeOut);
+      earsArc(s,at,g,90,90,EARS_NEAR,EARS_NEAR,1.1,1.1); }      /* inside the head, still, faint: air already in */
+    else if(kind==="out"){
+      /* bursts out of the head at full level, hands itself back to the world, then falls, darkens and goes far */
+      env(s.g.gain,s.g.gain.value,et*1.1,at,g*0.08,easeOut); env(s.g.gain,et*1.1,et*0.05,at+g*0.08,g*0.9,easeOut);
+      env(s.spatial,s.spatial.value,1,at,g*0.22,easeOut); env(s.inHead,s.inHead.value,0.0001,at,g*0.22,easeOut);
+      env(s.bp.frequency,1500,140,at,g,easeIO); env(s.bp.Q,1.0,0.7,at,g,easeIO); env(s.lp.frequency,7000,450,at,g,easeOut);
+      earsArc(s,at,g,90,270,EARS_NEAR,EARS_FAR,1.1,-1.0); }
     else { env(s.g.gain,s.g.gain.value,0.0001,at,0.3,easeOut); }
   }
   if(s.kind==="breath"){
@@ -480,7 +496,7 @@ function Field2D(cv, opt){
     var cx=W/2, cy=H*0.47, R=Math.max(W,H)*0.55;
     var gain = (90 + 240*st.amp) * st.flow;         /* the audible gust is the visible gust */
     var turb = st.turb, k=0.0045, e=6, tz=t*0.25;
-    var col = tint(st.temp), bright = 0.35 + 0.65*st.fill, pokeR = Math.min(W,H)*0.11;
+    var col = tint(st.temp), bright = 0.35 + 0.65*st.fill, pokeR = Math.min(W,H)*0.2;
     ctx.lineCap="round";
     var i, p;
     for(i=0;i<P.length;i++){
@@ -494,7 +510,7 @@ function Field2D(cv, opt){
       ax += (n3-n4)/(2*e)*cs; ay -= (n1-n2)/(2*e)*cs;
       if(st.idle){ ax += 60; }
       /* the finger: a poke pushes particles out from the fingertip; a held finger pins them */
-      if(st.tapK>0.01){ var tx=p.x-st.tapX, ty=p.y-st.tapY, tr=Math.hypot(tx,ty)+1e-3, tf=st.tapK*Math.exp(-tr*tr/(pokeR*pokeR))*9000; ax += tx/tr*tf; ay += ty/tr*tf; }
+      if(st.tapK>0.01){ var tx=p.x-st.tapX, ty=p.y-st.tapY, tr=Math.hypot(tx,ty)+1e-3, tf=st.tapK*Math.exp(-tr*tr/(pokeR*pokeR))*36000; ax += tx/tr*tf; ay += ty/tr*tf; }
       p.vx += ax*dt; p.vy += ay*dt;
       var drag = 1 - Math.min(1, 1.6*dt); p.vx*=drag; p.vy*=drag;
       if(st.pinK>0){ var px_=p.x-st.pinX, py_=p.y-st.pinY, pf=1-st.pinK*0.25*Math.exp(-(px_*px_+py_*py_)/(pokeR*pokeR)); p.vx*=pf; p.vy*=pf; }
@@ -572,7 +588,7 @@ function FieldGL(cv){
       "float ring=ss(0.06,0.3,rn)*(1.0-ss(1.0,1.5,rb));vec2 f=-n*uFlow*ring*70.0;vec2 t=vec2(-n.y,n.x);"+
       "f+=t*uSwirl*ring*30.0*sin(rn*9.0+uTime*1.7);f+=vec2(uWind*28.0,0.0);"+
       /* the finger: a poke pushes air out from the fingertip; a held finger pins it */
-      "vec2 dt2=(vUv-uTap)*uAspect;float rt=length(dt2)+1e-4;f+=(dt2/rt)*uTapK*exp(-rt*rt/0.006)*520.0;v+=f*uDt;"+
+      "vec2 dt2=(vUv-uTap)*uAspect;float rt=length(dt2)+1e-4;f+=(dt2/rt)*uTapK*exp(-rt*rt/0.022)*2400.0;v+=f*uDt;"+
       "vec2 dp=(vUv-uPin)*uAspect;v*=1.0-uPinK*0.9*exp(-dot(dp,dp)/0.004);"+
       "float m=texture(uMask,vUv).a;v*=(1.0-m);float L=length(v);if(L>uMax)v*=uMax/L;o=vec4(v,0.0,1.0);}",
     curl: HEAD+"uniform sampler2D uVel;void main(){float L=texture(uVel,vUv-vec2(uTexel.x,0)).y,R=texture(uVel,vUv+vec2(uTexel.x,0)).y,B=texture(uVel,vUv-vec2(0,uTexel.y)).x,T=texture(uVel,vUv+vec2(0,uTexel.y)).x;o=vec4(0.5*((R-L)-(T-B)),0,0,1);}",
@@ -584,7 +600,7 @@ function FieldGL(cv){
     dye: HEAD+"uniform sampler2D uDye,uMask;uniform vec2 uCenter,uAspect,uTap;uniform float uDt,uIn,uOut,uIdle,uTime,uTapK;uniform vec3 uColor;"+
       "void main(){vec4 d=texture(uDye,vUv);vec2 q=(vUv-uCenter)*uAspect;float rn=length(q)/0.5;float rb=max(abs(q.x)/(0.5*uAspect.x),abs(q.y)/0.5);"+
       "float edge=smoothstep(0.72,1.0,rb)*(0.55+0.45*sin(atan(q.y,q.x)*7.0+uTime*0.9));float core=1.0-smoothstep(0.0,0.28,rn);"+
-      "vec2 qt=(vUv-uTap)*uAspect;d.rgb+=uColor*uTapK*exp(-dot(qt,qt)/0.003)*9.0*uDt;"+      /* the puff at the fingertip */
+      "vec2 qt=(vUv-uTap)*uAspect;float rq=length(qt);d.rgb+=uColor*uTapK*(exp(-rq*rq/0.004)*22.0+exp(-pow(rq-0.16*(1.0-uTapK),2.0)/0.0012)*14.0)*uDt;"+      /* the puff at the fingertip and the ring it throws */
       "d.rgb+=uColor*(uIn*edge*2.2+uOut*core*2.6)*uDt;d.rgb+=uColor*uIdle*(1.0-smoothstep(0.0,0.06,vUv.x))*(0.5+0.5*sin(vUv.y*34.0+uTime*1.3))*1.6*uDt;"+
       "d.rgb*=(1.0-texture(uMask,vUv).a*0.9);o=vec4(min(d.rgb,vec3(1.1)),1.0);}",
     show: HEAD+"uniform sampler2D uDye;uniform vec3 uGround;uniform float uGain;void main(){vec3 c=uGround+texture(uDye,vUv).rgb*uGain;o=vec4(c,1.0);}"
@@ -624,7 +640,7 @@ function FieldGL(cv){
     u=use("vort"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uK, 12+30*st.turb); bind(u,"uVel",vel,0); bind(u,"uCurl",cl,1); draw(vel2); swapV();
     /* 3. the breath: inward divergence on IN, outward on OUT, nothing on HOLD */
     u=use("force"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
-    gl.uniform1f(u.uFlow, st.flow*(0.5+1.4*st.amp)); gl.uniform1f(u.uSwirl, st.turb); gl.uniform1f(u.uWind, st.idle?1:0); gl.uniform1f(u.uTime,t); gl.uniform1f(u.uMax, 90);
+    gl.uniform1f(u.uFlow, st.flow*(0.5+1.4*st.amp)); gl.uniform1f(u.uSwirl, st.turb); gl.uniform1f(u.uWind, st.idle?1:0); gl.uniform1f(u.uTime,t); gl.uniform1f(u.uMax, 90+120*st.tapK);
     gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK); gl.uniform2f(u.uPin, st.pinX/W, 1-st.pinY/H); gl.uniform1f(u.uPinK, st.pinK);
     bind(u,"uVel",vel,0); bind(u,"uMask",maskTex,1); draw(vel2); swapV();
     /* 4. project to divergence-free */
@@ -796,7 +812,7 @@ function startSession(mode){
   /* the three methods: belly (the accelerometer mirror), tap (you drum the breath), ears (spatial wind) */
   S.mirror = mode==="breathe" && c.breathe.belly!=="off" && MIR.perm==="granted";
   S.tapOn = mode==="breathe" && c.breathe.tap==="on";
-  S.ears = mode==="breathe" && c.breathe.ears==="on";
+  S.ears = c[mode].ears==="on";
   S.poke={x:0,y:0,k:0,t:-9}; S.pin={x:0,y:0,on:false};
   if(mode==="lift"){ S.reps=c.lift.reps; S.sets=c.lift.sets; S.restDur=c.lift.tune[c.lift.preset].rest; S.holdMode=c.lift.preset==="hold"?1:0; S.holdSec=c.lift.holdSec; }
   else { S.reps=c.breathe.cycles; S.sets=1; S.holdMode=0; }
@@ -893,7 +909,7 @@ var frameState = {phase:"idle", fill:0, prog:0, flow:0, amp:0, temp:0, turb:0, g
                   tapX:0, tapY:0, tapK:0, pinX:0, pinY:0, pinK:0};
 /* the finger in the field: a decaying poke and a held pin, in canvas pixels for the 2D engine and uv for the GPU */
 function touchState(now, fs){
-  var pa=now-S.poke.t; fs.tapK = (pa>=0 && pa<0.6) ? S.poke.k*Math.exp(-pa/0.11) : 0; fs.tapX=S.poke.x; fs.tapY=S.poke.y;
+  var pa=now-S.poke.t; fs.tapK = (pa>=0 && pa<0.9) ? S.poke.k*Math.exp(-pa/0.2) : 0; fs.tapX=S.poke.x; fs.tapY=S.poke.y;
   fs.pinK = S.pin.on ? 1 : 0; fs.pinX=S.pin.x; fs.pinY=S.pin.y;
 }
 function render(now){
@@ -920,7 +936,7 @@ function render(now){
   touchState(now, fs);
   /* the beat, in light: each second of an active phase the whole ground blinks up a step and settles */
   var beat=0; if(S.tapOn && st.stage==="set" && (st.k==="in"||st.k==="out")){ var into=now-S.stepStart, bt=into-Math.floor(into); beat=Math.exp(-bt/0.10); }
-  fs.ground=ground(Math.min(1.1, fs.fill + 0.14*beat), fs.temp, fs.dim);
+  fs.ground=ground(Math.min(1.2, fs.fill + 0.14*beat + 0.18*fs.tapK), fs.temp, fs.dim);   /* the tap lights the whole ground for an instant */
   if(st.k==="done"){ if(lastWord!=="DONE") paintDone(); return; }
   elEnd.classList.remove("hid");
   var isRest=st.stage==="rest", isSet=st.stage==="set";
@@ -980,13 +996,15 @@ function refresh(){
   document.getElementById("tap-sub").textContent = "Drum the breath. Tap once a second on the count, in and out. Hold: press and hold. Every tap pushes the wind under your finger.";
   document.getElementById("ears-sub").textContent = "Headphones. A rising whistle comes in from the left and climbs to your right ear; a low blow sinks away behind you. Eyes shut, you hear the breath.";
   var pills=document.querySelectorAll("#methods .pill"); for(i=0;i<pills.length;i++){ var on=M[pills[i].getAttribute("data-m")]; pills[i].textContent=on?"On":"Off"; pills[i].classList.toggle("sel",!!on); }
-  var ears=P.ears||"off";
+  var lp=document.querySelector("#methods-lift .pill"), lOn=L.ears==="on"; lp.textContent=lOn?"On":"Off"; lp.classList.toggle("sel",lOn);
+  document.getElementById("ears-sub-lift").textContent = "Headphones under the bar. The breath comes in as a rising whistle and lands in your head; it leaves as a low blow behind you. The count is in your ears, not on the screen.";
+  var ears=DB.cfg[setupMode].ears||"off";
   document.getElementById("setup-lift").classList.toggle("hid", setupMode!=="lift"); document.getElementById("setup-breathe").classList.toggle("hid", setupMode!=="breathe");
   document.getElementById("setup-title").textContent = setupMode==="lift"?"Lift":"Breathe";
   document.getElementById("setupnote").textContent = ENG.name==="field" ? "The wind reads the sound it makes: the gust you hear is the gust you see." : "";
   var segP=document.querySelectorAll("#seg-preset button"); for(i=0;i<segP.length;i++) segP[i].classList.toggle("sel", segP[i].getAttribute("data-preset")===L.preset);
   var segPat=document.querySelectorAll("#seg-pat button"); for(i=0;i<segPat.length;i++) segPat[i].classList.toggle("sel", segPat[i].getAttribute("data-pat")===P.pat);
-  var earsOn = setupMode==="breathe" && ears==="on";
+  var earsOn = ears==="on";
   var snd=document.querySelectorAll("[data-sound]"); for(i=0;i<snd.length;i++){ snd[i].classList.toggle("sel", DB.cfg[setupMode].sound===snd[i].getAttribute("data-sound")); snd[i].disabled=earsOn; }
   document.getElementById("sound-sub").textContent = earsOn ? "Ears is on: the spatial wind is the sound." : "";
 }
@@ -1003,7 +1021,7 @@ document.addEventListener("click", function(ev){
   if((v=t.getAttribute("data-s"))){ var p=v.split(":"); bump(p[0],parseFloat(p[1])); return; }
   if((v=t.getAttribute("data-preset"))){ DB.cfg.lift.preset=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-pat"))){ DB.cfg.breathe.pat=v; save(); refresh(); return; }
-  if((v=t.getAttribute("data-m"))){ DB.cfg.breathe[v] = (v==="belly" ? DB.cfg.breathe[v]!=="off" : DB.cfg.breathe[v]==="on") ? "off" : "on"; save(); refresh(); return; }
+  if((v=t.getAttribute("data-m"))){ var tg=DB.cfg[setupMode]; tg[v] = (v==="belly" ? tg[v]!=="off" : tg[v]==="on") ? "off" : "on"; save(); refresh(); return; }
   if((v=t.getAttribute("data-sound"))){ DB.cfg[setupMode].sound=v; save(); refresh(); return; }
 });
 document.getElementById("b-start").addEventListener("click", function(){
@@ -1038,7 +1056,7 @@ window.WIND = {
   state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst?ENG.inst.info():""}; },
   probe:function(){ if(ENG.inst&&ENG.inst.probe) ENG.inst.probe(); },
   rects:function(){ var out={}, els=document.querySelectorAll("#s-run .slot, #word span, #num, .rail .r"); for(var i=0;i<els.length;i++){ var r=els[i].getBoundingClientRect(); out[(els[i].id||els[i].className)+"#"+i]=[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]; } out.wordSize=getComputedStyle(elWord).fontSize; return out; },
-  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, ticks:function(){ return A?A.nodes.filter(function(n){ return n.frequency && n.frequency.value===1480; }).length:0; }, pan:function(){ if(!scheme||scheme.kind!=="ears") return null; var p=scheme.pan; return {x:+(p.positionX?p.positionX.value:NaN).toFixed(2), y:+(p.positionY?p.positionY.value:NaN).toFixed(2), z:+(p.positionZ?p.positionZ.value:NaN).toFixed(2), g:+scheme.g.gain.value.toFixed(3), f:Math.round(scheme.bp.frequency.value), q:+scheme.bp.Q.value.toFixed(2), auto:scheme.auto, model:p.panningModel, ctx:A.ctx.state}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ DB.cfg.breathe[k]=v; }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
+  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, ticks:function(){ return A?A.nodes.filter(function(n){ return n.frequency && n.frequency.value===1480; }).length:0; }, pan:function(){ if(!scheme||scheme.kind!=="ears") return null; var p=scheme.pan; return {x:+(p.positionX?p.positionX.value:NaN).toFixed(2), y:+(p.positionY?p.positionY.value:NaN).toFixed(2), z:+(p.positionZ?p.positionZ.value:NaN).toFixed(2), g:+scheme.g.gain.value.toFixed(3), f:Math.round(scheme.bp.frequency.value), q:+scheme.bp.Q.value.toFixed(2), lp:Math.round(scheme.lp.frequency.value), sp:+scheme.spatial.value.toFixed(2), ih:+scheme.inHead.value.toFixed(2), auto:scheme.auto, model:p.panningModel, ctx:A.ctx.state}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ DB.cfg.breathe[k]=v; }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
 };
 /* ---- boot ---- */
 fitWordOnce();

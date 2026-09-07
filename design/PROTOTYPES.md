@@ -82,8 +82,11 @@ Method · Tap on. The pacer counts; you play the count.
 - **Exhale.** Tap once a second again.
 
 Each tap pushes the wind: a real gust into the fluid at your fingertip, a
-radial shove in the velocity field plus a puff of dye, so the air moves
-because you moved it. A held finger pins the air under it: velocity is
+radial shove in the velocity field wide enough to cross a third of the
+screen, a puff of dye at the finger and a ring thrown out from it, the
+velocity ceiling lifted for the instant so the shove is not clipped, and a
+flash of the whole ground. The poke rings down over about half a second.
+The air moves because you moved it, and you can see that it did. A held finger pins the air under it: velocity is
 damped in a small disc around the touch, and the field settles there
 first. In the particle fallback the same two things happen to particles.
 
@@ -119,21 +122,33 @@ uses **two different voices**, and the strongest cue in hearing, the
 direction of a pitch glide.
 
 - **Inhale.** A thin, rising whistle. White noise through a bandpass that
-  sweeps 450 to 2600 Hz while its Q tightens from 1.2 to 3.0, so the pitch
-  climbs the whole way. It swells to full level only at the end. It comes
-  in from far left (7 m), across the front, to the right ear (0.8 m), and
-  rises from below the ears to overhead.
-- **Hold.** Close, overhead, still, faint (14%). Air already in, nothing
+  sweeps 380 to 2900 Hz while its Q tightens from 1.2 to 3.2, so the pitch
+  climbs the whole way. It starts far (10 m) and muffled, the top end
+  shut at 700 Hz as if through air, and clears to 7.5 kHz as it nears. It
+  swells to full level only at the end, with a small overshoot. It comes
+  in from far left, across the front, to the right ear (0.5 m), rising
+  from below the ears to overhead. Over the last 40% it crossfades from
+  the spatial path to a dry path straight into the middle of the head, so
+  the air stops being out there and is suddenly inside you.
+- **Hold.** Inside the head, still, faint (14%). Air already in, nothing
   new entering, but present, so silence is never mistaken for a dead
   headphone.
-- **Exhale.** A broad, low blow. Full level at once, then sinking away;
-  bandpass falling 1400 to 170 Hz with Q loosening to 0.7 and the top end
-  closing from 5.2 kHz to 900 Hz. It leaves from the right ear, round the
-  back, out to the far left, and sinks below.
+- **Exhale.** A broad, low blow. It bursts out at full level, hands itself
+  back to the world over the first 22%, then sinks away: bandpass falling
+  1500 to 140 Hz with Q loosening to 0.7, the top end closing from 7 kHz
+  to 450 Hz, level down to 5%. It leaves from the right ear, round the
+  back, out to 10 m on the far left, and sinks below.
 
-So the inhale is *rising, tightening, swelling, climbing, approaching* and
-the exhale is *falling, loosening, fading, sinking, receding*. Any one of
-those is enough with eyes shut; they all agree.
+The distance law is steep, inverse with rolloff 1.6 from a 0.5 m reference,
+so the far end is a tenth of the near level before the envelope even
+starts. The inhale is *rising, tightening, swelling, clearing, climbing,
+approaching, then inside* and the exhale is *out, falling, loosening,
+fading, muffling, sinking, receding*. Any one of those is enough with eyes
+shut; they all agree.
+
+Ears is a Lift setting too, one Ears row under Sets. The rest breathing
+between sets is the same in and out, so the count is in your ears under
+the bar rather than on a screen across the gym.
 
 Position is scheduled with the same look-ahead as the envelopes, 26
 linear ramps per phase on `positionX`, `positionY` and `positionZ`, with a

@@ -29,17 +29,16 @@ Memory and Still exist only as automatic catches when the GPU cannot deliver.
 | **Memory** | The wind is the session data. Deterministic seed from date and config. Each rep releases a debris particle that the field carries for the rest of the set; a sync tap's miss becomes turbulence; on rest the debris settles into a pile. Momentum from drag, no solver. | Nothing | 99 | 1 to 2.5 ms | Automatic catch for no WebGL2, GPU context loss, low battery, or a blown frame budget. Particle count halves under budget pressure |
 | **Still** | Zero particles. The ground luminance ramp alone. | Nothing | 0 | 0.05 ms | Nothing. The floor, reachable now only via `?eng=still`. |
 
-## Three methods
+## Two methods
 
 The screen is the instrument, and the user is mostly not looking at it. So
-the pacer couples to the body three other ways. They live in one card on
-the Breathe setup, **Method**, and combine freely.
+the pacer couples to the body two other ways. They are the **With** chips
+on the Breathe setup, and combine freely.
 
 | Method | Setting | What it is | Needs |
 |---|---|---|---|
 | **Belly** | On by default | The phone on the abdomen reads the breath from the accelerometer. The wind and the breath noise become your actual breath; the tone is the pacer. | One motion-permission tap on iOS |
 | **Tap** | Off by default | You drum the breath: tap once a second on the count through the inhale and the exhale, press and hold through the hold. Each tap is a real gust into the fluid at your fingertip. The pacer gives the beat as a tick and a pulse of light. | Nothing |
-| **Ears** | Off by default | Spatial wind. Two voices around the head: a thin rising whistle that comes in from the left and climbs to the right ear, a low falling blow that sinks away behind. Eyes closed, you hear the breath. | Headphones |
 
 Follow, the pattern that started at your own pace and led you down to 5.5 s,
 is gone. It carried its own start screen, a three-tap calibration, a
@@ -110,53 +109,51 @@ cannot be driven on a timer. So that version is blocked by the platform,
 not by effort. If this method turns out to be the one used every night,
 that is the first real argument in this project for a native app.
 
-## Ears: the breath in headphones
+## Ears, tried and cut
 
-Sound · Ears. One Sound for the whole app, Tone, Breath or Ears, chosen
-once and identical in Lift and Breathe.
+Five versions of a headphone method were built and tested on the phone: a
+voice on a circle round the head, two sharper voices on the circle, a
+single front axis, a line through the head from the nose to the back of
+the skull, and finally a stereo-width scheme with no panner and no room.
+The last was the most legible, and the existing Breath sound still did
+the job better: its own envelope, brighter in and darker out, already
+carries the direction of the air, and it does so from the speaker with
+no headphones. Ears is gone; an old Ears setting becomes Breath. The
+lesson matches the one under the microphone below: a method that needs a
+peripheral the pacer does not need is a second product.
 
-Four versions came before this. Three used a `PannerNode` with HRTF and
-moved a voice about the head, on a circle, then on the front axis, then on
-a line through the head from the nose to the back of the skull; the fourth
-added a reverb send. On the phone none of them read as air coming into the
-head, and the last was chaotic. The reason is structural: HRTF has almost
-nothing to say on the median plane, front, back and inside all sit at the
-centre of the image with only a faint colouration between them, and the
-reverb smeared what was left.
+## The picture: looming, dense, held, cool, alive
 
-This version uses no panner and no room. Two cues carry it, and both hold
-in every pair of ears:
+The screen used to carry the phase in one number, the ground lightness,
+and the top of the inhale was therefore the brightest flat value: white.
+The hold had no state of its own. Five changes, all inside the layout
+constraint.
 
-- **The stereo image.** A different noise in each ear is heard outside and
-  around you. The same noise in both ears is heard inside the head, at the
-  centre. The scheme runs one pink-noise buffer as three sources, two
-  independent ones hard-panned left and right and one fed to both ears,
-  with an equal-power crossfade between the pair and the single. Width 1
-  is around you; width 0 is inside your head.
-- **The spectrum.** Far is thin and dull: a narrow band (Q 1.8) under a
-  1.6 kHz top. Close is full and bright: the band open (Q 0.35) under a
-  6.5 kHz top. This is what distance does to any sound.
-
-So the three phases are:
-
-- **In.** Heard the instant the count starts, at half level, wide, thin
-  and dull. Over the whole inhale it collapses from wide to mono while it
-  grows to full level, its band opens and its top clears: the air gathers
-  from everywhere into the middle of your head.
-- **Hold.** The mono centre. A low hum, the noise through a narrow
-  resonance at 120 Hz with the top shut at 500 Hz, at a third of full
-  level, with a soft throb once a second from the second second on so the
-  hold can be counted eyes shut.
-- **Out.** The hum opens into full wind within 0.15 s, still inside the
-  head, then spreads back out from mono to wide over the whole exhale
-  while it fades to 5%, its top closes to 1.2 kHz and its band narrows:
-  the air leaves the head and thins away in front of you.
-
-Every parameter starts a phase from where the previous one left it, so the
-handoffs are continuous; nothing reverses inside a phase. The width and
-the filters are scheduled with the same look-ahead as the envelopes, 26
-linear ramps per phase. The output low-pass opens to 7 kHz for Ears. With
-Belly on as well, your own airflow stays in the head as the mirror voice.
+1. **Looming.** The field used to converge on the inhale. Air coming in is
+   air coming toward you, and the strongest cue peripheral vision has is
+   optic flow, so the inhale looms: the field expands from the centre
+   toward you, dye born at the centre and carried outward. The exhale
+   recedes: the field contracts and dye born at the edges is drawn to the
+   centre and gone.
+2. **Dense, not white.** Fill maps to density: lightness runs only to
+   17.5% and saturation climbs with it, so full lungs are a deep,
+   saturated field, with a luminous rim in the tint colour growing around
+   the edge of the screen, which is where peripheral vision is looking.
+3. **Held.** Still air: the fluid's momentum decays three and a half
+   times faster in the hold, the field freezes with a shimmer, the rim
+   stays lit, and from the second second on the whole screen pulses once
+   a second, so the hold can be counted from the field alone.
+4. **Cool.** The set used to run from blue to amber, which passes through
+   teal and green in the middle and read as a lab. It now runs from deep
+   blue (hue 222) to violet (hue 290): cool the whole way, the dye and the
+   rim in periwinkle to lilac, the ground of the app a deep navy.
+5. **Alive.** A curl-noise term, the curl of a slowly drifting value-noise
+   field injected as force, gives the air wisps and eddies even at rest;
+   the breath force is half again stronger with a higher velocity
+   ceiling; vorticity confinement is up so eddies persist; the simulation
+   is 160 wide instead of 128; dye clears faster so motion reads instead
+   of mud, with a gentle contrast curve on it. The particle fallback has
+   more particles and stronger curl. Still one fluid pass per frame.
 
 ### Why not the microphone
 
@@ -207,13 +204,13 @@ three-tap calibration, dynamic cycle building, the 45 s sensing timeout,
 the sleep ending, the Sync and Inhale tap readings with the held-hold
 splice. About 120 lines, four session-state fields, two step kinds, two
 words in the word slot. What was added: one tap that only touches the
-field, a beat, two Ears voices, three toggles.
+field, a beat, two chips.
 
 **UI.** Setup was three cards of toggles with a paragraph each, plus a
 Sound card that went grey when Ears was on and a footer note in jargon,
 and it read as overwhelming. It is now, in both modes, the thing you are
 doing (preset or pattern, with reps and sets or cycles), then **Sound**,
-one choice of three, Tone, Breath or Ears, shared by the app, then in
+one choice of two, Tone or Breath, shared by the app, then in
 Breathe only **With**, two chips, Belly and Tap. Each row carries a single
 short line. Nothing is disabled, nothing is duplicated between modes, and
 there is no footer.
@@ -229,11 +226,9 @@ fitter measured the hidden run screen, got zero, never scaled, and READY
 ran off both edges of the phone. Nothing on the run screen moves between
 phases.
 
-**UX.** The tick under Tap in Breathe is gone; the audible beat belongs to
-the Ears hold and nowhere else. The three methods now compose without
-special cases: Belly is a
-sensor, Tap is a finger, Ears is a speaker, and the pacer is the same fixed
-pattern under all of them. There is no mode where the app is waiting for
+**UX.** The tick under Tap in Breathe is gone. The two methods compose
+without special cases: Belly is a sensor, Tap is a finger, and the pacer
+is the same fixed pattern under both. There is no mode where the app is waiting for
 you, no calibration to get wrong, and no session that ends on its own.
 The Tap beat is the weakest link and is honestly labelled as such above.
 
@@ -245,14 +240,14 @@ owns the beat. The mirror keeps its estimator but nothing drives the
 timeline from it. Storage migrates a saved Follow pattern to 4 · 7 · 8 and
 a saved Sync or Inhale to Tap on.
 
-Still to do on a phone: the Ears level balance in real earbuds, the tick
-level against the tone, and whether the ground pulse is visible in a lit
-room.
+Still to do on a phone: whether the ground pulse and the curl wisps read
+in a lit room, and the frame time of the 160-wide simulation on an older
+phone.
 
 ## Try it
 
 - `wind.html` home screen, Lift or Breathe, Start.
-- Breathe, **Method** card: Belly, Tap, Ears. Each is one toggle. Any combination.
+- Breathe, **With** chips: Belly, Tap. Any combination. **Sound**: Tone or Breath, shared by both modes.
 - `wind.html?perf=1` frame-time overlay.
 - `wind.html?eng=memory|still` forces a fallback engine, for testing.
 - `wind.html?auto=lift` starts a session on load (audio will be silent until a tap).

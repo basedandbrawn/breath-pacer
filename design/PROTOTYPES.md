@@ -110,78 +110,53 @@ cannot be driven on a timer. So that version is blocked by the platform,
 not by effort. If this method turns out to be the one used every night,
 that is the first real argument in this project for a native app.
 
-## Ears: spatial wind
+## Ears: the breath in headphones
 
-Method · Ears on, headphones in. One setting, shared by Breathe and Lift,
-shown in both setups; the sound is identical in both modes, same level,
-same voice. The sound scheme becomes the spatial wind and the Sound row is
-disabled: the wind is the sound.
+Sound · Ears. One Sound for the whole app, Tone, Breath or Ears, chosen
+once and identical in Lift and Breathe.
 
-Three versions came before this: a voice on a circle round the head, two
-sharper voices on the same circle, and a single axis from far in front
-into the head. The one that matches what a breath feels like is a
-straight line **through the head, front to back**: the air is drawn in at
-the nose and travels to the back of the skull; it is held there; it leaves
-the back of the skull, passes the nose and goes out in front.
+Four versions came before this. Three used a `PannerNode` with HRTF and
+moved a voice about the head, on a circle, then on the front axis, then on
+a line through the head from the nose to the back of the skull; the fourth
+added a reverb send. On the phone none of them read as air coming into the
+head, and the last was chaotic. The reason is structural: HRTF has almost
+nothing to say on the median plane, front, back and inside all sit at the
+centre of the image with only a faint colouration between them, and the
+reverb smeared what was left.
 
-- **Inhale.** One gesture. Heard the instant the count starts, out in
-  front, airy (top end 3.6 kHz), and it comes back into the head: louder,
-  deeper (top end down to 1.5 kHz), and through the middle half of the
-  phase it crossfades from the spatial path to a dry path in the middle
-  of the head, so it ends inside you at the back of the skull. Nothing
-  reverses mid-phase; an earlier version rushed bright at the nostril and
-  then darkened, and that read as two events.
-- **Hold.** A different kind of sound, not wind: a low hum, the noise
-  through a narrow resonance at 120 Hz with the top shut at 500 Hz, held
-  at the back of the skull inside the head, with a soft throb once a
-  second from the second second on so the hold can be counted eyes shut.
-  The drop from the full inhale into the hum marks the first second.
-- **Exhale.** One gesture the other way. Full at once, from the back of
-  the skull, still inside. It opens as it passes the nose (centre up to
-  700 Hz, top end to 3.6 kHz, handed back to the spatial path between 10%
-  and 45%), then goes out in front, falling to 260 Hz, closing to 700 Hz,
-  fading to 5%, eight metres out by the end.
+This version uses no panner and no room. Two cues carry it, and both hold
+in every pair of ears:
 
-Every parameter starts a phase where the previous phase left it: level,
-both filters, the head blend and the position are all ramped from their
-current value, so the handoffs are continuous and the three phases are
-one motion. The panner carries direction only; its distance law is off and
-distance is done in the envelope. The voice is pink noise, soft at the top.
-Position is scheduled with the same look-ahead as the envelopes, 26 linear
-ramps per phase along the waypoints, with a per-frame fallback where the
-params are missing. The output low-pass opens to 7 kHz for Ears. With
+- **The stereo image.** A different noise in each ear is heard outside and
+  around you. The same noise in both ears is heard inside the head, at the
+  centre. The scheme runs one pink-noise buffer as three sources, two
+  independent ones hard-panned left and right and one fed to both ears,
+  with an equal-power crossfade between the pair and the single. Width 1
+  is around you; width 0 is inside your head.
+- **The spectrum.** Far is thin and dull: a narrow band (Q 1.8) under a
+  1.6 kHz top. Close is full and bright: the band open (Q 0.35) under a
+  6.5 kHz top. This is what distance does to any sound.
+
+So the three phases are:
+
+- **In.** Heard the instant the count starts, at half level, wide, thin
+  and dull. Over the whole inhale it collapses from wide to mono while it
+  grows to full level, its band opens and its top clears: the air gathers
+  from everywhere into the middle of your head.
+- **Hold.** The mono centre. A low hum, the noise through a narrow
+  resonance at 120 Hz with the top shut at 500 Hz, at a third of full
+  level, with a soft throb once a second from the second second on so the
+  hold can be counted eyes shut.
+- **Out.** The hum opens into full wind within 0.15 s, still inside the
+  head, then spreads back out from mono to wide over the whole exhale
+  while it fades to 5%, its top closes to 1.2 kHz and its band narrows:
+  the air leaves the head and thins away in front of you.
+
+Every parameter starts a phase from where the previous one left it, so the
+handoffs are continuous; nothing reverses inside a phase. The width and
+the filters are scheduled with the same look-ahead as the envelopes, 26
+linear ramps per phase. The output low-pass opens to 7 kHz for Ears. With
 Belly on as well, your own airflow stays in the head as the mirror voice.
-
-In Lift the Ears row sits under Sets and toggles the same setting. The
-rest breathing between sets is the same in and out, so the count is in
-your ears under the bar rather than on a screen across the gym.
-
-## The picture: looming, dense, held
-
-The screen used to carry the phase in one number, the ground lightness,
-and the top of the inhale was therefore the brightest flat value: white.
-The hold had no state of its own; it was the inhale's last frame, held.
-Three changes, all inside the layout constraint.
-
-1. **The same axis as the ears.** The field used to converge on the
-   inhale. Air coming in is air coming toward you, and the strongest cue
-   peripheral vision has is optic flow, so the inhale now looms: the
-   field expands from the centre toward you, dye born at the centre and
-   carried outward. The exhale recedes: the field contracts and the dye
-   born at the edges is drawn to the centre and gone. Covered word, six
-   feet away, expansion is in and contraction is out, and it is the same
-   direction the sound moves.
-2. **The white is capped.** Fill maps to density: lightness runs only to
-   17.5% and saturation climbs from 0.42 to 0.82 with it, so full lungs
-   are a deep, saturated field. A luminous rim in the tint colour grows
-   with fill around the edge of the screen, which is where peripheral
-   vision is looking anyway.
-3. **The hold is its own state.** Still air: the fluid's momentum decays
-   three and a half times faster and the particles drag hard, so the
-   field freezes with a shimmer instead of coasting. The rim stays lit,
-   and from the second second on the whole screen pulses once a second,
-   in step with the Ears throb, so the beat you hear is the beat you see
-   whether or not you can hear it.
 
 ### Why not the microphone
 
@@ -234,15 +209,25 @@ splice. About 120 lines, four session-state fields, two step kinds, two
 words in the word slot. What was added: one tap that only touches the
 field, a beat, two Ears voices, three toggles.
 
-**UI.** The Breathe setup is now Pattern and Cycles, then a Method card of
-three rows with a name, one line of what it does, and an On/Off pill; then
-Sound. The earlier three segmented controls with sub-lines were three
-copies of the same widget for three yes/no questions. The row form reads
-top to bottom as a list of what the pacer can do to you. When Ears is on
-the Sound buttons dim and the reason is printed inside the Sound card,
-not in a footer note. Nothing on the run screen moved: the meta line gains
-"· TAP" or "· PRESS" in Tap mode, short enough to clear the End button at
-390 px, and that is the only text change.
+**UI.** Setup was three cards of toggles with a paragraph each, plus a
+Sound card that went grey when Ears was on and a footer note in jargon,
+and it read as overwhelming. It is now, in both modes, the thing you are
+doing (preset or pattern, with reps and sets or cycles), then **Sound**,
+one choice of three, Tone, Breath or Ears, shared by the app, then in
+Breathe only **With**, two chips, Belly and Tap. Each row carries a single
+short line. Nothing is disabled, nothing is duplicated between modes, and
+there is no footer.
+
+On the run screen the IN · HOLD · OUT rail, three words with one lit,
+is replaced by a timeline: three thin segments in proportion to the
+in, hold and out of the current cycle, the current one filling left to
+right. It shows the shape of the breath and where you are in it without
+a second set of words, and the hold segment simply is not there on
+5.5 · 5.5. The phase word is smaller, 24% of the width capped at 15% of
+the height, and it is now measured on a visible offscreen span: the old
+fitter measured the hidden run screen, got zero, never scaled, and READY
+ran off both edges of the phone. Nothing on the run screen moves between
+phases.
 
 **UX.** The tick under Tap in Breathe is gone; the audible beat belongs to
 the Ears hold and nowhere else. The three methods now compose without

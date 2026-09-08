@@ -29,6 +29,46 @@ Memory and Still exist only as automatic catches when the GPU cannot deliver.
 | **Memory** | The wind is the session data. Deterministic seed from date and config. Each rep releases a debris particle that the field carries for the rest of the set; a sync tap's miss becomes turbulence; on rest the debris settles into a pile. Momentum from drag, no solver. | Nothing | 99 | 1 to 2.5 ms | Automatic catch for no WebGL2, GPU context loss, low battery, or a blown frame budget. Particle count halves under budget pressure |
 | **Still** | Zero particles. The ground luminance ramp alone. | Nothing | 0 | 0.05 ms | Nothing. The floor, reachable now only via `?eng=still`. |
 
+## Lift: three presets, one per rep shape
+
+The old split, compound, isolation, isometric, sorted lifts by taxonomy,
+and two lifts in the same bucket could need opposite breathing. What
+actually determines the breath is where the pause lives, and there are
+only two answers, plus isometrics. Every cycle opens on IN.
+
+| Preset | Sequence | Rep | Rest | Lifts |
+|---|---|---|---|---|
+| **Drive** | in 3 · brace 1 · out 2 | 6 s | 2:30 | Squats, presses, hinges, lunges, dips, push-ups |
+| **Squeeze** | in 2 · out 1 · squeeze 2 | 5 s | 1:30 | Rows, pulls, curls, raises, extensions, calves, hip thrusts |
+| **Hold** | in 3 · out 4, continuous | seconds | 1:00 | Planks, carries, wall sits, dead hangs |
+
+Drive pauses full: inhale on the way down, brace at the bottom with the
+air in, exhale through the drive. The bottom of a squat wants
+intra-abdominal pressure, and the one-second brace kills the bounce out of
+the hole. Squeeze pauses empty: inhale on the way down, exhale as you
+lift, and the exhale finishes through the squeeze at the top. The top of
+a curl needs no brace, and breath-holding on light high-rep work is the
+thing to avoid. The two are mirror images, three in against two out and
+two in against three out, and no phase exceeds three seconds.
+
+One preset per shape was a deliberate choice over six. The three-second
+lowering errs long on a bench press, which is a good hypertrophy
+prescription, rather than short on a heavy squat, which is a rushed
+eccentric. The two-second squeeze is the only length that works on every
+lift in its family: one is too short for calves and glutes, three is too
+long to hold a heavy row. The one named compromise is that pull-ups and
+barbell rows would take a three-second lowering if they had their own
+preset.
+
+On the run screen the two pauses are the same still state as Breathe's
+hold, a lit rim and a pulse each second, at opposite fills: BRACE is
+bright and still, SQUEEZE is dark and still. The squeeze is a fourth slot
+in the cycle and the timeline, the engine's old empty-lungs phase, which
+is literally what it is. The words are IN, BRACE, OUT and IN, OUT,
+SQUEEZE; SQUEEZE is now the widest word the fitter measures. Max-effort
+work under six reps is out of scope on purpose: at that load the breath
+is held for the whole rep and a pacer cannot help.
+
 ## Two methods
 
 The screen is the instrument, and the user is mostly not looking at it. So
@@ -246,7 +286,7 @@ phone.
 
 ## Try it
 
-- `wind.html` home screen, Lift or Breathe, Start.
+- `wind.html` home screen, Lift or Breathe, Start. Lift: Drive, Squeeze or Hold.
 - Breathe, **With** chips: Belly, Tap. Any combination. **Sound**: Tone or Breath, shared by both modes.
 - `wind.html?perf=1` frame-time overlay.
 - `wind.html?eng=memory|still` forces a fallback engine, for testing.

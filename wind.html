@@ -138,8 +138,9 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   <div class="scroll">
     <div id="setup-lift">
       <div class="card"><div class="row stack">
-        <div class="seg" id="seg-preset"><button data-preset="compound">Compound</button><button data-preset="isolation">Isolation</button><button data-preset="hold">Hold</button></div>
+        <div class="seg" id="seg-preset"><button data-preset="drive">Drive</button><button data-preset="squeeze">Squeeze</button><button data-preset="hold">Hold</button></div>
         <div id="preset-sub" class="sub" style="letter-spacing:.2em"></div>
+        <div id="preset-note" class="sub"></div>
       </div></div>
       <div class="card">
         <div class="row" id="row-reps"><span class="lbl">Reps</span><div class="step"><button data-s="reps:-1">−</button><span class="v" id="v-reps">10</span><button data-s="reps:1">+</button></div></div>
@@ -173,7 +174,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   <div class="spacer"></div>
   <div class="word slot" id="word"><span></span></div>
   <div class="count slot" id="num"></div>
-  <div class="rail slot"><div class="tl" id="tl"><div id="tl-in"><i></i></div><div id="tl-hold"><i></i></div><div id="tl-out"><i></i></div></div></div>
+  <div class="rail slot"><div class="tl" id="tl"><div id="tl-in"><i></i></div><div id="tl-hold"><i></i></div><div id="tl-out"><i></i></div><div id="tl-empty"><i></i></div></div></div>
   <div class="spacer"></div>
   <div class="foot slot">
     <button class="btn" id="b-skip">Skip rest</button>
@@ -192,10 +193,13 @@ var KEY = "wind.v1";
 var DEF = {
   cfg: {
     sound:"tone",
-    lift: {preset:"compound", reps:10, sets:4, holdSec:45,
-      tune:{compound:{"in":4, hold:2, out:6, rest:180},
-            isolation:{"in":2, hold:0, out:3, rest:90},
-            hold:{"in":4, hold:0, out:8, rest:90}}},
+    /* LIFT presets, one per rep shape. DRIVE pauses full at the bottom: squats, presses, hinges.
+       SQUEEZE pauses empty at the top: rows, pulls, curls, raises, calves. HOLD is isometric:
+       continuous breathing, counted in seconds. Every cycle opens on IN. */
+    lift: {preset:"drive", reps:10, sets:4, holdSec:45,
+      tune:{drive:  {"in":3, hold:1, out:2, empty:0, rest:150},
+            squeeze:{"in":2, hold:0, out:1, empty:2, rest:90},
+            hold:   {"in":3, hold:0, out:4, empty:0, rest:60}}},
     breathe: {cycles:8, pat:"478", belly:"on", tap:"off"}
   },
   stats: {sec:0, log:[]}
@@ -206,7 +210,9 @@ try{
   var raw = JSON.parse(localStorage.getItem(KEY) || "null");
   if(raw && raw.cfg){
     var L = raw.cfg.lift; if(L){ ["preset","reps","sets","holdSec"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
-      if(L.tune) for(var pk in DB.cfg.lift.tune){ if(L.tune[pk]) for(var tk in DB.cfg.lift.tune[pk]) if(L.tune[pk][tk]!==undefined) DB.cfg.lift.tune[pk][tk]=L.tune[pk][tk]; } }
+      /* the tempos are fixed now; nothing stored overrides them. Old preset names map onto the new shapes. */
+      if(DB.cfg.lift.preset==="compound") DB.cfg.lift.preset="drive"; else if(DB.cfg.lift.preset==="isolation") DB.cfg.lift.preset="squeeze";
+      if(!DB.cfg.lift.tune[DB.cfg.lift.preset]) DB.cfg.lift.preset="drive"; }
     if(raw.cfg.breathe) for(var bk in DB.cfg.breathe) if(raw.cfg.breathe[bk]!==undefined) DB.cfg.breathe[bk]=raw.cfg.breathe[bk];
     if(DB.cfg.breathe.pat!=="478" && DB.cfg.breathe.pat!=="coh") DB.cfg.breathe.pat="478";          /* Follow is gone */
     /* one Sound for the app; sounds were once per mode, and Ears, now gone, becomes Breath */
@@ -311,12 +317,14 @@ function schemePhase(kind, at, dur){
     if(kind==="in"){ env(s.hi.gain,0.0001,hi,at,g*0.8,easeIO); env(s.hi.gain,hi,hi*0.85,at+g*0.8,g*0.2,easeIO); env(s.lo.gain,s.lo.gain.value,0.03*k,at,g*0.5,easeIO); env(s.lp.frequency,900,2200,at,g,easeIO); }
     else if(kind==="hold"){ env(s.hi.gain,s.hi.gain.value,0.0001,at,Math.min(g*0.3,0.45),easeOut); env(s.lo.gain,s.lo.gain.value,0.0001,at,Math.min(g*0.3,0.45),easeOut); }
     else if(kind==="out"){ env(s.lo.gain,0.0001,lo,at,g*0.25,easeOut); env(s.lo.gain,lo,0.0003,at+g*0.25,g*0.72,easeIO); env(s.hi.gain,s.hi.gain.value,0.0001,at,g*0.4,easeIO); env(s.lp.frequency,1800,640,at,g,easeIO); }
+    else if(kind==="empty"){ env(s.hi.gain,s.hi.gain.value,0.0001,at,0.3,easeOut); env(s.lo.gain,s.lo.gain.value,0.06*k,at,0.2,easeOut); env(s.lo.gain,0.06*k,0.0001,at+g*0.5,g*0.5,easeIn); env(s.lp.frequency,s.lp.frequency.value,520,at,g,easeOut); }   /* the squeeze: the low voice held, then gone */
     else { env(s.hi.gain,s.hi.gain.value,0.0001,at,0.4,easeIn); env(s.lo.gain,s.lo.gain.value,0.0001,at,0.4,easeIn); }
   }
   if(s.kind==="breath"){
     var top=1.05*k;
     if(kind==="in"){ env(s.g.gain,0.0001,top,at,g*0.6,easeIO); env(s.g.gain,top,top*0.35,at+g*0.6,g*0.35,easeIO); env(s.bp.frequency,520,1400,at,g,easeIO); env(s.lp.frequency,1800,2600,at,g,easeIO); }
     else if(kind==="hold"){ env(s.g.gain,s.g.gain.value,0.0001,at,0.3,easeOut); }
+    else if(kind==="empty"){ env(s.g.gain,s.g.gain.value,0.16*top,at,0.2,easeOut); env(s.g.gain,0.16*top,0.0001,at+g*0.5,g*0.5,easeIn); env(s.bp.frequency,s.bp.frequency.value,300,at,g,easeOut); }   /* the squeeze: the last of the air leaving */
     else if(kind==="out"){ env(s.g.gain,0.0001,0.9*k,at,g*0.14,easeOut); env(s.g.gain,0.9*k,0.0002,at+g*0.14,g*0.76,easeIO); env(s.bp.frequency,1200,380,at,g,easeIO); env(s.lp.frequency,2300,1100,at,g,easeIO); }
     else { env(s.g.gain,s.g.gain.value,0.0001,at,0.25,easeOut); }
   }
@@ -444,7 +452,7 @@ function Field2D(cv, opt){
       /* the finger: a poke pushes particles out from the fingertip; a held finger pins them */
       if(st.tapK>0.01){ var tx=p.x-st.tapX, ty=p.y-st.tapY, tr=Math.hypot(tx,ty)+1e-3, tf=st.tapK*Math.exp(-tr*tr/(pokeR*pokeR))*36000; ax += tx/tr*tf; ay += ty/tr*tf; }
       p.vx += ax*dt; p.vy += ay*dt;
-      var drag = 1 - Math.min(1, (st.phase==="hold"?4.5:1.6)*dt); p.vx*=drag; p.vy*=drag;
+      var drag = 1 - Math.min(1, (st.still?4.5:1.6)*dt); p.vx*=drag; p.vy*=drag;
       if(st.pinK>0){ var px_=p.x-st.pinX, py_=p.y-st.pinY, pf=1-st.pinK*0.25*Math.exp(-(px_*px_+py_*py_)/(pokeR*pokeR)); p.vx*=pf; p.vy*=pf; }
       /* obstacle: the word */
       if(maskAt(p.x,p.y) > 0.5){
@@ -571,14 +579,14 @@ function FieldGL(cv){
     var tx=1/simW, ty=1/simH, u, i;
     var aspect=[W/H,1], center=[0.5, 1-0.47];
     /* 1. advect velocity (dissipation = momentum decay: the hold settles) */
-    u=use("advect"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss, st.idle?0.985:st.phase==="hold"?0.972:0.992);   /* the hold settles fast: still air */ bind(u,"uVel",vel,0); bind(u,"uSrc",vel,1); draw(vel2); swapV();
+    u=use("advect"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss, st.idle?0.985:st.still?0.972:0.992);   /* the hold settles fast: still air */ bind(u,"uVel",vel,0); bind(u,"uSrc",vel,1); draw(vel2); swapV();
     /* 2. vorticity confinement keeps the eddies alive */
     u=use("curl"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uVel",vel,0); draw(cl);
     u=use("vort"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uK, 22+30*st.turb); bind(u,"uVel",vel,0); bind(u,"uCurl",cl,1); draw(vel2); swapV();
     /* 3. the breath: inward divergence on IN, outward on OUT, nothing on HOLD */
     u=use("force"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
     gl.uniform1f(u.uFlow, st.flow*(0.5+1.4*st.amp)); gl.uniform1f(u.uSwirl, 0.18+st.turb); gl.uniform1f(u.uWind, st.idle?1:0); gl.uniform1f(u.uTime,t); gl.uniform1f(u.uMax, 130+120*st.tapK);
-    gl.uniform1f(u.uCurl, (st.phase==="hold"?1.5:5.0)*(0.6+Math.abs(st.flow))+22*st.turb);
+    gl.uniform1f(u.uCurl, (st.still?1.5:5.0)*(0.6+Math.abs(st.flow))+22*st.turb);
     gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK); gl.uniform2f(u.uPin, st.pinX/W, 1-st.pinY/H); gl.uniform1f(u.uPinK, st.pinK);
     bind(u,"uVel",vel,0); bind(u,"uMask",maskTex,1); draw(vel2); swapV();
     /* 4. project to divergence-free */
@@ -714,10 +722,10 @@ function coherentSteps(seconds, stage, setNo){ var out=[], n=Math.ceil(seconds/1
 function buildSteps(){
   var st=[], c=DB.cfg, i, s, r;
   if(S.mode==="lift"){
-    var T=c.lift.tune[c.lift.preset], counts={"in":+T["in"],hold:+T.hold,out:+T.out,empty:0};
+    var T=c.lift.tune[c.lift.preset], counts={"in":+T["in"],hold:+T.hold,out:+T.out,empty:+T.empty};
     for(s=1;s<=S.sets;s++){
       st.push(ph("getset",3,"getset",s,0)); var mark=st.length;
-      if(S.holdMode){ var cyc=counts["in"]+counts.hold+counts.out, reps=Math.ceil(S.holdSec/cyc)+1; for(r=1;r<=reps;r++) pushCycle(st,counts,"set",s,r); trimTo(st,mark,S.holdSec); }
+      if(S.holdMode){ var cyc=counts["in"]+counts.hold+counts.out+counts.empty, reps=Math.ceil(S.holdSec/cyc)+1; for(r=1;r<=reps;r++) pushCycle(st,counts,"set",s,r); trimTo(st,mark,S.holdSec); }
       else for(r=1;r<=S.reps;r++) pushCycle(st,counts,"set",s,r);
       if(s<S.sets){ var rest=coherentSteps(S.restDur,"rest",s); for(i=0;i<rest.length;i++) st.push(rest[i]); }
     }
@@ -824,16 +832,17 @@ var elWord=document.getElementById("word"), elWordI=elWord.firstElementChild, el
     elMeta=document.getElementById("rmeta"), elRun=document.getElementById("s-run"),
     elEnd=document.getElementById("endbtn"), bSkip=document.getElementById("b-skip"), bSave=document.getElementById("b-save"), bBack=document.getElementById("b-back"),
     elMark=document.getElementById("mark"), elPerf=document.getElementById("perf"),
-    tlSeg={"in":document.getElementById("tl-in"), hold:document.getElementById("tl-hold"), out:document.getElementById("tl-out")};
+    tlSeg={"in":document.getElementById("tl-in"), hold:document.getElementById("tl-hold"), out:document.getElementById("tl-out"), empty:document.getElementById("tl-empty")};
 var lastWord=null, lastNum=null, lastMeta=null, lastKind=null, lastRail=null, lastFoot=null;
-var WORDS={"in":"IN",hold:"HOLD",out:"OUT",empty:"",getset:"READY",done:"DONE",rest:"REST"};
+var WORDS={"in":"IN",hold:"HOLD",out:"OUT",empty:"EMPTY",getset:"READY",done:"DONE",rest:"REST"};
+function wordFor(st){ if(S.mode==="lift" && st.stage==="set"){ if(st.k==="hold") return "BRACE"; if(st.k==="empty") return "SQUEEZE"; } return WORDS[st.k]; }
 
 /* fitted ONCE for the widest word that can ever appear; never per word */
 /* measured on a visible offscreen span: the run screen is display:none at boot and a hidden
    element measures 0, which is how READY once ran off both edges of the phone */
 var meas=document.createElement("span"); meas.style.cssText="position:fixed;left:-9999px;top:0;visibility:hidden;white-space:nowrap;font-weight:800;letter-spacing:.04em;line-height:1;pointer-events:none"; document.body.appendChild(meas);
 function fitWordOnce(){
-  var words=["READY","HOLD","REST","DONE"], size=Math.min(window.innerWidth*0.24, window.innerHeight*0.15), avail=window.innerWidth*0.78;
+  var words=["SQUEEZE","READY","BRACE","HOLD","REST","DONE"], size=Math.min(window.innerWidth*0.24, window.innerHeight*0.15), avail=window.innerWidth*0.86;
   meas.style.fontSize=size+"px"; var maxW=0; for(var i=0;i<words.length;i++){ meas.textContent=words[i]; maxW=Math.max(maxW, meas.offsetWidth); }
   if(maxW>avail) size=size*avail/maxW;
   document.documentElement.style.setProperty("--wordSize", Math.floor(size)+"px");
@@ -841,24 +850,24 @@ function fitWordOnce(){
 function txt(el,v,cache){ if(cache!==v) el.textContent=v; return v; }
 function fmtClock(s){ s=Math.max(0,Math.ceil(s)); var m=Math.floor(s/60), r=s%60; return m+":"+(r<10?"0":"")+r; }
 function setFoot(which){ if(which===lastFoot) return; bSkip.classList.toggle("show",which==="skip"); bSave.classList.toggle("show",which==="save"); bBack.classList.toggle("show",which==="back"); lastFoot=which; }
-var tlKey="", tlFill={"in":-1,hold:-1,out:-1}, ORDER={"in":0,hold:1,out:2,empty:3};
+var tlKey="", tlFill={"in":-1,hold:-1,out:-1,empty:-1}, ORDER={"in":0,hold:1,out:2,empty:3};
 /* the in, hold and out of the cycle the current step belongs to */
 function cycleOf(){
   var st=S.steps[S.idx]; if(!st || ORDER[st.k]===undefined) return null;
   var same=function(q){ return q && q.stage===st.stage && q.set===st.set && q.rep===st.rep && ORDER[q.k]!==undefined; };
   var j=S.idx; while(j>0 && same(S.steps[j-1]) && ORDER[S.steps[j-1].k]<ORDER[S.steps[j].k]) j--;
-  var d={"in":0,hold:0,out:0}, k=j; while(k<S.steps.length && same(S.steps[k]) && (k===j || ORDER[S.steps[k].k]>ORDER[S.steps[k-1].k])){ if(d[S.steps[k].k]!==undefined) d[S.steps[k].k]=S.steps[k].dur; k++; }
+  var d={"in":0,hold:0,out:0,empty:0}, k=j; while(k<S.steps.length && same(S.steps[k]) && (k===j || ORDER[S.steps[k].k]>ORDER[S.steps[k-1].k])){ if(d[S.steps[k].k]!==undefined) d[S.steps[k].k]=S.steps[k].dur; k++; }
   return d;
 }
 function setRail(k, frac){
   var st=S.steps[S.idx], key=st ? st.stage+":"+st.set+":"+st.rep : "";
   if(key!==tlKey){ tlKey=key; var d=cycleOf(); for(var n in tlSeg){ var w=d?d[n]:0; tlSeg[n].style.flexGrow=w||1; tlSeg[n].classList.toggle("gone", !!d && w===0); } }
-  var f={"in":0,hold:0,out:0}; if(k){ for(var m in f){ f[m] = ORDER[m]<ORDER[k] ? 1 : ORDER[m]===ORDER[k] ? Math.round(frac*200)/200 : 0; } }
+  var f={"in":0,hold:0,out:0,empty:0}; if(k){ for(var m in f){ f[m] = ORDER[m]<ORDER[k] ? 1 : ORDER[m]===ORDER[k] ? Math.round(frac*200)/200 : 0; } }
   for(var q in f){ if(f[q]!==tlFill[q]){ tlFill[q]=f[q]; tlSeg[q].firstElementChild.style.transform="scaleX("+f[q]+")"; } }
 }
 function paintDone(){ lastWord=txt(elWordI,"DONE",lastWord); lastNum=txt(elNum,"",lastNum); lastMeta=txt(elMeta,"",lastMeta); setFoot("back"); setRail(null,0); elEnd.classList.add("hid"); MASK.dirty=true; }
 
-var frameState = {phase:"idle", fill:0, prog:0, flow:0, amp:0, temp:0, turb:0, ground:[0,0,0], idle:true, stage:"", rep:0, reps:1, set:0, sets:1, dim:1,
+var frameState = {phase:"idle", fill:0, prog:0, flow:0, amp:0, temp:0, turb:0, ground:[0,0,0], idle:true, still:false, stage:"", rep:0, reps:1, set:0, sets:1, dim:1,
                   tapX:0, tapY:0, tapK:0, pinX:0, pinY:0, pinK:0, rim:0, pulse:0};
 /* the finger in the field: a decaying poke and a held pin, in canvas pixels for the 2D engine and uv for the GPU */
 function touchState(now, fs){
@@ -890,17 +899,18 @@ function render(now){
   /* the beat, in light, for Tap: each second of an active phase the whole ground blinks up a step and settles */
   var beat=0, into=now-S.stepStart; if(S.tapOn && st.stage==="set" && (st.k==="in"||st.k==="out")){ var bt=into-Math.floor(into); beat=Math.exp(-bt/0.10); }
   /* the hold is its own state: still air, a luminous rim, and a pulse once a second from the second second on, so the hold can be counted from the field */
-  fs.pulse=0; if(st.k==="hold" && into>=1){ var hb=into-Math.floor(into); fs.pulse=Math.exp(-hb/0.12); }
-  fs.rim = 0.16*fs.fill + 0.22*fs.pulse + (st.k==="hold"?0.06:0);
+  fs.still = st.k==="hold" || st.k==="empty";     /* brace holds full; squeeze holds empty; both are still air with a lit rim */
+  fs.pulse=0; if(fs.still && into>=1){ var hb=into-Math.floor(into); fs.pulse=Math.exp(-hb/0.12); }
+  fs.rim = 0.16*fs.fill + 0.22*fs.pulse + (fs.still?0.08:0);
   fs.ground=ground(Math.min(1.2, fs.fill + 0.14*beat + 0.18*fs.tapK + 0.05*fs.pulse), fs.temp, fs.dim);   /* the tap lights the whole ground for an instant */
   if(st.k==="done"){ if(lastWord!=="DONE") paintDone(); return; }
   elEnd.classList.remove("hid");
   var isRest=st.stage==="rest", isSet=st.stage==="set";
-  var word = isRest ? "REST" : WORDS[st.k];
+  var word = isRest ? "REST" : wordFor(st);
   lastWord=txt(elWordI, word, lastWord);
   if(isRest){ var left=rem,i; for(i=S.idx+1;i<S.steps.length&&S.steps[i].stage==="rest"&&S.steps[i].set===st.set;i++) left+=S.steps[i].dur; lastNum=txt(elNum,fmtClock(left),lastNum); }
-  else { var shown=Math.min(Math.ceil(rem-0.001),Math.ceil(st.dur)); lastNum=txt(elNum, st.k==="empty"?"":String(shown||1), lastNum); }
-  setRail(st.k==="in"||st.k==="hold"||st.k==="out"?st.k:null, frac);
+  else { var shown=Math.min(Math.ceil(rem-0.001),Math.ceil(st.dur)); lastNum=txt(elNum, String(shown||1), lastNum); }
+  setRail(ORDER[st.k]!==undefined?st.k:null, frac);
   var meta;
   if(isRest) meta="REST · SET "+st.set+"/"+S.sets;
   else if(S.holdMode && isSet){ var pr=setProgress(); meta="SET "+st.set+"/"+S.sets+" · "+Math.ceil(S.holdSec-pr)+"S"; }
@@ -911,7 +921,7 @@ function render(now){
 }
 function idleRender(t){
   var fs=frameState; fs.idle=true; fs.phase="idle"; fs.stage=""; fs.flow=0; fs.amp=0.2; fs.turb=Math.max(0, fs.turb-0.01);
-  fs.fill = 0.28 + 0.12*Math.sin(t*0.35); fs.temp=0.1; fs.dim=1; fs.ground=ground(fs.fill, fs.temp, 1); fs.tapK=0; fs.pinK=0; fs.rim=0.05; fs.pulse=0;
+  fs.fill = 0.28 + 0.12*Math.sin(t*0.35); fs.temp=0.1; fs.dim=1; fs.ground=ground(fs.fill, fs.temp, 1); fs.tapK=0; fs.pinK=0; fs.rim=0.05; fs.pulse=0; fs.still=false;
 }
 
 /* ============================ LOOP ============================ */
@@ -945,7 +955,9 @@ function refresh(){
   var L=DB.cfg.lift, P=DB.cfg.breathe, T=L.tune[L.preset], i, isHold=L.preset==="hold";
   document.getElementById("v-reps").textContent=L.reps; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-holdSec").textContent=L.holdSec; document.getElementById("v-cycles").textContent=P.cycles;
   document.getElementById("row-reps").classList.toggle("hid",isHold); document.getElementById("row-hsec").classList.toggle("hid",!isHold);
-  document.getElementById("preset-sub").textContent = fmtN(T["in"])+(T.hold>0?" · "+fmtN(T.hold):"")+" · "+fmtN(T.out)+"   —   rest "+fmtClock(T.rest);
+  var seq = L.preset==="drive" ? "in "+T["in"]+" · brace "+T.hold+" · out "+T.out : L.preset==="squeeze" ? "in "+T["in"]+" · out "+T.out+" · squeeze "+T.empty : "in "+T["in"]+" · out "+T.out;
+  document.getElementById("preset-sub").textContent = seq+"   —   rest "+fmtClock(T.rest);
+  document.getElementById("preset-note").textContent = L.preset==="drive" ? "Squats, presses, hinges. Breathe in on the way down, brace at the bottom, drive up." : L.preset==="squeeze" ? "Rows, pulls, curls, raises, calves. Breathe in on the way down, lift, squeeze at the top." : "Planks, carries, wall sits. Breathe steadily; seconds, not reps.";
   var belly=P.belly!=="off", tap=P.tap==="on", sound=DB.cfg.sound;
   document.getElementById("pat-sub").textContent = P.pat==="coh" ? "Coherent, 5.5 a minute." : "Relaxing breath, long exhale.";
   document.getElementById("sound-sub").textContent = sound==="breath" ? "A breath of wind, in and out." : "A soft pad.";

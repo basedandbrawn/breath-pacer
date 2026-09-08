@@ -199,11 +199,12 @@ var Q = {}; try{ location.search.slice(1).split("&").forEach(function(kv){ var p
 var KEY = "wind.v1";
 var DEF = {
   cfg: {
-    lift: {preset:"compound", reps:10, sets:4, holdSec:45, sound:"tone", ears:"off",
+    ears:"off",
+    lift: {preset:"compound", reps:10, sets:4, holdSec:45, sound:"tone",
       tune:{compound:{"in":4, hold:2, out:6, rest:180},
             isolation:{"in":2, hold:0, out:3, rest:90},
             hold:{"in":4, hold:0, out:8, rest:90}}},
-    breathe: {cycles:8, pat:"478", sound:"tone", belly:"on", tap:"off", ears:"off"}
+    breathe: {cycles:8, pat:"478", sound:"tone", belly:"on", tap:"off"}
   },
   stats: {sec:0, log:[]}
 };
@@ -212,10 +213,12 @@ var DB = clone(DEF);
 try{
   var raw = JSON.parse(localStorage.getItem(KEY) || "null");
   if(raw && raw.cfg){
-    var L = raw.cfg.lift; if(L){ ["preset","reps","sets","holdSec","sound","ears"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
+    var L = raw.cfg.lift; if(L){ ["preset","reps","sets","holdSec","sound"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
       if(L.tune) for(var pk in DB.cfg.lift.tune){ if(L.tune[pk]) for(var tk in DB.cfg.lift.tune[pk]) if(L.tune[pk][tk]!==undefined) DB.cfg.lift.tune[pk][tk]=L.tune[pk][tk]; } }
     if(raw.cfg.breathe) for(var bk in DB.cfg.breathe) if(raw.cfg.breathe[bk]!==undefined) DB.cfg.breathe[bk]=raw.cfg.breathe[bk];
     if(DB.cfg.breathe.pat!=="478" && DB.cfg.breathe.pat!=="coh") DB.cfg.breathe.pat="478";          /* Follow is gone */
+    var oe = raw.cfg.ears || ((raw.cfg.breathe&&raw.cfg.breathe.ears==="on")||(raw.cfg.lift&&raw.cfg.lift.ears==="on") ? "on" : "off");   /* Ears was per mode; now one setting */
+    DB.cfg.ears = oe==="on" ? "on" : "off"; delete DB.cfg.breathe.ears;
     if(DB.cfg.breathe.tap!=="off" && DB.cfg.breathe.tap!=="on") DB.cfg.breathe.tap="on";            /* Sync and Inhale became the one Tap */
   }
   if(raw && raw.stats){ DB.stats.sec = raw.stats.sec||0; DB.stats.log = raw.stats.log||[]; }
@@ -350,7 +353,7 @@ function earsFrame(){   /* fallback for panners without AudioParam positions */
   var m=scheme.motion, p=(A.ctx.currentTime-m.at)/Math.max(m.dur,0.01), w=pathAt(m.pts,p);
   try{ scheme.pan.setPosition(w[0],w[1],w[2]); }catch(e){}
 }
-function makeScheme(name, dim){ if(!A) return null; var k=dim?0.7:1; A.roll.frequency.value=name==="ears"?7000:dim?2600:4200; return name==="ears"?mkEars(k):name==="breath"?mkBreath(k):mkTone(k); }
+function makeScheme(name, dim){ if(!A) return null; var k=dim?0.7:1; A.roll.frequency.value=name==="ears"?7000:dim?2600:4200; return name==="ears"?mkEars(1):name==="breath"?mkBreath(k):mkTone(k); }   /* Ears is the same in Lift and Breathe */
 function schemePhase(kind, at, dur){
   if(!scheme || !A) return;
   var s=scheme, k=s.k, g=Math.max(dur,0.35);
@@ -366,21 +369,19 @@ function schemePhase(kind, at, dur){
        swells all the way to the end and climbs overhead; OUT is a broad, low blow that
        starts loud and sinks away, falling in pitch the whole time. Rising versus falling
        pitch is the one cue nobody mishears. */
-    /* IN: the air is drawn in at the nose and travels to the back of the skull. It is heard
-       the instant the count starts, rushes at the nostril, then goes deeper and darker as it
-       fills the back of the head. HOLD: the air held, at the back of the skull: a low hum, not
-       wind, so the still phase is a different kind of sound, with a soft throb each second.
-       OUT: the air leaves the back of the skull, opens up as it passes the nose, and goes out
-       in front until it is far and faint. Every value starts where the last phase left it. */
+    /* IN: one gesture. The air is out in front, heard on the count, and comes back into the
+       head: louder, deeper, and inside. Nothing reverses mid-phase. HOLD: the air held at the
+       back of the skull: a low hum, not wind, with a soft throb each second. OUT: one gesture
+       the other way: out of the skull, opening as it passes the nose, then out in front until
+       it is far and faint. Every value starts where the last phase left it. */
     var et=1.25*k, bIn=et*0.55, bHold=et*0.42, bOut=et*1.05;
     if(kind==="in"){
       env(s.g.gain,s.g.gain.value,bIn,at,0.08,easeOut); env(s.g.gain,bIn,et*1.1,at+0.08,g-0.08,easeIO);
-      env(s.bp.frequency,s.bp.frequency.value,950,at,g*0.3,easeOut); env(s.bp.frequency,950,420,at+g*0.3,g*0.7,easeIO);      /* rush at the nostril, deep at the back */
-      env(s.bp.Q,s.bp.Q.value,1.3,at,g*0.3,easeOut); env(s.bp.Q,1.3,0.9,at+g*0.3,g*0.7,easeIO);
-      env(s.lp.frequency,s.lp.frequency.value,3800,at,0.15,easeOut); env(s.lp.frequency,3800,1300,at+0.15,g-0.15,easeIO);   /* darker as it goes back */
-      env(s.spatial,s.spatial.value,1,at,g*0.15,easeIO); env(s.spatial,1,0.15,at+g*0.15,g*0.3,easeIO);
-      env(s.inHead,s.inHead.value,0.0001,at,g*0.15,easeIO); env(s.inHead,0.0001,1,at+g*0.15,g*0.3,easeIO);                 /* inside once it passes the nose */
-      earsPath(s,at,g,[E_APPROACH,E_NOSE,E_MID,E_SKULL]); }
+      env(s.bp.frequency,s.bp.frequency.value,520,at,g,easeIO); env(s.bp.Q,s.bp.Q.value,0.7,at,g*0.3,easeOut);
+      env(s.lp.frequency,s.lp.frequency.value,3600,at,0.15,easeOut); env(s.lp.frequency,3600,1500,at+0.15,g-0.15,easeIO);   /* deeper as it goes back */
+      env(s.spatial,s.spatial.value,1,at,g*0.25,easeIO); env(s.spatial,1,0.1,at+g*0.25,g*0.5,easeIO);
+      env(s.inHead,s.inHead.value,0.0001,at,g*0.25,easeIO); env(s.inHead,0.0001,1,at+g*0.25,g*0.5,easeIO);                 /* into the head through the middle half */
+      earsPath(s,at,g,[E_APPROACH,E_SKULL]); }
     else if(kind==="hold"){
       env(s.g.gain,s.g.gain.value,bHold,at,0.25,easeOut);
       env(s.bp.frequency,s.bp.frequency.value,120,at,0.3,easeOut); env(s.bp.Q,s.bp.Q.value,7,at,0.3,easeOut); env(s.lp.frequency,s.lp.frequency.value,500,at,0.3,easeOut);   /* the hum */
@@ -389,12 +390,12 @@ function schemePhase(kind, at, dur){
       earsThrobs(s,at,g,bHold); }
     else if(kind==="out"){
       env(s.g.gain,s.g.gain.value,bOut,at,0.1,easeOut); env(s.g.gain,bOut,et*0.05,at+0.1,g-0.1,easeIO);
-      env(s.bp.frequency,s.bp.frequency.value,1100,at,g*0.3,easeIO); env(s.bp.frequency,1100,220,at+g*0.3,g*0.7,easeIO);    /* opens at the nose, then away */
-      env(s.bp.Q,s.bp.Q.value,1.0,at,g*0.3,easeOut); env(s.bp.Q,1.0,0.7,at+g*0.3,g*0.7,easeIO);
-      env(s.lp.frequency,s.lp.frequency.value,4200,at,g*0.3,easeIO); env(s.lp.frequency,4200,650,at+g*0.3,g*0.7,easeIO);
-      env(s.spatial,s.spatial.value,0.08,at,g*0.12,easeIO); env(s.spatial,0.08,1,at+g*0.12,g*0.23,easeIO);
-      env(s.inHead,s.inHead.value,1,at,g*0.12,easeIO); env(s.inHead,1,0.0001,at+g*0.12,g*0.23,easeIO);                     /* out of the head as it passes the nose */
-      earsPath(s,at,g,[E_SKULL,E_NOSE,E_APPROACH,E_FRONT]); }
+      env(s.bp.frequency,s.bp.frequency.value,700,at,g*0.25,easeIO); env(s.bp.frequency,700,260,at+g*0.25,g*0.75,easeIO);    /* opens at the nose, then away */
+      env(s.bp.Q,s.bp.Q.value,0.7,at,g*0.3,easeOut);
+      env(s.lp.frequency,s.lp.frequency.value,3600,at,g*0.25,easeIO); env(s.lp.frequency,3600,700,at+g*0.25,g*0.75,easeIO);
+      env(s.spatial,s.spatial.value,0.08,at,g*0.1,easeIO); env(s.spatial,0.08,1,at+g*0.1,g*0.35,easeIO);
+      env(s.inHead,s.inHead.value,1,at,g*0.1,easeIO); env(s.inHead,1,0.0001,at+g*0.1,g*0.35,easeIO);                       /* out of the head as it passes the nose */
+      earsPath(s,at,g,[E_SKULL,E_NOSE,E_FRONT]); }
     else { env(s.g.gain,s.g.gain.value,0.0001,at,0.3,easeOut); }
   }
   if(s.kind==="breath"){
@@ -405,21 +406,13 @@ function schemePhase(kind, at, dur){
     else { env(s.g.gain,s.g.gain.value,0.0001,at,0.25,easeOut); }
   }
 }
-/* the beat: a soft tick each second of an active phase, for Tap. The pacer cannot tap
-   your finger back on iOS Safari, so it ticks instead. */
-function tickAt(when){
-  if(!A) return; var ctx=A.ctx, o=ctx.createOscillator(), g=ctx.createGain();
-  o.type="sine"; o.frequency.value=1480; g.gain.setValueAtTime(0.0001,when); g.gain.exponentialRampToValueAtTime(0.10,when+0.004); g.gain.exponentialRampToValueAtTime(0.0001,when+0.055);
-  o.connect(g); g.connect(A.dryIn); o.start(when); o.stop(when+0.08); keep(o); o.onended=function(){ var i=A.nodes.indexOf(o); if(i>=0) A.nodes.splice(i,1); };
-}
-function scheduleTicks(at, dur){ var n=Math.floor(dur-0.01)+1, i; for(i=0;i<n;i++) tickAt(toCtx(Math.max(at+i, nowSec()+0.004))); }
 function audioStart(mode, sound){
   initAudio(); if(!A) return;
   try{ if(navigator.audioSession) navigator.audioSession.type = "playback"; }catch(e){}
   if(A.ctx.state!=="running"){ try{ A.ctx.resume(); }catch(e){} }
   try{ var _p=audioEl.play(); if(_p&&_p.catch) _p.catch(function(){}); }catch(e){}
   teardownScheme(); scheme = makeScheme(sound, mode==="breathe");
-  env(A.master.gain, 0.0001, mode==="breathe"?0.62:0.92, A.ctx.currentTime+0.02, 1.0, easeOut);
+  env(A.master.gain, 0.0001, sound==="ears"?0.8:mode==="breathe"?0.62:0.92, A.ctx.currentTime+0.02, 1.0, easeOut);
   try{ if(navigator.mediaSession) navigator.mediaSession.playbackState="playing"; }catch(e){}
 }
 function teardownScheme(){ mirrorVoice=null; if(!A) return; for(var i=0;i<A.nodes.length;i++){ try{A.nodes[i].stop();}catch(e){} try{A.nodes[i].disconnect();}catch(e){} } A.nodes=[]; scheme=null; }
@@ -443,8 +436,8 @@ document.addEventListener("visibilitychange", function(){ if(document.visibility
 function hsl(h,s,l){ h=((h%360)+360)%360/360; var q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q; function f(t){ t=(t+1)%1; if(t<1/6) return p+(q-p)*6*t; if(t<1/2) return q; if(t<2/3) return p+(q-p)*(2/3-t)*6; return p; } return [f(h+1/3), f(h), f(h-1/3)]; }
 function ground(fill, temp, dim){
   var h = 208 - 178*temp;                 /* 208 cool blue .. 30 amber */
-  var l = (0.035 + 0.24*fill) * dim;
-  return hsl(h, 0.42, l);
+  var l = (0.035 + 0.15*fill) * dim;      /* capped: full lungs are dense colour, not white */
+  return hsl(h, 0.42 + 0.40*fill, l);
 }
 function tint(temp){ var h=208-178*temp; return hsl(h, 0.55, 0.72); }
 function css(c){ return "rgb("+Math.round(c[0]*255)+","+Math.round(c[1]*255)+","+Math.round(c[2]*255)+")"; }
@@ -512,8 +505,11 @@ function Field2D(cv, opt){
   function frame(dt, st, t){
     ctx.setTransform(D,0,0,D,0,0);
     ctx.fillStyle = css(st.ground); ctx.fillRect(0,0,W,H);
-    if(!P.length && !DEB.length) return;
     var cx=W/2, cy=H*0.47, R=Math.max(W,H)*0.55;
+    if(st.rim>0.005){ var rc=tint(st.temp), rg=ctx.createRadialGradient(cx,cy,Math.min(W,H)*0.3,cx,cy,Math.max(W,H)*0.62);   /* the luminous rim */
+      rg.addColorStop(0,"rgba("+(rc[0]*255|0)+","+(rc[1]*255|0)+","+(rc[2]*255|0)+",0)"); rg.addColorStop(1,"rgba("+(rc[0]*255|0)+","+(rc[1]*255|0)+","+(rc[2]*255|0)+","+Math.min(1,st.rim*st.dim*1.6).toFixed(3)+")");
+      ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); }
+    if(!P.length && !DEB.length) return;
     var gain = (90 + 240*st.amp) * st.flow;         /* the audible gust is the visible gust */
     var turb = st.turb, k=0.0045, e=6, tz=t*0.25;
     var col = tint(st.temp), bright = 0.35 + 0.65*st.fill, pokeR = Math.min(W,H)*0.2;
@@ -523,7 +519,7 @@ function Field2D(cv, opt){
       p=P[i];
       var dx=p.x-cx, dy=p.y-cy, r=Math.hypot(dx,dy)+1e-3, nx=dx/r, ny=dy/r, rn=r/R;
       var ring = smooth(0.05,0.3,rn)*(1-smooth(0.9,1.4,rn));
-      var ax = -nx*gain*ring*p.s, ay = -ny*gain*ring*p.s;
+      var ax = nx*gain*ring*p.s, ay = ny*gain*ring*p.s;      /* IN looms outward toward you, OUT recedes to the centre */
       /* curl noise: texture at rest, turbulence when the user drifts */
       var n1=noise((p.x+e)*k,p.y*k,tz), n2=noise((p.x-e)*k,p.y*k,tz), n3=noise(p.x*k,(p.y+e)*k,tz), n4=noise(p.x*k,(p.y-e)*k,tz);
       var cs=(6+70*turb)*40;
@@ -532,7 +528,7 @@ function Field2D(cv, opt){
       /* the finger: a poke pushes particles out from the fingertip; a held finger pins them */
       if(st.tapK>0.01){ var tx=p.x-st.tapX, ty=p.y-st.tapY, tr=Math.hypot(tx,ty)+1e-3, tf=st.tapK*Math.exp(-tr*tr/(pokeR*pokeR))*36000; ax += tx/tr*tf; ay += ty/tr*tf; }
       p.vx += ax*dt; p.vy += ay*dt;
-      var drag = 1 - Math.min(1, 1.6*dt); p.vx*=drag; p.vy*=drag;
+      var drag = 1 - Math.min(1, (st.phase==="hold"?4.5:1.6)*dt); p.vx*=drag; p.vy*=drag;
       if(st.pinK>0){ var px_=p.x-st.pinX, py_=p.y-st.pinY, pf=1-st.pinK*0.25*Math.exp(-(px_*px_+py_*py_)/(pokeR*pokeR)); p.vx*=pf; p.vy*=pf; }
       /* obstacle: the word */
       if(maskAt(p.x,p.y) > 0.5){
@@ -541,9 +537,9 @@ function Field2D(cv, opt){
         var vd = p.vx*gx + p.vy*gy; if(vd>0){ p.vx -= vd*gx*1.6; p.vy -= vd*gy*1.6; }
       }
       p.x += p.vx*dt; p.y += p.vy*dt;
-      if(p.x<-20||p.x>W+20||p.y<-20||p.y>H+20||(st.flow>0.2&&rn<0.06)||(st.flow<-0.2&&rn>1.35)){
-        if(st.flow>0.2){ var a=rnd()*6.283; p.x=cx+Math.cos(a)*R*1.25; p.y=cy+Math.sin(a)*R*1.25; }
-        else if(st.flow<-0.2){ var a2=rnd()*6.283, rr=R*0.05*rnd(); p.x=cx+Math.cos(a2)*rr; p.y=cy+Math.sin(a2)*rr; }
+      if(p.x<-20||p.x>W+20||p.y<-20||p.y>H+20||(st.flow<-0.2&&rn<0.06)||(st.flow>0.2&&rn>1.35)){
+        if(st.flow<-0.2){ var a=rnd()*6.283; p.x=cx+Math.cos(a)*R*1.25; p.y=cy+Math.sin(a)*R*1.25; }
+        else if(st.flow>0.2){ var a2=rnd()*6.283, rr=R*0.05*rnd(); p.x=cx+Math.cos(a2)*rr; p.y=cy+Math.sin(a2)*rr; }
         else { p.x=st.idle?-10:rnd()*W; p.y=rnd()*H; }
         p.vx=0; p.vy=0;
       }
@@ -569,7 +565,7 @@ function Field2D(cv, opt){
         if(d.y<4){d.y=4;d.vy=Math.abs(d.vy);}
         var floor = H - 6 - pileHeight(d.x);
         if(d.y >= floor){ d.y=floor; if(settle){ d.settled=true; pile.push(d); } else { d.vy=-Math.abs(d.vy)*0.3; } }
-        if(st.flow<-0.2 && drn>1.3){ d.x=cx+(rnd()-0.5)*R*0.1; d.y=cy+(rnd()-0.5)*R*0.1; d.vx=d.vy=0; }
+        if(st.flow>0.2 && drn>1.3){ d.x=cx+(rnd()-0.5)*R*0.1; d.y=cy+(rnd()-0.5)*R*0.1; d.vx=d.vy=0; }
         ctx.fillStyle=css(d.c); ctx.globalAlpha=0.9; ctx.beginPath(); ctx.arc(d.x,d.y,d.sz,0,6.283); ctx.fill(); ctx.globalAlpha=1;
       }
     }
@@ -605,7 +601,7 @@ function FieldGL(cv){
       "float ss(float a,float b,float x){return smoothstep(a,b,x);}"+
       "void main(){vec2 v=texture(uVel,vUv).xy;vec2 d=(vUv-uCenter)*uAspect;float r=length(d)+1e-4;vec2 n=d/r;float rn=r/0.5;"+
       "float rb=max(abs(d.x)/(0.5*uAspect.x),abs(d.y)/0.5);"+
-      "float ring=ss(0.06,0.3,rn)*(1.0-ss(1.0,1.5,rb));vec2 f=-n*uFlow*ring*70.0;vec2 t=vec2(-n.y,n.x);"+
+      "float ring=ss(0.06,0.3,rn)*(1.0-ss(1.0,1.5,rb));vec2 f=n*uFlow*ring*70.0;vec2 t=vec2(-n.y,n.x);"+
       "f+=t*uSwirl*ring*30.0*sin(rn*9.0+uTime*1.7);f+=vec2(uWind*28.0,0.0);"+
       /* the finger: a poke pushes air out from the fingertip; a held finger pins it */
       "vec2 dt2=(vUv-uTap)*uAspect;float rt=length(dt2)+1e-4;f+=(dt2/rt)*uTapK*exp(-rt*rt/0.022)*2400.0;v+=f*uDt;"+
@@ -621,9 +617,9 @@ function FieldGL(cv){
       "void main(){vec4 d=texture(uDye,vUv);vec2 q=(vUv-uCenter)*uAspect;float rn=length(q)/0.5;float rb=max(abs(q.x)/(0.5*uAspect.x),abs(q.y)/0.5);"+
       "float edge=smoothstep(0.72,1.0,rb)*(0.55+0.45*sin(atan(q.y,q.x)*7.0+uTime*0.9));float core=1.0-smoothstep(0.0,0.28,rn);"+
       "vec2 qt=(vUv-uTap)*uAspect;float rq=length(qt);d.rgb+=uColor*uTapK*(exp(-rq*rq/0.004)*22.0+exp(-pow(rq-0.16*(1.0-uTapK),2.0)/0.0012)*14.0)*uDt;"+      /* the puff at the fingertip and the ring it throws */
-      "d.rgb+=uColor*(uIn*edge*2.2+uOut*core*2.6)*uDt;d.rgb+=uColor*uIdle*(1.0-smoothstep(0.0,0.06,vUv.x))*(0.5+0.5*sin(vUv.y*34.0+uTime*1.3))*1.6*uDt;"+
+      "d.rgb+=uColor*(uIn*core*2.6+uOut*edge*2.2)*uDt;d.rgb+=uColor*uIdle*(1.0-smoothstep(0.0,0.06,vUv.x))*(0.5+0.5*sin(vUv.y*34.0+uTime*1.3))*1.6*uDt;"+
       "d.rgb*=(1.0-texture(uMask,vUv).a*0.9);o=vec4(min(d.rgb,vec3(1.1)),1.0);}",
-    show: HEAD+"uniform sampler2D uDye;uniform vec3 uGround;uniform float uGain;void main(){vec3 c=uGround+texture(uDye,vUv).rgb*uGain;o=vec4(c,1.0);}"
+    show: HEAD+"uniform sampler2D uDye;uniform vec3 uGround,uRim;uniform vec2 uAspect;uniform float uGain,uRimK;void main(){vec2 q=(vUv-vec2(0.5,0.53))*uAspect;float rb=max(abs(q.x)/(0.5*uAspect.x),abs(q.y)/0.5);float rim=smoothstep(0.4,1.08,rb);vec3 c=uGround+uRim*rim*uRimK+texture(uDye,vUv).rgb*uGain;o=vec4(c,1.0);}"
   };
   function sh(type,src){ var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){ throw new Error(gl.getShaderInfoLog(s)); } return s; }
   var vs; try{ vs = sh(gl.VERTEX_SHADER, VS); }catch(e){ return null; }
@@ -654,7 +650,7 @@ function FieldGL(cv){
     var tx=1/simW, ty=1/simH, u, i;
     var aspect=[W/H,1], center=[0.5, 1-0.47];
     /* 1. advect velocity (dissipation = momentum decay: the hold settles) */
-    u=use("advect"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss, st.idle?0.985:0.992); bind(u,"uVel",vel,0); bind(u,"uSrc",vel,1); draw(vel2); swapV();
+    u=use("advect"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss, st.idle?0.985:st.phase==="hold"?0.972:0.992);   /* the hold settles fast: still air */ bind(u,"uVel",vel,0); bind(u,"uSrc",vel,1); draw(vel2); swapV();
     /* 2. vorticity confinement keeps the eddies alive */
     u=use("curl"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uVel",vel,0); draw(cl);
     u=use("vort"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uK, 12+30*st.turb); bind(u,"uVel",vel,0); bind(u,"uCurl",cl,1); draw(vel2); swapV();
@@ -676,7 +672,7 @@ function FieldGL(cv){
     gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK);
     gl.uniform3f(u.uColor,c[0],c[1],c[2]); bind(u,"uDye",dye,0); bind(u,"uMask",maskTex,1); draw(dye2); swapD();
     /* 6. show: ground luminance carries the phase; dye carries the motion */
-    u=use("show"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform3f(u.uGround,st.ground[0],st.ground[1],st.ground[2]); gl.uniform1f(u.uGain, 0.36*st.dim); bind(u,"uDye",dye,0); draw(null);
+    u=use("show"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform3f(u.uGround,st.ground[0],st.ground[1],st.ground[2]); gl.uniform3f(u.uRim,c[0],c[1],c[2]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uRimK, st.rim*st.dim); gl.uniform1f(u.uGain, 0.36*st.dim); bind(u,"uDye",dye,0); draw(null);
     if(probeReq){ probeReq=false; probeGL(); }
   }
   var probeReq=false;
@@ -832,7 +828,7 @@ function startSession(mode){
   /* the three methods: belly (the accelerometer mirror), tap (you drum the breath), ears (spatial wind) */
   S.mirror = mode==="breathe" && c.breathe.belly!=="off" && MIR.perm==="granted";
   S.tapOn = mode==="breathe" && c.breathe.tap==="on";
-  S.ears = c[mode].ears==="on";
+  S.ears = c.ears==="on";
   S.poke={x:0,y:0,k:0,t:-9}; S.pin={x:0,y:0,on:false};
   if(mode==="lift"){ S.reps=c.lift.reps; S.sets=c.lift.sets; S.restDur=c.lift.tune[c.lift.preset].rest; S.holdMode=c.lift.preset==="hold"?1:0; S.holdSec=c.lift.holdSec; }
   else { S.reps=c.breathe.cycles; S.sets=1; S.holdMode=0; }
@@ -871,8 +867,7 @@ function reanchor(hard){
 function startTimeOf(j){ var t=S.stepStart,k; for(k=S.idx;k<j;k++) t+=S.steps[k].dur; return t; }
 function scheduleAhead(now){
   if(!A||A.ctx.state!=="running") return; var guard=0;
-  while(S.schedIdx<S.steps.length-1&&guard++<6){ var j=S.schedIdx+1, t=startTimeOf(j); if(t>now+LEAD) break; var stp=S.steps[j]; if(stp.k!=="done") schemePhase(stp.k==="getset"?"getset":stp.k, toCtx(Math.max(t,now+0.004)), stp.dur);
-    if(S.tapOn && stp.stage==="set" && (stp.k==="in"||stp.k==="out")) scheduleTicks(t, stp.dur); S.schedIdx=j; }
+  while(S.schedIdx<S.steps.length-1&&guard++<6){ var j=S.schedIdx+1, t=startTimeOf(j); if(t>now+LEAD) break; var stp=S.steps[j]; if(stp.k!=="done") schemePhase(stp.k==="getset"?"getset":stp.k, toCtx(Math.max(t,now+0.004)), stp.dur); S.schedIdx=j; }
 }
 
 /* ============================ ENGINE MANAGER ============================ */
@@ -926,7 +921,7 @@ function setRail(k){ if(k===lastRail) return; for(var i=0;i<rails.length;i++) ra
 function paintDone(){ lastWord=txt(elWordI,"DONE",lastWord); lastNum=txt(elNum,"",lastNum); lastMeta=txt(elMeta,"",lastMeta); setFoot("back"); setRail(null); elEnd.classList.add("hid"); MASK.dirty=true; }
 
 var frameState = {phase:"idle", fill:0, prog:0, flow:0, amp:0, temp:0, turb:0, ground:[0,0,0], idle:true, stage:"", rep:0, reps:1, set:0, sets:1, dim:1,
-                  tapX:0, tapY:0, tapK:0, pinX:0, pinY:0, pinK:0};
+                  tapX:0, tapY:0, tapK:0, pinX:0, pinY:0, pinK:0, rim:0, pulse:0};
 /* the finger in the field: a decaying poke and a held pin, in canvas pixels for the 2D engine and uv for the GPU */
 function touchState(now, fs){
   var pa=now-S.poke.t; fs.tapK = (pa>=0 && pa<0.9) ? S.poke.k*Math.exp(-pa/0.2) : 0; fs.tapX=S.poke.x; fs.tapY=S.poke.y;
@@ -954,9 +949,12 @@ function render(now){
   S.turb *= (1 - 0.12*Math.min(1, (now - (S._lt||now)))); S._lt=now;
   fs.turb=Math.min(1,S.turb);
   touchState(now, fs);
-  /* the beat, in light: each second of an active phase the whole ground blinks up a step and settles */
-  var beat=0; if(S.tapOn && st.stage==="set" && (st.k==="in"||st.k==="out")){ var into=now-S.stepStart, bt=into-Math.floor(into); beat=Math.exp(-bt/0.10); }
-  fs.ground=ground(Math.min(1.2, fs.fill + 0.14*beat + 0.18*fs.tapK), fs.temp, fs.dim);   /* the tap lights the whole ground for an instant */
+  /* the beat, in light, for Tap: each second of an active phase the whole ground blinks up a step and settles */
+  var beat=0, into=now-S.stepStart; if(S.tapOn && st.stage==="set" && (st.k==="in"||st.k==="out")){ var bt=into-Math.floor(into); beat=Math.exp(-bt/0.10); }
+  /* the hold is its own state: still air, a luminous rim, and a pulse once a second from the second second on, in step with the Ears throb */
+  fs.pulse=0; if(st.k==="hold" && into>=1){ var hb=into-Math.floor(into); fs.pulse=Math.exp(-hb/0.12); }
+  fs.rim = 0.16*fs.fill + 0.22*fs.pulse + (st.k==="hold"?0.06:0);
+  fs.ground=ground(Math.min(1.2, fs.fill + 0.14*beat + 0.18*fs.tapK + 0.05*fs.pulse), fs.temp, fs.dim);   /* the tap lights the whole ground for an instant */
   if(st.k==="done"){ if(lastWord!=="DONE") paintDone(); return; }
   elEnd.classList.remove("hid");
   var isRest=st.stage==="rest", isSet=st.stage==="set";
@@ -975,7 +973,7 @@ function render(now){
 }
 function idleRender(t){
   var fs=frameState; fs.idle=true; fs.phase="idle"; fs.stage=""; fs.flow=0; fs.amp=0.2; fs.turb=Math.max(0, fs.turb-0.01);
-  fs.fill = 0.28 + 0.12*Math.sin(t*0.35); fs.temp=0.1; fs.dim=1; fs.ground=ground(fs.fill, fs.temp, 1); fs.tapK=0; fs.pinK=0;
+  fs.fill = 0.28 + 0.12*Math.sin(t*0.35); fs.temp=0.1; fs.dim=1; fs.ground=ground(fs.fill, fs.temp, 1); fs.tapK=0; fs.pinK=0; fs.rim=0.05; fs.pulse=0;
 }
 
 /* ============================ LOOP ============================ */
@@ -1010,15 +1008,15 @@ function refresh(){
   document.getElementById("v-reps").textContent=L.reps; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-holdSec").textContent=L.holdSec; document.getElementById("v-cycles").textContent=P.cycles;
   document.getElementById("row-reps").classList.toggle("hid",isHold); document.getElementById("row-hsec").classList.toggle("hid",!isHold);
   document.getElementById("preset-sub").textContent = fmtN(T["in"])+(T.hold>0?" · "+fmtN(T.hold):"")+" · "+fmtN(T.out)+"   —   rest "+fmtClock(T.rest);
-  var M={belly:P.belly!=="off", tap:P.tap==="on", ears:P.ears==="on"};
+  var M={belly:P.belly!=="off", tap:P.tap==="on", ears:DB.cfg.ears==="on"};
   document.getElementById("pat-sub").textContent = P.pat==="coh" ? "Coherent breathing, 5.5 a minute." : "Relaxing breath. Long exhale.";
   document.getElementById("belly-sub").textContent = "Lie down, phone on your belly, screen up. It reads your breath: the wind and the breath noise are you, the tone is the pacer.";
-  document.getElementById("tap-sub").textContent = "Drum the breath. Tap once a second on the count, in and out. Hold: press and hold. Every tap pushes the wind under your finger.";
-  document.getElementById("ears-sub").textContent = "Headphones. The air comes in at your nose and travels to the back of your skull; the hold is a low hum held there, throbbing once a second; the out leaves the skull, passes the nose and goes out in front. Eyes shut, you hear the breath.";
+  document.getElementById("tap-sub").textContent = "Drum the breath. Tap once a second on the count, in and out. Hold: press and hold. Every tap pushes the wind under your finger; the ground blinks on each count.";
+  document.getElementById("ears-sub").textContent = "Headphones. The air comes in from in front and back into your head; the hold is a low hum held at the back of the skull, throbbing once a second; the out leaves the skull and goes out in front. Same in Lift.";
   var pills=document.querySelectorAll("#methods .pill"); for(i=0;i<pills.length;i++){ var on=M[pills[i].getAttribute("data-m")]; pills[i].textContent=on?"On":"Off"; pills[i].classList.toggle("sel",!!on); }
-  var lp=document.querySelector("#methods-lift .pill"), lOn=L.ears==="on"; lp.textContent=lOn?"On":"Off"; lp.classList.toggle("sel",lOn);
-  document.getElementById("ears-sub-lift").textContent = "Headphones under the bar. The air comes in at your nose to the back of your skull and goes back out in front. The count is in your ears, not on the screen.";
-  var ears=DB.cfg[setupMode].ears||"off";
+  var lp=document.querySelector("#methods-lift .pill"), lOn=DB.cfg.ears==="on"; lp.textContent=lOn?"On":"Off"; lp.classList.toggle("sel",lOn);
+  document.getElementById("ears-sub-lift").textContent = "Headphones under the bar. The air comes in from in front and back into your head, hums at the back of the skull on the hold, and goes out in front. Same in Breathe.";
+  var ears=DB.cfg.ears||"off";
   document.getElementById("setup-lift").classList.toggle("hid", setupMode!=="lift"); document.getElementById("setup-breathe").classList.toggle("hid", setupMode!=="breathe");
   document.getElementById("setup-title").textContent = setupMode==="lift"?"Lift":"Breathe";
   document.getElementById("setupnote").textContent = ENG.name==="field" ? "The wind reads the sound it makes: the gust you hear is the gust you see." : "";
@@ -1041,7 +1039,7 @@ document.addEventListener("click", function(ev){
   if((v=t.getAttribute("data-s"))){ var p=v.split(":"); bump(p[0],parseFloat(p[1])); return; }
   if((v=t.getAttribute("data-preset"))){ DB.cfg.lift.preset=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-pat"))){ DB.cfg.breathe.pat=v; save(); refresh(); return; }
-  if((v=t.getAttribute("data-m"))){ var tg=DB.cfg[setupMode]; tg[v] = (v==="belly" ? tg[v]!=="off" : tg[v]==="on") ? "off" : "on"; save(); refresh(); return; }
+  if((v=t.getAttribute("data-m"))){ var tg = v==="ears" ? DB.cfg : DB.cfg.breathe; tg[v] = (v==="belly" ? tg[v]!=="off" : tg[v]==="on") ? "off" : "on"; save(); refresh(); return; }
   if((v=t.getAttribute("data-sound"))){ DB.cfg[setupMode].sound=v; save(); refresh(); return; }
 });
 document.getElementById("b-start").addEventListener("click", function(){
@@ -1076,7 +1074,7 @@ window.WIND = {
   state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst?ENG.inst.info():""}; },
   probe:function(){ if(ENG.inst&&ENG.inst.probe) ENG.inst.probe(); },
   rects:function(){ var out={}, els=document.querySelectorAll("#s-run .slot, #word span, #num, .rail .r"); for(var i=0;i<els.length;i++){ var r=els[i].getBoundingClientRect(); out[(els[i].id||els[i].className)+"#"+i]=[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]; } out.wordSize=getComputedStyle(elWord).fontSize; return out; },
-  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, ticks:function(){ return A?A.nodes.filter(function(n){ return n.frequency && n.frequency.value===1480; }).length:0; }, pan:function(){ if(!scheme||scheme.kind!=="ears") return null; var p=scheme.pan; return {x:+(p.positionX?p.positionX.value:NaN).toFixed(2), y:+(p.positionY?p.positionY.value:NaN).toFixed(2), z:+(p.positionZ?p.positionZ.value:NaN).toFixed(2), g:+scheme.g.gain.value.toFixed(3), f:Math.round(scheme.bp.frequency.value), q:+scheme.bp.Q.value.toFixed(2), lp:Math.round(scheme.lp.frequency.value), sp:+scheme.spatial.value.toFixed(2), ih:+scheme.inHead.value.toFixed(2), auto:scheme.auto, model:p.panningModel, ctx:A.ctx.state}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ DB.cfg.breathe[k]=v; }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
+  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, pan:function(){ if(!scheme||scheme.kind!=="ears") return null; var p=scheme.pan; return {x:+(p.positionX?p.positionX.value:NaN).toFixed(2), y:+(p.positionY?p.positionY.value:NaN).toFixed(2), z:+(p.positionZ?p.positionZ.value:NaN).toFixed(2), g:+scheme.g.gain.value.toFixed(3), f:Math.round(scheme.bp.frequency.value), q:+scheme.bp.Q.value.toFixed(2), lp:Math.round(scheme.lp.frequency.value), sp:+scheme.spatial.value.toFixed(2), ih:+scheme.inHead.value.toFixed(2), auto:scheme.auto, model:p.panningModel, ctx:A.ctx.state}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ if(k==="ears") DB.cfg.ears=v; else DB.cfg.breathe[k]=v; }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
 };
 /* ---- boot ---- */
 fitWordOnce();

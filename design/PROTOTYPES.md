@@ -95,11 +95,11 @@ becomes turbulence, the same channel pace error has always used, and
 nothing is scored or displayed. The layout does not move.
 
 **The beat.** Because the phone cannot tap you back, the pacer gives the
-beat two other ways. A soft tick (1480 Hz, 55 ms) at each second of an
-active phase, scheduled with the same look-ahead as the breath sound so it
-holds through dropped frames. And a pulse of light: the whole ground
-blinks up a step at each beat and settles in a tenth of a second, which
-peripheral vision catches. The hold has no beat; the finger just stays.
+beat in light: the whole ground blinks up a step at each second of an
+active phase and settles in a tenth of a second, which peripheral vision
+catches. An audible tick was tried and cut: it cluttered the breath sound.
+The hold has no beat from Tap; the finger just stays, and the hold's own
+pulse (below) counts it.
 
 **The version that is out of reach.** The ideal form taps back: a tick you
 feel at each beat, so you could do this with the phone face-down and eyes
@@ -112,8 +112,10 @@ that is the first real argument in this project for a native app.
 
 ## Ears: spatial wind
 
-Method · Ears on, headphones in. The sound scheme becomes the spatial wind
-and the Sound row is disabled: the wind is the sound.
+Method · Ears on, headphones in. One setting, shared by Breathe and Lift,
+shown in both setups; the sound is identical in both modes, same level,
+same voice. The sound scheme becomes the spatial wind and the Sound row is
+disabled: the wind is the sound.
 
 Three versions came before this: a voice on a circle round the head, two
 sharper voices on the same circle, and a single axis from far in front
@@ -122,24 +124,23 @@ straight line **through the head, front to back**: the air is drawn in at
 the nose and travels to the back of the skull; it is held there; it leaves
 the back of the skull, passes the nose and goes out in front.
 
-- **Inhale.** Heard the instant the count starts, just in front of the
-  nose, airy (top end 3.8 kHz). It rushes at the nostril (pitch centre up
-  to 950 Hz over the first 30%) and then goes deeper and darker as it
-  fills the back of the head: centre down to 420 Hz, top end down to
-  1.3 kHz, level up to full. As it passes the nose it crossfades from the
-  spatial path to a dry path in the middle of the head, so from there on
-  it is inside you. Position: 1.4 m in front, nose, middle, back of the
-  skull, slightly above the ears.
+- **Inhale.** One gesture. Heard the instant the count starts, out in
+  front, airy (top end 3.6 kHz), and it comes back into the head: louder,
+  deeper (top end down to 1.5 kHz), and through the middle half of the
+  phase it crossfades from the spatial path to a dry path in the middle
+  of the head, so it ends inside you at the back of the skull. Nothing
+  reverses mid-phase; an earlier version rushed bright at the nostril and
+  then darkened, and that read as two events.
 - **Hold.** A different kind of sound, not wind: a low hum, the noise
   through a narrow resonance at 120 Hz with the top shut at 500 Hz, held
   at the back of the skull inside the head, with a soft throb once a
   second from the second second on so the hold can be counted eyes shut.
   The drop from the full inhale into the hum marks the first second.
-- **Exhale.** Full at once, from the back of the skull, still inside. It
-  opens up as it passes the nose (centre up to 1.1 kHz, top end to 4.2 kHz,
-  handed back to the spatial path between 12% and 35%), then goes out in
-  front, falling to 220 Hz, closing to 650 Hz, fading to 5%, eight metres
-  out by the end.
+- **Exhale.** One gesture the other way. Full at once, from the back of
+  the skull, still inside. It opens as it passes the nose (centre up to
+  700 Hz, top end to 3.6 kHz, handed back to the spatial path between 10%
+  and 45%), then goes out in front, falling to 260 Hz, closing to 700 Hz,
+  fading to 5%, eight metres out by the end.
 
 Every parameter starts a phase where the previous phase left it: level,
 both filters, the head blend and the position are all ramped from their
@@ -151,9 +152,36 @@ ramps per phase along the waypoints, with a per-frame fallback where the
 params are missing. The output low-pass opens to 7 kHz for Ears. With
 Belly on as well, your own airflow stays in the head as the mirror voice.
 
-Ears is a Lift setting too, one Ears row under Sets. The rest breathing
-between sets is the same in and out, so the count is in your ears under
-the bar rather than on a screen across the gym.
+In Lift the Ears row sits under Sets and toggles the same setting. The
+rest breathing between sets is the same in and out, so the count is in
+your ears under the bar rather than on a screen across the gym.
+
+## The picture: looming, dense, held
+
+The screen used to carry the phase in one number, the ground lightness,
+and the top of the inhale was therefore the brightest flat value: white.
+The hold had no state of its own; it was the inhale's last frame, held.
+Three changes, all inside the layout constraint.
+
+1. **The same axis as the ears.** The field used to converge on the
+   inhale. Air coming in is air coming toward you, and the strongest cue
+   peripheral vision has is optic flow, so the inhale now looms: the
+   field expands from the centre toward you, dye born at the centre and
+   carried outward. The exhale recedes: the field contracts and the dye
+   born at the edges is drawn to the centre and gone. Covered word, six
+   feet away, expansion is in and contraction is out, and it is the same
+   direction the sound moves.
+2. **The white is capped.** Fill maps to density: lightness runs only to
+   17.5% and saturation climbs from 0.42 to 0.82 with it, so full lungs
+   are a deep, saturated field. A luminous rim in the tint colour grows
+   with fill around the edge of the screen, which is where peripheral
+   vision is looking anyway.
+3. **The hold is its own state.** Still air: the fluid's momentum decays
+   three and a half times faster and the particles drag hard, so the
+   field freezes with a shimmer instead of coasting. The rim stays lit,
+   and from the second second on the whole screen pulses once a second,
+   in step with the Ears throb, so the beat you hear is the beat you see
+   whether or not you can hear it.
 
 ### Why not the microphone
 
@@ -216,7 +244,9 @@ not in a footer note. Nothing on the run screen moved: the meta line gains
 "· TAP" or "· PRESS" in Tap mode, short enough to clear the End button at
 390 px, and that is the only text change.
 
-**UX.** The three methods now compose without special cases: Belly is a
+**UX.** The tick under Tap in Breathe is gone; the audible beat belongs to
+the Ears hold and nowhere else. The three methods now compose without
+special cases: Belly is a
 sensor, Tap is a finger, Ears is a speaker, and the pacer is the same fixed
 pattern under all of them. There is no mode where the app is waiting for
 you, no calibration to get wrong, and no session that ends on its own.

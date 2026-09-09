@@ -75,51 +75,99 @@ cannot help.
 
 ## The tone
 
-The chime, tried after a written description of the guided coherence track,
-was cut: a strike rings and is gone, so on a three-second in the last two
-seconds were silent, and it read as a chime rather than a pacer. Tone is
-now the orthodox thing: one plain sustained note that sounds for the whole
-of a phase and glides in pitch across it. A sine, with a quiet sine an
-octave below for body, through a low-pass at 1.4 kHz and a little room.
-Through the breath in it rises and arrives on G4 as the lungs fill;
-through the breath out it falls from G4. It fades in over the first third
-of the count and out over the last fifth, so it never starts or stops with
-a click, and it reaches the next phase's note exactly as that phase begins,
-so in and out join without a step. A held breath, a brace and a squeeze
-are silent: the note fades out on the count and the pause is quiet, which
-on 4 · 7 · 8 makes the seven silent by itself. The interval is a fourth on
-a phase of two seconds or more and narrows on shorter counts (two and a
-half semitones on a one-second drive), so a short phase is a soft lean of a
-note and never a whoop. Nothing is struck and nothing rings.
+Three tones were built and two were cut. The chime, after a written
+description of the guided coherence track: a strike rings and is gone, so
+on a three-second in the last two seconds were silent. The glide, one
+sustained sine sliding up through the in and down through the out: that
+is the shape of a siren, and with a low octave under it, a horn. Nothing
+that slides in pitch can be made not to.
+
+Tone is now a ladder. One soft note a second, each held until the next,
+stepping up a G pentatonic scale (A3 to G5) through the breath in and
+arriving on the top note as the lungs fill, and stepping down from just
+under the top through the breath out. The pitch rises because the next
+note is higher, never because a note moved. Plain sines, no octave
+beneath, no room, each note quieter the higher it is, a 90 ms attack and
+a short release into the next. A held breath, a brace and a squeeze
+schedule nothing, so they are silent; on 4 · 7 · 8 the seven is quiet by
+itself. A one-second phase is one note; a three-second in is D5 E5 G5; an
+eight-second out walks E5 down to B3.
+
+## The picture, fixed
+
+The field had been a flat grey sheet in every session since the gesture
+pass, on the phone and in the harness alike, and it was not a tuning
+problem. The gesture bell computed `pow(sin(gp·π), 0.7)` while `gp` was
+still negative in the 0.1 s lead-in before the first phase; the sine went
+negative, the power went NaN, and one NaN frame in `uFlow` poisoned the
+velocity texture for the rest of the session. With NaN velocity the
+advect pass samples every texel from the same place, which is exactly a
+uniform sheet, and reads back as dye everywhere and velocity nowhere. The
+fix is the guard (`gp > 0`), a `NaN → 0` on `fs.flow`, and an `isnan`
+scrub at the end of the force shader as insurance. The texture-stats hook
+(`WIND.stats()`) that found it stays in.
+
+With the wind actually moving, the dye was retuned to be seen: it goes in
+as filaments (a two-octave value noise raised to 2.6) rather than a flat
+wash, decays per second rather than per frame (half-life about a second,
+so slow frames do not pool), and the show pass lifts it with a 1.15 power
+so faint dye stays dark and streaks read bright. The ink dye is now a
+saturated steel blue rather than silver.
+
+## Breathing weight
+
+The word and the wordmark breathe: a text stroke grows from 0 to 0.028 em
+as the lungs fill and the letter-spacing closes from 0.06 em to 0.015 em,
+so the letters thicken and close on the in and thin and open on the out.
+A stroke rather than a variable font weight, because it is continuous on
+every platform and San Francisco is not a variable font through CSS.
+
+## Palettes
+
+Six, all blue at heart, all dark through the breath, selectable with
+`?pal=` and laid out on the palettes artifact with live renders: ink
+(current), midnight (the pick: deep saturated navy, icy dye), storm
+(slate and steel), abyss (indigo, near black), glacier (cold teal-blue,
+cyan-white dye) and dusk (blue to plum across a set). Each is eight
+numbers: the ground hue at the first and last rep, its saturation empty
+and full, a luminance scale, and the dye's hue, saturation and lightness.
+
+## One setup for both modes
+
+Breathe's setup now uses Lift's two doors: RELAX carries in 4 · hold 7 ·
+out 8 as a proportional bar with "long exhale" in the corner, COHERENT
+carries 5.5 · 5.5 with "5.5 a minute"; under them the same card as Reps
+and Sets, with Cycles and the session's length. Sound is the same card in
+both; With appears only in Breathe. The list scrolls and Start stays on
+screen.
 
 ## Five picks from the samples page
 
 Built from the directions artifact, all in the one file, all on the
 existing engines:
 
-- **Trail.** The wordmark carries four echoes of itself fading upwind,
-  in em units so they scale with the type. CSS only; the obstacle mask
-  ignores them.
+- **Trail.** Not a text-shadow (that looked like clip art). The trail is
+  real dye: the wordmark is already the obstacle in the idle wind, and the
+  dye pass now sheds filaments from the lee edge of every letter into the
+  flow, so BENDER streams on the home screen.
 - **Depth.** A second layer of dye at sim resolution, carried at a third
   of the field's speed and fading slower, drawn behind the main dye at a
   fraction of its gain. The far air: coarse, slow, dim, so the near dye
-  reads as near. Two extra low-resolution passes a frame.
+  reads as near.
 - **Ink.** With Tap on the tap's dye is denser and the show pass adds a
   small eight-tap bloom around whatever is brighter than the mid-tone, in
   the moment of the tap or the drag only, so a tap reads as a drop of ink
-  and the field at rest is unchanged. Gated to Tap; off, the shader skips
-  the taps.
+  and the field at rest is unchanged.
 - **Drag a gust.** Any finger moving across the field during a session
   has its velocity, smoothed, injected into the fluid around the fingertip
   for a fraction of a second after each move, and the dye takes a streak
-  along the path. A flick throws a gust. In the particle engine the same
-  force pulls particles toward the finger's velocity.
+  along the path. A flick throws a gust. The particle engine gets the
+  same force.
 - **Tilt.** Gravity from `devicemotion`, smoothed over 0.3 s with the
   posture removed over 4 s, becomes a lean vector that slides the whole
   field the way the phone tips and settles back to level. It listens only
   where no new prompt is needed: where motion needs no permission, or once
-  Belly has already been granted it. On iOS without Belly there is no
-  tilt rather than a second permission sheet.
+  Belly has already been granted it.
 
 ## The wind on short counts
 

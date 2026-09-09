@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Wind Bender">
-<meta name="theme-color" content="#06081a">
+<meta name="theme-color" content="#0a0c14">
 <title>Wind Bender</title>
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -24,7 +24,7 @@
   --countSize:min(14vw,9vh);
 }
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;height:100%;background:#06081a}
+html,body{margin:0;padding:0;height:100%;background:#0a0c14}
 body{
   font-family:-apple-system,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   color:var(--fg);-webkit-font-smoothing:antialiased;
@@ -64,15 +64,19 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .seg button[disabled]{opacity:.35}
 .note{font-size:12px;line-height:1.45;color:var(--mute);min-height:2.9em;letter-spacing:.02em}
 .sub{text-align:center;font-size:12px;letter-spacing:.1em;color:var(--mute);padding-bottom:6px;line-height:1.5}
-/* the tempo strip: the rep as the counts you will see on screen, one column per phase, rest at the end */
-.tempo{display:flex;align-items:stretch;justify-content:center;gap:0;padding:4px 0 2px}
-.tempo .ph{flex:1 1 0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0;border-right:1px solid var(--line)}
-.tempo .ph:last-child{border-right:0}
-.tempo .ph .k{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--mute);font-weight:700}
-.tempo .ph .n{font-size:30px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
-.tempo .ph .n small{font-size:12px;font-weight:700;color:var(--mute);margin-left:2px;letter-spacing:.05em}
-.tempo .ph.rest .n{font-size:22px;padding-top:4px}
-.hint{text-align:center;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);font-weight:600;padding:2px 0 8px}
+/* the doors: each preset is a tile that carries its own tempo as a proportional bar,
+   the phase names in small caps above the segments and the seconds inside them */
+.door{display:block;width:100%;text-align:left;background:var(--ui);border:1px solid var(--line);border-radius:18px;padding:16px 18px 14px;margin-bottom:12px;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);position:relative}
+.door.sel{border-color:rgba(238,243,247,.6);background:rgba(238,243,247,.09)}
+.door .dt{display:block;font-weight:800;font-size:26px;letter-spacing:.06em;line-height:1;margin-bottom:12px}
+.door .dr{position:absolute;right:18px;top:18px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.door .bar{display:flex;gap:4px}
+.door .bar b{display:flex;flex-direction:column;gap:6px;min-width:0}
+.door .bar b i{display:block;font-style:normal;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);font-weight:700;white-space:nowrap}
+.door .bar b u{display:flex;align-items:center;justify-content:center;text-decoration:none;height:30px;border-radius:7px;background:rgba(238,243,247,.10);
+  font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.door.sel .bar b u{background:rgba(238,243,247,.16)}
 
 /* ---------- setup ---------- */
 .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;height:40px}
@@ -147,14 +151,9 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   <div class="top"><button class="btn ghost" data-go="home">Back</button><span class="eyebrow" id="setup-title">Lift</span></div>
   <div class="scroll">
     <div id="setup-lift">
-      <!-- the shape of the rep: two presets, and the tempo shown as the count you will see -->
-      <div class="card">
-        <div class="row stack">
-          <div class="seg" id="seg-preset"><button data-preset="drive">Drive</button><button data-preset="squeeze">Squeeze</button></div>
-          <div class="tempo" id="tempo"></div>
-          <div class="hint" id="preset-hint"></div>
-        </div>
-      </div>
+      <!-- the shape of the rep: two doors, each carrying its own tempo as a labelled bar -->
+      <button class="door" data-preset="drive"><span class="dt">DRIVE</span><span class="bar" id="bar-drive"></span><span class="dr" id="rest-drive"></span></button>
+      <button class="door" data-preset="squeeze"><span class="dt">SQUEEZE</span><span class="bar" id="bar-squeeze"></span><span class="dr" id="rest-squeeze"></span></button>
       <div class="card">
         <div class="row" id="row-reps"><span class="lbl">Reps</span><div class="step"><button data-s="reps:-1">−</button><span class="v" id="v-reps">10</span><button data-s="reps:1">+</button></div></div>
         <div class="row"><span class="lbl">Sets</span><div class="step"><button data-s="sets:-1">−</button><span class="v" id="v-sets">4</span><button data-s="sets:1">+</button></div></div>
@@ -209,8 +208,8 @@ var DEF = {
        SQUEEZE pauses empty at the top: rows, pulls, curls, raises, calves. Every cycle opens on IN.
        The one-second concentric is an instruction to be fast; the long eccentric absorbs a slow rep. */
     lift: {preset:"drive", reps:{drive:10, squeeze:12}, sets:4,
-      tune:{drive:  {"in":4, hold:2, out:1, empty:0, rest:120},
-            squeeze:{"in":3, hold:0, out:1, empty:1, rest:90}}},
+      tune:{drive:  {"in":3, hold:1, out:2, empty:0, rest:120},
+            squeeze:{"in":2, hold:0, out:1, empty:2, rest:90}}},
     breathe: {cycles:8, pat:"478", belly:"on", tap:"off"}
   },
   stats: {sec:0, log:[]}
@@ -303,26 +302,24 @@ function initAudio(){
   return A;
 }
 function keep(n){ A.nodes.push(n); return n; }
-/* TONE, in the manner of the guided coherence tracks: one soft sustained pad whose pitch glides up
-   through the inhale and back down through the exhale, a fifth each way, with a small bell at the
-   turn. The glide is the instruction: rising is in, falling is out, and you can follow it with your
-   eyes shut. Held phases sit still at the top or the bottom of the glide, quiet. */
-var TONE_LO=196, TONE_HI=294;   /* G3 to D4 */
+/* TONE, after the guided coherence tracks she breathes to: a windchime struck once at the start
+   of each phase, on two notes. G for the breath in, D for the breath out, so the note rises on
+   the in and falls on the out, and each strike rings for about four seconds and is gone. A held
+   breath adds nothing; the last strike simply decays into it. Two-second phases get the same
+   strike as eleven-second ones, which is why it cannot turn into a siren. */
+var CHIME_IN=392.0, CHIME_OUT=293.66;   /* G4 and D4 */
 function mkTone(k){
-  var ctx=A.ctx, lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1100; lp.Q.value=0.5;
-  var g=ctx.createGain(), oscs=[]; g.gain.value=0.0001;
-  function voice(mult, type, amp, det){ var o=ctx.createOscillator(); o.type=type; o.frequency.value=TONE_LO*mult; o.detune.value=det; var og=ctx.createGain(); og.gain.value=amp; o.connect(og); og.connect(g); o.start(); keep(o); oscs.push({o:o,mult:mult}); }
-  voice(1,"sine",0.55,-4); voice(1,"triangle",0.16,4); voice(2,"sine",0.12,0); voice(0.5,"sine",0.22,0);
-  var bell=ctx.createGain(); bell.gain.value=0.0001; bell.connect(lp);
-  g.connect(lp); lp.connect(A.wetIn);
-  return {kind:"tone", g:g, lp:lp, oscs:oscs, bell:bell, k:k};
+  var ctx=A.ctx, lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=3200; lp.Q.value=0.3;
+  var g=ctx.createGain(); g.gain.value=1; g.connect(lp); lp.connect(A.wetIn);
+  return {kind:"tone", g:g, lp:lp, k:k, last:0, live:0};
 }
-/* glide every voice from f0 to f1 over dur, keeping their ratios */
-function toneGlide(s, f0, f1, at, dur){ for(var i=0;i<s.oscs.length;i++){ var v=s.oscs[i]; env(v.o.frequency, f0*v.mult, f1*v.mult, at, dur, easeIO); } }
-function toneBell(s, freq, at, amp){
-  if(!A) return; var ctx=A.ctx, o=ctx.createOscillator(), bg=ctx.createGain(); o.type="sine"; o.frequency.value=freq;
-  bg.gain.setValueAtTime(0.0001,at); bg.gain.exponentialRampToValueAtTime(amp,at+0.012); bg.gain.exponentialRampToValueAtTime(0.0001,at+1.4);
-  o.connect(bg); bg.connect(s.bell); s.bell.gain.value=1; o.start(at); o.stop(at+1.5); keep(o); o.onended=function(){ var i=A.nodes.indexOf(o); if(i>=0) A.nodes.splice(i,1); };
+/* one strike: a tube's partials, 1 · 2.76 · 5.40, each with its own decay, soft 8 ms attack */
+function chime(s, f, at, amp){
+  if(!A) return; var ctx=A.ctx, parts=[[1,1.0,4.2],[2.76,0.42,2.4],[5.40,0.16,1.1]], i;
+  for(i=0;i<parts.length;i++){ (function(part){ var o=ctx.createOscillator(), og=ctx.createGain(); o.type="sine"; o.frequency.value=f*part[0];
+    og.gain.setValueAtTime(0.0001,at); og.gain.exponentialRampToValueAtTime(amp*part[1],at+0.008); og.gain.setTargetAtTime(0.0001,at+0.02,part[2]/4);
+    o.connect(og); og.connect(s.g); o.start(at); o.stop(at+part[2]+1.5); keep(o); s.live++; o.onended=function(){ s.live--; var j=A.nodes.indexOf(o); if(j>=0) A.nodes.splice(j,1); }; })(parts[i]); }
+  s.last=f;
 }
 function mkBreath(k){
   var ctx=A.ctx, src=ctx.createBufferSource(); src.buffer=noiseBuffer(ctx,5,true); src.loop=true;
@@ -338,12 +335,10 @@ function schemePhase(kind, at, dur){
   if(!scheme || !A) return;
   var s=scheme, k=s.k, g=Math.max(dur,0.35);
   if(s.kind==="tone"){
-    var lv=0.34*k, still=0.10*k;
-    if(kind==="in"){ env(s.g.gain,s.g.gain.value,lv,at,0.35,easeOut); toneGlide(s,TONE_LO,TONE_HI,at,g); env(s.lp.frequency,s.lp.frequency.value,1900,at,g,easeIO); toneBell(s,TONE_HI*2,at,0.16*k); }      /* rising: in */
-    else if(kind==="out"){ env(s.g.gain,s.g.gain.value,lv,at,0.35,easeOut); toneGlide(s,TONE_HI,TONE_LO,at,g); env(s.lp.frequency,s.lp.frequency.value,900,at,g,easeIO); toneBell(s,TONE_LO*2,at,0.16*k); }     /* falling: out */
-    else if(kind==="hold"){ env(s.g.gain,s.g.gain.value,still,at,0.4,easeOut); toneGlide(s,TONE_HI,TONE_HI,at,0.05); }                                          /* still at the top, quiet */
-    else if(kind==="empty"){ env(s.g.gain,s.g.gain.value,still,at,0.4,easeOut); toneGlide(s,TONE_LO,TONE_LO,at,0.05); }                                         /* still at the bottom, quiet */
-    else { env(s.g.gain,s.g.gain.value,0.0001,at,0.4,easeIn); }
+    var amp=0.26*k;
+    if(kind==="in") chime(s, CHIME_IN, at, amp);            /* G: the note rises */
+    else if(kind==="out") chime(s, CHIME_OUT, at, amp);     /* D: the note falls */
+    /* hold, brace and squeeze: nothing new; the last strike rings into the pause and is gone */
   }
   if(s.kind==="breath"){
     var top=1.05*k;
@@ -382,13 +377,14 @@ document.addEventListener("visibilitychange", function(){ if(document.visibility
    Ground luminance rises with the lungs and falls with them; hue slides
    from cool to warm across the set. Everything else is carried on top. */
 function hsl(h,s,l){ h=((h%360)+360)%360/360; var q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q; function f(t){ t=(t+1)%1; if(t<1/6) return p+(q-p)*6*t; if(t<1/2) return q; if(t<2/3) return p+(q-p)*(2/3-t)*6; return p; } return [f(h+1/3), f(h), f(h-1/3)]; }
-/* the set runs from deep blue to violet: cool the whole way, never through teal or green */
-function hueOf(temp){ return 222 + 68*temp; }
+/* ink to dusk: a deep, quiet navy that never turns royal, drifting toward a muted mauve across the
+   set. The ground stays dark even at full lungs; the light lives in the dye and the rim. */
+function hueOf(temp){ return 216 + 50*temp; }
 function ground(fill, temp, dim){
-  var l = (0.035 + 0.15*fill) * dim;      /* capped: full lungs are dense colour, not white */
-  return hsl(hueOf(temp), 0.46 + 0.36*fill, l);
+  var l = (0.03 + 0.12*fill) * dim;       /* capped low: full lungs are dense, not pale */
+  return hsl(hueOf(temp), 0.34 + 0.12*fill, l);
 }
-function tint(temp){ return hsl(hueOf(temp), 0.7, 0.76); }   /* the dye and the rim: periwinkle to lilac */
+function tint(temp){ return hsl(hueOf(temp)+10, 0.34, 0.66); }   /* the dye and the rim: silver-lavender, dim enough to add colour and not white */
 function css(c){ return "rgb("+Math.round(c[0]*255)+","+Math.round(c[1]*255)+","+Math.round(c[2]*255)+")"; }
 
 /* ============================ NOISE ============================ */
@@ -456,7 +452,7 @@ function Field2D(cv, opt){
     ctx.fillStyle = css(st.ground); ctx.fillRect(0,0,W,H);
     var cx=W/2, cy=H*0.47, R=Math.max(W,H)*0.55;
     if(st.rim>0.005){ var rc=tint(st.temp), rg=ctx.createRadialGradient(cx,cy,Math.min(W,H)*0.3,cx,cy,Math.max(W,H)*0.62);   /* the luminous rim */
-      rg.addColorStop(0,"rgba("+(rc[0]*255|0)+","+(rc[1]*255|0)+","+(rc[2]*255|0)+",0)"); rg.addColorStop(1,"rgba("+(rc[0]*255|0)+","+(rc[1]*255|0)+","+(rc[2]*255|0)+","+Math.min(1,st.rim*st.dim*1.6).toFixed(3)+")");
+      rg.addColorStop(0,"rgba("+(rc[0]*255|0)+","+(rc[1]*255|0)+","+(rc[2]*255|0)+",0)"); rg.addColorStop(1,"rgba("+(rc[0]*255|0)+","+(rc[1]*255|0)+","+(rc[2]*255|0)+","+Math.min(1,st.rim*st.dim*1.2).toFixed(3)+")");
       ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); }
     if(!P.length && !DEB.length) return;
     var gain = (130 + 300*st.amp) * st.flow;        /* the audible gust is the visible gust */
@@ -571,7 +567,7 @@ function FieldGL(cv){
       "void main(){vec4 d=texture(uDye,vUv);vec2 q=(vUv-uCenter)*uAspect;float rn=length(q)/0.5;float rb=max(abs(q.x)/(0.5*uAspect.x),abs(q.y)/0.5);"+
       "float edge=smoothstep(0.72,1.0,rb)*(0.55+0.45*sin(atan(q.y,q.x)*7.0+uTime*0.9));float core=1.0-smoothstep(0.0,0.28,rn);"+
       "vec2 qt=(vUv-uTap)*uAspect;float rq=length(qt);d.rgb+=uColor*uTapK*(exp(-rq*rq/0.004)*22.0+exp(-pow(rq-0.16*(1.0-uTapK),2.0)/0.0012)*14.0)*uDt;"+      /* the puff at the fingertip and the ring it throws */
-      "d.rgb+=uColor*(uIn*core*2.6+uOut*edge*2.2)*uDt;d.rgb+=uColor*uIdle*(1.0-smoothstep(0.0,0.06,vUv.x))*(0.5+0.5*sin(vUv.y*34.0+uTime*1.3))*1.6*uDt;"+
+      "d.rgb+=uColor*(uIn*core*1.6+uOut*edge*1.3)*uDt;d.rgb=min(d.rgb,vec3(1.0));d.rgb+=uColor*uIdle*(1.0-smoothstep(0.0,0.06,vUv.x))*(0.5+0.5*sin(vUv.y*34.0+uTime*1.3))*1.6*uDt;"+
       "d.rgb*=(1.0-texture(uMask,vUv).a*0.9);o=vec4(min(d.rgb,vec3(1.1)),1.0);}",
     show: HEAD+"uniform sampler2D uDye;uniform vec3 uGround,uRim;uniform vec2 uAspect;uniform float uGain,uRimK;void main(){vec2 q=(vUv-vec2(0.5,0.53))*uAspect;float rb=max(abs(q.x)/(0.5*uAspect.x),abs(q.y)/0.5);float rim=smoothstep(0.4,1.08,rb);vec3 dy=texture(uDye,vUv).rgb;vec3 c=uGround+uRim*rim*uRimK+pow(max(dy,0.0),vec3(0.85))*uGain;o=vec4(c,1.0);}"
   };
@@ -620,14 +616,14 @@ function FieldGL(cv){
     for(i=0;i<12;i++){ bind(u,"uP",pr,0); draw(pr2); swapP(); }
     u=use("grad"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uP",pr,0); bind(u,"uVel",vel,1); draw(vel2); swapV();
     /* 5. dye: carried by the field, slowly fading, so the session accumulates */
-    u=use("advect"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss,0.9935); bind(u,"uVel",vel,0); bind(u,"uSrc",dye,1); draw(dye2); swapD();
+    u=use("advect"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss,0.991); bind(u,"uVel",vel,0); bind(u,"uSrc",dye,1); draw(dye2); swapD();
     var c=tint(st.temp);
     u=use("dye"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
     gl.uniform1f(u.uIn, Math.max(0,st.flow)*(0.5+st.amp)); gl.uniform1f(u.uOut, Math.max(0,-st.flow)*(0.5+st.amp)); gl.uniform1f(u.uIdle, st.idle?1:0); gl.uniform1f(u.uTime,t);
     gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK);
     gl.uniform3f(u.uColor,c[0],c[1],c[2]); bind(u,"uDye",dye,0); bind(u,"uMask",maskTex,1); draw(dye2); swapD();
     /* 6. show: ground luminance carries the phase; dye carries the motion */
-    u=use("show"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform3f(u.uGround,st.ground[0],st.ground[1],st.ground[2]); gl.uniform3f(u.uRim,c[0],c[1],c[2]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uRimK, st.rim*st.dim); gl.uniform1f(u.uGain, 0.52*st.dim); bind(u,"uDye",dye,0); draw(null);
+    u=use("show"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform3f(u.uGround,st.ground[0],st.ground[1],st.ground[2]); gl.uniform3f(u.uRim,c[0],c[1],c[2]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uRimK, st.rim*st.dim); gl.uniform1f(u.uGain, 0.34*st.dim); bind(u,"uDye",dye,0); draw(null);
     if(probeReq){ probeReq=false; probeGL(); }
   }
   var probeReq=false;
@@ -876,9 +872,11 @@ function setFoot(which){ if(which===lastFoot) return; bSkip.classList.toggle("sh
 var tlKey="", tlFill={"in":-1,hold:-1,out:-1,empty:-1}, ORDER={"in":0,hold:1,out:2,empty:3};
 /* the in, hold and out of the cycle the current step belongs to */
 function cycleOf(){
-  var st=S.steps[S.idx]; if(!st || ORDER[st.k]===undefined) return null;
+  var st=S.steps[S.idx]; if(!st) return null;
+  if(st.k==="getset"){ var n=S.idx+1; while(n<S.steps.length && ORDER[S.steps[n].k]===undefined) n++; if(n>=S.steps.length) return null; st=S.steps[n]; }   /* READY shows the shape of the set to come */
+  else if(ORDER[st.k]===undefined) return null;
   var same=function(q){ return q && q.stage===st.stage && q.set===st.set && q.rep===st.rep && ORDER[q.k]!==undefined; };
-  var j=S.idx; while(j>0 && same(S.steps[j-1]) && ORDER[S.steps[j-1].k]<ORDER[S.steps[j].k]) j--;
+  var j=S.steps.indexOf(st); while(j>0 && same(S.steps[j-1]) && ORDER[S.steps[j-1].k]<ORDER[S.steps[j].k]) j--;
   var d={"in":0,hold:0,out:0,empty:0}, k=j; while(k<S.steps.length && same(S.steps[k]) && (k===j || ORDER[S.steps[k].k]>ORDER[S.steps[k-1].k])){ if(d[S.steps[k].k]!==undefined) d[S.steps[k].k]=S.steps[k].dur; k++; }
   return d;
 }
@@ -890,6 +888,7 @@ function setRail(k, frac){
 }
 function paintDone(){ lastWord=txt(elWordI,"DONE",lastWord); lastNum=txt(elNum,"",lastNum); lastMeta=txt(elMeta,"",lastMeta); setFoot("back"); setRail(null,0); elEnd.classList.add("hid"); MASK.dirty=true; }
 
+var GEST_MIN=2.2, gest={k:"",t0:-1,T:1,gain:1,dir:0,prev:null};
 var frameState = {phase:"idle", fill:0, prog:0, flow:0, amp:0, temp:0, turb:0, ground:[0,0,0], idle:true, still:false, stage:"", rep:0, reps:1, set:0, sets:1, dim:1,
                   tapX:0, tapY:0, tapK:0, pinX:0, pinY:0, pinK:0, rim:0, pulse:0};
 /* the finger in the field: a decaying poke and a held pin, in canvas pixels for the 2D engine and uv for the GPU */
@@ -907,9 +906,16 @@ function render(now){
   /* the breath as numbers the field can use */
   fs.stage=st.stage; fs.phase=st.k; fs.prog=frac; fs.rep=st.rep; fs.reps=S.reps; fs.set=st.set; fs.sets=S.sets;
   if(st.k==="in") fs.fill=easeIO(frac); else if(st.k==="hold") fs.fill=1; else if(st.k==="out") fs.fill=1-easeIO(frac); else if(st.k==="getset") fs.fill=0.15*(1-frac); else fs.fill=0;
-  var bell=Math.pow(Math.sin(frac*Math.PI),0.7);
-  fs.flow = st.k==="in"?bell : st.k==="out"?-bell : 0;
+  /* the wind's gesture for a phase lasts at least GEST_MIN seconds and carries on into the next
+     phase if the count is shorter, so a one-second drive still blows out fully; a short phase
+     also pushes harder, so the air moves as far as it would have in a long one */
+  if(st.k!==gest.k || S.stepStart!==gest.t0){ if(gest.k==="in"||gest.k==="out"){ gest.prev={dir:gest.dir,t0:gest.t0,T:gest.T,gain:gest.gain}; } gest.k=st.k; gest.t0=S.stepStart; gest.T=Math.max(st.dur,GEST_MIN); gest.gain=Math.min(2.4,Math.max(1,GEST_MIN/st.dur)); gest.dir = st.k==="in"?1 : st.k==="out"?-1 : 0; }
+  var bell=0, gp=(now-gest.t0)/gest.T; if(gest.dir && gp<1) bell=Math.pow(Math.sin(gp*Math.PI),0.7)*gest.gain;
+  var flow=gest.dir*bell, residual=0;
+  if(gest.prev){ var pp=(now-gest.prev.t0)/gest.prev.T; if(pp<1){ residual=gest.prev.dir*Math.pow(Math.sin(pp*Math.PI),0.7)*gest.prev.gain; } else gest.prev=null; }
+  fs.flow = Math.max(-2.4, Math.min(2.4, flow + residual));
   if(st.stage==="rest") fs.flow*=0.45;
+  bell=Math.abs(fs.flow)>1?1:Math.abs(fs.flow);
   var a=audioAmp(); if(a<0) a=bell*0.6; ampSm += (a-ampSm)*0.25; fs.amp=ampSm;
   /* the mirror: when the sensor sees you, the wind is you and the tone is the pacer */
   var pt=performance.now()/1000, seeing = S.mirror && MIR.conf>0.35 && !MIR.moving;
@@ -922,9 +928,9 @@ function render(now){
   /* the beat, in light, for Tap: each second of an active phase the whole ground blinks up a step and settles */
   var beat=0, into=now-S.stepStart; if(S.tapOn && st.stage==="set" && (st.k==="in"||st.k==="out")){ var bt=into-Math.floor(into); beat=Math.exp(-bt/0.10); }
   /* the hold is its own state: still air, a luminous rim, and a pulse once a second from the second second on, so the hold can be counted from the field */
-  fs.still = st.k==="hold" || st.k==="empty";     /* brace holds full; squeeze holds empty; both are still air with a lit rim */
+  fs.still = (st.k==="hold" || st.k==="empty") && !gest.prev;     /* brace holds full; squeeze holds empty; still air once the last gust has played out */
   fs.pulse=0; if(fs.still && into>=1){ var hb=into-Math.floor(into); fs.pulse=Math.exp(-hb/0.12); }
-  fs.rim = 0.16*fs.fill + 0.22*fs.pulse + (fs.still?0.08:0);
+  fs.rim = 0.09*fs.fill + 0.16*fs.pulse + (fs.still?0.04:0);
   fs.ground=ground(Math.min(1.2, fs.fill + 0.14*beat + 0.18*fs.tapK + 0.05*fs.pulse), fs.temp, fs.dim);   /* the tap lights the whole ground for an instant */
   if(st.k==="done"){ if(lastWord!=="DONE") paintDone(); return; }
   elEnd.classList.remove("hid");
@@ -976,22 +982,21 @@ var setupMode="lift";
 function refresh(){
   var L=DB.cfg.lift, P=DB.cfg.breathe, T=L.tune[L.preset], i;
   document.getElementById("v-reps").textContent=L.reps[L.preset]; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-cycles").textContent=P.cycles;
-  /* the tempo strip reads exactly as the run screen will: the words in order, the seconds under them */
-  var phases = L.preset==="drive" ? [["in",T["in"]],["brace",T.hold],["out",T.out]] : [["in",T["in"]],["out",T.out],["squeeze",T.empty]];
-  var html=""; for(i=0;i<phases.length;i++) html+='<div class="ph"><span class="k">'+phases[i][0]+'</span><span class="n">'+phases[i][1]+'<small>s</small></span></div>';
-  html+='<div class="ph rest"><span class="k">rest</span><span class="n">'+fmtClock(T.rest)+'</span></div>';
-  document.getElementById("tempo").innerHTML=html;
-  document.getElementById("preset-hint").textContent = L.preset==="drive" ? "Squats · presses · hinges" : "Rows · curls · raises · calves";
+  /* each door carries its tempo as a proportional bar: the phase names above, the seconds inside */
+  function bar(pr){ var Tq=L.tune[pr], ph = pr==="drive" ? [["in",Tq["in"]],["brace",Tq.hold],["out",Tq.out]] : [["in",Tq["in"]],["out",Tq.out],["squeeze",Tq.empty]], h="", j;
+    for(j=0;j<ph.length;j++) h+='<b style="flex:'+ph[j][1]+' 1 0"><i>'+ph[j][0]+'</i><u>'+ph[j][1]+'</u></b>'; return h; }
+  document.getElementById("bar-drive").innerHTML=bar("drive"); document.getElementById("bar-squeeze").innerHTML=bar("squeeze");
+  document.getElementById("rest-drive").textContent="rest "+fmtClock(L.tune.drive.rest); document.getElementById("rest-squeeze").textContent="rest "+fmtClock(L.tune.squeeze.rest);
+  var doors=document.querySelectorAll(".door"); for(i=0;i<doors.length;i++) doors[i].classList.toggle("sel", doors[i].getAttribute("data-preset")===L.preset);
   var belly=P.belly!=="off", tap=P.tap==="on", sound=DB.cfg.sound;
   document.getElementById("pat-sub").textContent = P.pat==="coh" ? "Coherent · 5.5 a minute" : "Relaxing · long exhale";
-  document.getElementById("sound-sub").textContent = sound==="breath" ? "A breath of wind, in and out." : "A soft tone that rises as you breathe in and falls as you breathe out.";
+  document.getElementById("sound-sub").textContent = sound==="breath" ? "A breath of wind, in and out." : "A soft chime: a higher note to breathe in, a lower note to breathe out.";
   var seg=document.querySelectorAll("#seg-with button"); for(i=0;i<seg.length;i++){ var wk=seg[i].getAttribute("data-w"); seg[i].classList.toggle("sel", wk==="belly"?belly:tap); }
   var parts=[]; if(belly) parts.push("Belly: phone on your belly, it reads your breath."); if(tap) parts.push("Tap: tap the count, hold to hold.");
   document.getElementById("with-sub").textContent = parts.length ? parts.join(" ") : "Nothing extra.";
   document.getElementById("card-with").classList.toggle("hid", setupMode!=="breathe");
   document.getElementById("setup-lift").classList.toggle("hid", setupMode!=="lift"); document.getElementById("setup-breathe").classList.toggle("hid", setupMode!=="breathe");
   document.getElementById("setup-title").textContent = setupMode==="lift"?"Lift":"Breathe";
-  var segP=document.querySelectorAll("#seg-preset button"); for(i=0;i<segP.length;i++) segP[i].classList.toggle("sel", segP[i].getAttribute("data-preset")===L.preset);
   var segPat=document.querySelectorAll("#seg-pat button"); for(i=0;i<segPat.length;i++) segPat[i].classList.toggle("sel", segPat[i].getAttribute("data-pat")===P.pat);
   var snd=document.querySelectorAll("[data-sound]"); for(i=0;i<snd.length;i++) snd[i].classList.toggle("sel", sound===snd[i].getAttribute("data-sound"));
 }
@@ -1048,7 +1053,7 @@ window.WIND = {
   state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst?ENG.inst.info():""}; },
   probe:function(){ if(ENG.inst&&ENG.inst.probe) ENG.inst.probe(); },
   rects:function(){ var out={}, els=document.querySelectorAll("#s-run .slot, #word span, #num, .rail .r"); for(var i=0;i<els.length;i++){ var r=els[i].getBoundingClientRect(); out[(els[i].id||els[i].className)+"#"+i]=[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]; } out.wordSize=getComputedStyle(elWord).fontSize; return out; },
-  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, tone:function(){ return scheme&&scheme.kind==="tone" ? {f:Math.round(scheme.oscs[0].o.frequency.value), g:+scheme.g.gain.value.toFixed(3), lp:Math.round(scheme.lp.frequency.value)} : null; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ if(k==="sound") DB.cfg.sound=v; else DB.cfg.breathe[k]=v; }, palette:function(t){ return ground(0.5,t,1); }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
+  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, tone:function(){ if(!scheme||scheme.kind!=="tone") return null; return {last:Math.round(scheme.last), live:scheme.live}; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ if(k==="sound") DB.cfg.sound=v; else DB.cfg.breathe[k]=v; }, palette:function(t){ return ground(0.5,t,1); }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
 };
 /* ---- boot ---- */
 fitWordOnce();

@@ -39,26 +39,18 @@ are breathed, not paced, and her page no longer carries them.
 
 | Preset | Sequence | Rep | Rest | Lifts |
 |---|---|---|---|---|
-| **Drive** | in 4 · brace 2 · out 1 | 7 s | 2:00 | Squats, presses, hinges, lunges, step-ups |
-| **Squeeze** | in 3 · out 1 · squeeze 1 | 5 s | 1:30 | Rows, pulls, curls, raises, kickbacks, calves, crunches, hip thrusts |
+| **Drive** | in 3 · brace 1 · out 2 | 6 s | 2:00 | Squats, presses, hinges, lunges, step-ups |
+| **Squeeze** | in 2 · out 1 · squeeze 2 | 5 s | 1:30 | Rows, pulls, curls, raises, kickbacks, calves, crunches, hip thrusts |
+
+The counts are the Lifting Cues page's, which is the source of truth for
+timing; the app follows the page, not the other way round.
 
 Drive pauses full: inhale on the way down, brace at the bottom with the
-air in, exhale through the drive. The two-second brace kills the bounce
-out of the hole and is the pause she valued in 4·2·6; what blew up that
-sequence's arithmetic was the six-second exhale, and that is what went.
-The one-second concentric is an instruction to be fast, and the
-four-second eccentric absorbs a slow rep: overrun the drive by two and the
-next descent gives you the slack to fall back in step. Seven seconds a rep
-means Drive should run eight to ten reps, not twelve; ten reps is a
-seventy-second set, the honest ceiling.
-
-Squeeze pauses empty: three down to match her standard for every lift,
-exhale as you lift, and the exhale finishes through one second of
-squeeze at the top. The two-second squeeze of the previous pass went;
-one is enough to kill momentum and confirm the contraction, and three
-down is worth more than the extra second at the top. Calves, shrugs and
-glute bridges are the lifts that wanted two, and that is an argument for
-a preset someday, not for changing this one.
+air in, exhale through the drive. The one-second brace kills the bounce
+out of the hole and turns the torso into one block. Squeeze pauses
+empty: exhale as you lift, and keep pushing air out through two seconds
+of squeeze at the top, because empty lungs are the abs contracting and
+ribs down is what lets the muscle shorten all the way.
 
 Where a lift goes is decided by where its pause lives, not by whether the
 trunk is braced. A one-arm row is braced for the whole set, so the brace
@@ -67,11 +59,11 @@ at the top: Squeeze. Same for pull-ups, landmine rows, pull-throughs and
 hip thrusts. Walking lunges qualify for Drive but include travel, which
 is not a breath phase; reverse lunges are the same muscles without it.
 
-Reps are stored per preset, ten for Drive and twelve for Squeeze, because
-a lift that wants twelve reps at seven seconds is a lift that wants
-Squeeze. The setup shows the rep as a tempo strip, the phase words in
-order with the seconds under them and the rest at the end, so it reads
-exactly as the run screen will.
+Reps are stored per preset, ten for Drive and twelve for Squeeze. The
+setup is two doors: each preset is a tile that carries its own tempo as a
+proportional bar, the phase names in small caps above the segments and
+the seconds inside them, with the rest in the corner. Both tempos are
+visible before you choose, and nothing on the screen names a lift.
 
 On the run screen the two pauses are the same still state as Breathe's
 hold, a lit rim and a pulse each second, at opposite fills: BRACE is
@@ -83,16 +75,36 @@ cannot help.
 
 ## The tone
 
-Tone is modelled on the guided coherence-breathing tracks she breathes to:
-one soft sustained pad whose pitch glides up through the inhale and back
-down through the exhale, a fifth each way, G3 to D4, with a small bell at
-each turn. The glide is the instruction, rising is in and falling is out,
-and it can be followed eyes shut. Held phases sit still and quiet at the
-top of the glide (brace, full) or the bottom (squeeze, empty). The
-reference track's audio could not be fetched from the build sandbox, so
-this is built from the genre's convention rather than a spectral match;
-if the real track's tone sits at a different pitch or interval, those are
-two constants.
+The guided coherence track she breathes to turns out not to glide at all.
+It strikes a windchime every 5.5 seconds on two notes, D and G, one for
+the exhale and one for the inhale. Tone is now that: a chime struck once
+at the start of each phase, G4 to breathe in and D4 to breathe out, so
+the note rises on the in and falls on the out. Each strike is three
+partials of a tube, 1 · 2.76 · 5.40, with their own decays, ringing for
+about four seconds. A held breath, a brace or a squeeze adds nothing; the
+last strike rings into the pause and is gone, which on 4 · 7 · 8 makes
+the seven silent by itself. A two-second phase gets the same strike as an
+eleven-second one, which is why it cannot turn into a siren, as the
+glide before it did on Lift's short counts.
+
+## The wind on short counts
+
+A one- or two-second phase used to get a one- or two-second gust, which
+could not undo the four-second one before it, and Lift looked chaotic.
+Now each in or out starts a gesture that lasts at least 2.2 seconds and
+pushes harder the shorter the count, so the air travels as far as it
+would have on a long phase, and if the count moves on first the gesture
+carries into the next phase and finishes there. The still state of a
+brace or squeeze waits for the last gesture to play out before it
+freezes the field. The count is never late; only the wind takes the time
+a gust takes.
+
+## Colour
+
+The royal blue is gone. The set runs from steel (hue 214) to dusk (270)
+at low saturation, 0.18 rising to 0.38 with fill, so the ground is a cool
+grey-blue that deepens rather than brightens, and the dye and rim are
+silver with a cool cast. The app's ground is a near-black graphite.
 
 ## The name
 

@@ -6,13 +6,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Wind Bender">
 <meta name="theme-color" content="#06081a">
-<title>Wind</title>
+<title>Wind Bender</title>
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <style>
 /* ---------------------------------------------------------------
-   WIND · prototype
+   WIND BENDER
    The whole screen is the instrument. Text is the caption.
    No web fonts, no CDN, no build: this file is the app.
    --------------------------------------------------------------- */
@@ -49,7 +50,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 /* ---------- home ---------- */
 .mark{display:grid;justify-items:center;gap:6px;padding-top:min(9vh,70px)}
 .mark .s{font-size:12px;letter-spacing:.5em;color:var(--mute);font-weight:600;padding-left:.5em}
-.mark .w{font-weight:800;font-size:min(23vw,120px);line-height:.95;letter-spacing:.01em}
+.mark .w{font-weight:800;font-size:min(17vw,100px);line-height:.95;letter-spacing:.02em}   /* BENDER, six letters, fits a 320 px phone */
 .modes{display:grid;gap:12px;margin-bottom:min(6vh,52px)}
 .mode{display:flex;justify-content:space-between;align-items:baseline;padding:22px 22px;border-radius:20px;
   background:var(--ui);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
@@ -63,6 +64,15 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .seg button[disabled]{opacity:.35}
 .note{font-size:12px;line-height:1.45;color:var(--mute);min-height:2.9em;letter-spacing:.02em}
 .sub{text-align:center;font-size:12px;letter-spacing:.1em;color:var(--mute);padding-bottom:6px;line-height:1.5}
+/* the tempo strip: the rep as the counts you will see on screen, one column per phase, rest at the end */
+.tempo{display:flex;align-items:stretch;justify-content:center;gap:0;padding:4px 0 2px}
+.tempo .ph{flex:1 1 0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0;border-right:1px solid var(--line)}
+.tempo .ph:last-child{border-right:0}
+.tempo .ph .k{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.tempo .ph .n{font-size:30px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.tempo .ph .n small{font-size:12px;font-weight:700;color:var(--mute);margin-left:2px;letter-spacing:.05em}
+.tempo .ph.rest .n{font-size:22px;padding-top:4px}
+.hint{text-align:center;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);font-weight:600;padding:2px 0 8px}
 
 /* ---------- setup ---------- */
 .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;height:40px}
@@ -123,7 +133,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 
 <!-- HOME -->
 <section id="s-home" class="screen on">
-  <div class="mark"><div class="s">SECOND</div><div class="w" id="mark">WIND</div></div>
+  <div class="mark"><div class="s">WIND</div><div class="w" id="mark">BENDER</div></div>
   <div class="spacer"></div>
   <div class="modes">
     <button class="mode" data-go="lift"><span class="t">LIFT</span><span class="d">sets · reps · rest</span></button>
@@ -137,14 +147,16 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   <div class="top"><button class="btn ghost" data-go="home">Back</button><span class="eyebrow" id="setup-title">Lift</span></div>
   <div class="scroll">
     <div id="setup-lift">
-      <div class="card"><div class="row stack">
-        <div class="seg" id="seg-preset"><button data-preset="drive">Drive</button><button data-preset="squeeze">Squeeze</button><button data-preset="hold">Hold</button></div>
-        <div id="preset-sub" class="sub" style="letter-spacing:.2em"></div>
-        <div id="preset-note" class="sub"></div>
-      </div></div>
+      <!-- the shape of the rep: two presets, and the tempo shown as the count you will see -->
+      <div class="card">
+        <div class="row stack">
+          <div class="seg" id="seg-preset"><button data-preset="drive">Drive</button><button data-preset="squeeze">Squeeze</button></div>
+          <div class="tempo" id="tempo"></div>
+          <div class="hint" id="preset-hint"></div>
+        </div>
+      </div>
       <div class="card">
         <div class="row" id="row-reps"><span class="lbl">Reps</span><div class="step"><button data-s="reps:-1">−</button><span class="v" id="v-reps">10</span><button data-s="reps:1">+</button></div></div>
-        <div class="row hid" id="row-hsec"><span class="lbl">Seconds</span><div class="step"><button data-s="holdSec:-5">−</button><span class="v" id="v-holdSec">45</span><button data-s="holdSec:5">+</button></div></div>
         <div class="row"><span class="lbl">Sets</span><div class="step"><button data-s="sets:-1">−</button><span class="v" id="v-sets">4</span><button data-s="sets:1">+</button></div></div>
       </div>
     </div>
@@ -194,12 +206,11 @@ var DEF = {
   cfg: {
     sound:"tone",
     /* LIFT presets, one per rep shape. DRIVE pauses full at the bottom: squats, presses, hinges.
-       SQUEEZE pauses empty at the top: rows, pulls, curls, raises, calves. HOLD is isometric:
-       continuous breathing, counted in seconds. Every cycle opens on IN. */
-    lift: {preset:"drive", reps:10, sets:4, holdSec:45,
-      tune:{drive:  {"in":3, hold:1, out:2, empty:0, rest:150},
-            squeeze:{"in":2, hold:0, out:1, empty:2, rest:90},
-            hold:   {"in":3, hold:0, out:4, empty:0, rest:60}}},
+       SQUEEZE pauses empty at the top: rows, pulls, curls, raises, calves. Every cycle opens on IN.
+       The one-second concentric is an instruction to be fast; the long eccentric absorbs a slow rep. */
+    lift: {preset:"drive", reps:{drive:10, squeeze:12}, sets:4,
+      tune:{drive:  {"in":4, hold:2, out:1, empty:0, rest:120},
+            squeeze:{"in":3, hold:0, out:1, empty:1, rest:90}}},
     breathe: {cycles:8, pat:"478", belly:"on", tap:"off"}
   },
   stats: {sec:0, log:[]}
@@ -209,9 +220,10 @@ var DB = clone(DEF);
 try{
   var raw = JSON.parse(localStorage.getItem(KEY) || "null");
   if(raw && raw.cfg){
-    var L = raw.cfg.lift; if(L){ ["preset","reps","sets","holdSec"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
+    var L = raw.cfg.lift; if(L){ ["preset","sets"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
+      if(L.reps && typeof L.reps==="object"){ for(var rk in DB.cfg.lift.reps) if(L.reps[rk]) DB.cfg.lift.reps[rk]=L.reps[rk]; }   /* reps are per preset now */
       /* the tempos are fixed now; nothing stored overrides them. Old preset names map onto the new shapes. */
-      if(DB.cfg.lift.preset==="compound") DB.cfg.lift.preset="drive"; else if(DB.cfg.lift.preset==="isolation") DB.cfg.lift.preset="squeeze";
+      if(DB.cfg.lift.preset==="compound"||DB.cfg.lift.preset==="hold") DB.cfg.lift.preset="drive"; else if(DB.cfg.lift.preset==="isolation") DB.cfg.lift.preset="squeeze";
       if(!DB.cfg.lift.tune[DB.cfg.lift.preset]) DB.cfg.lift.preset="drive"; }
     if(raw.cfg.breathe) for(var bk in DB.cfg.breathe) if(raw.cfg.breathe[bk]!==undefined) DB.cfg.breathe[bk]=raw.cfg.breathe[bk];
     if(DB.cfg.breathe.pat!=="478" && DB.cfg.breathe.pat!=="coh") DB.cfg.breathe.pat="478";          /* Follow is gone */
@@ -286,18 +298,31 @@ function initAudio(){
   A = {ctx:ctx, master:master, roll:roll, dryIn:dryIn, wetIn:wetIn, tap:tap, tapBuf:new Float32Array(1024), nodes:[]};
   lastCtxT = ctx.currentTime; lastPerfT = performance.now()/1000;
   ctx.onstatechange = function(){ if(ctx.state==="running" && S.running){ S.schedIdx = S.idx - 1; } };
-  try{ if(window.MediaMetadata && navigator.mediaSession){ navigator.mediaSession.metadata = new MediaMetadata({title:"Wind"}); navigator.mediaSession.playbackState="playing";
+  try{ if(window.MediaMetadata && navigator.mediaSession){ navigator.mediaSession.metadata = new MediaMetadata({title:"Wind Bender"}); navigator.mediaSession.playbackState="playing";
     ["play","pause"].forEach(function(a){ try{ navigator.mediaSession.setActionHandler(a, function(){ try{ ctx.resume(); audioEl.play(); }catch(e){} }); }catch(e){} }); } }catch(e){}
   return A;
 }
 function keep(n){ A.nodes.push(n); return n; }
+/* TONE, in the manner of the guided coherence tracks: one soft sustained pad whose pitch glides up
+   through the inhale and back down through the exhale, a fifth each way, with a small bell at the
+   turn. The glide is the instruction: rising is in, falling is out, and you can follow it with your
+   eyes shut. Held phases sit still at the top or the bottom of the glide, quiet. */
+var TONE_LO=196, TONE_HI=294;   /* G3 to D4 */
 function mkTone(k){
-  var ctx=A.ctx, lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1200; lp.Q.value=0.4;
-  function voice(freq, amp, dest){ for(var d=0; d<2; d++){ var o=ctx.createOscillator(); o.type="sine"; o.frequency.value=freq; o.detune.value=d?3:-3; var og=ctx.createGain(); og.gain.value=amp*0.5; o.connect(og); og.connect(dest); o.start(); keep(o); } }
-  var gHi=ctx.createGain(); gHi.gain.value=0.0001; voice(528,0.55,gHi); voice(792,0.10,gHi); voice(396,0.22,gHi);
-  var gLo=ctx.createGain(); gLo.gain.value=0.0001; voice(264,0.60,gLo); voice(132,0.30,gLo); voice(396,0.14,gLo);
-  gHi.connect(lp); gLo.connect(lp); lp.connect(A.wetIn);
-  return {kind:"tone", hi:gHi, lo:gLo, lp:lp, k:k};
+  var ctx=A.ctx, lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1100; lp.Q.value=0.5;
+  var g=ctx.createGain(), oscs=[]; g.gain.value=0.0001;
+  function voice(mult, type, amp, det){ var o=ctx.createOscillator(); o.type=type; o.frequency.value=TONE_LO*mult; o.detune.value=det; var og=ctx.createGain(); og.gain.value=amp; o.connect(og); og.connect(g); o.start(); keep(o); oscs.push({o:o,mult:mult}); }
+  voice(1,"sine",0.55,-4); voice(1,"triangle",0.16,4); voice(2,"sine",0.12,0); voice(0.5,"sine",0.22,0);
+  var bell=ctx.createGain(); bell.gain.value=0.0001; bell.connect(lp);
+  g.connect(lp); lp.connect(A.wetIn);
+  return {kind:"tone", g:g, lp:lp, oscs:oscs, bell:bell, k:k};
+}
+/* glide every voice from f0 to f1 over dur, keeping their ratios */
+function toneGlide(s, f0, f1, at, dur){ for(var i=0;i<s.oscs.length;i++){ var v=s.oscs[i]; env(v.o.frequency, f0*v.mult, f1*v.mult, at, dur, easeIO); } }
+function toneBell(s, freq, at, amp){
+  if(!A) return; var ctx=A.ctx, o=ctx.createOscillator(), bg=ctx.createGain(); o.type="sine"; o.frequency.value=freq;
+  bg.gain.setValueAtTime(0.0001,at); bg.gain.exponentialRampToValueAtTime(amp,at+0.012); bg.gain.exponentialRampToValueAtTime(0.0001,at+1.4);
+  o.connect(bg); bg.connect(s.bell); s.bell.gain.value=1; o.start(at); o.stop(at+1.5); keep(o); o.onended=function(){ var i=A.nodes.indexOf(o); if(i>=0) A.nodes.splice(i,1); };
 }
 function mkBreath(k){
   var ctx=A.ctx, src=ctx.createBufferSource(); src.buffer=noiseBuffer(ctx,5,true); src.loop=true;
@@ -313,12 +338,12 @@ function schemePhase(kind, at, dur){
   if(!scheme || !A) return;
   var s=scheme, k=s.k, g=Math.max(dur,0.35);
   if(s.kind==="tone"){
-    var hi=0.30*k, lo=0.26*k;
-    if(kind==="in"){ env(s.hi.gain,0.0001,hi,at,g*0.8,easeIO); env(s.hi.gain,hi,hi*0.85,at+g*0.8,g*0.2,easeIO); env(s.lo.gain,s.lo.gain.value,0.03*k,at,g*0.5,easeIO); env(s.lp.frequency,900,2200,at,g,easeIO); }
-    else if(kind==="hold"){ env(s.hi.gain,s.hi.gain.value,0.0001,at,Math.min(g*0.3,0.45),easeOut); env(s.lo.gain,s.lo.gain.value,0.0001,at,Math.min(g*0.3,0.45),easeOut); }
-    else if(kind==="out"){ env(s.lo.gain,0.0001,lo,at,g*0.25,easeOut); env(s.lo.gain,lo,0.0003,at+g*0.25,g*0.72,easeIO); env(s.hi.gain,s.hi.gain.value,0.0001,at,g*0.4,easeIO); env(s.lp.frequency,1800,640,at,g,easeIO); }
-    else if(kind==="empty"){ env(s.hi.gain,s.hi.gain.value,0.0001,at,0.3,easeOut); env(s.lo.gain,s.lo.gain.value,0.06*k,at,0.2,easeOut); env(s.lo.gain,0.06*k,0.0001,at+g*0.5,g*0.5,easeIn); env(s.lp.frequency,s.lp.frequency.value,520,at,g,easeOut); }   /* the squeeze: the low voice held, then gone */
-    else { env(s.hi.gain,s.hi.gain.value,0.0001,at,0.4,easeIn); env(s.lo.gain,s.lo.gain.value,0.0001,at,0.4,easeIn); }
+    var lv=0.34*k, still=0.10*k;
+    if(kind==="in"){ env(s.g.gain,s.g.gain.value,lv,at,0.35,easeOut); toneGlide(s,TONE_LO,TONE_HI,at,g); env(s.lp.frequency,s.lp.frequency.value,1900,at,g,easeIO); toneBell(s,TONE_HI*2,at,0.16*k); }      /* rising: in */
+    else if(kind==="out"){ env(s.g.gain,s.g.gain.value,lv,at,0.35,easeOut); toneGlide(s,TONE_HI,TONE_LO,at,g); env(s.lp.frequency,s.lp.frequency.value,900,at,g,easeIO); toneBell(s,TONE_LO*2,at,0.16*k); }     /* falling: out */
+    else if(kind==="hold"){ env(s.g.gain,s.g.gain.value,still,at,0.4,easeOut); toneGlide(s,TONE_HI,TONE_HI,at,0.05); }                                          /* still at the top, quiet */
+    else if(kind==="empty"){ env(s.g.gain,s.g.gain.value,still,at,0.4,easeOut); toneGlide(s,TONE_LO,TONE_LO,at,0.05); }                                         /* still at the bottom, quiet */
+    else { env(s.g.gain,s.g.gain.value,0.0001,at,0.4,easeIn); }
   }
   if(s.kind==="breath"){
     var top=1.05*k;
@@ -709,7 +734,7 @@ function mirrorVoiceFrame(){
 /* ============================ SESSION ============================ */
 var LEAD = 0.12;
 var S = {running:false, mode:"lift", sound:"tone", steps:[], idx:0, stepStart:0, schedIdx:-1,
-         reps:10, sets:4, restDur:180, holdMode:0, holdSec:45, startedAt:0, recorded:{}, ended:false,
+         reps:10, sets:4, restDur:180, startedAt:0, recorded:{}, ended:false,
          turb:0, mirror:false, tapOn:false,
          poke:{x:0,y:0,k:0,t:-9}, pin:{x:0,y:0,on:false}};
 function ph(kind, dur, stage, setNo, rep){ return {k:kind, dur:dur, stage:stage, set:setNo, rep:rep}; }
@@ -724,9 +749,8 @@ function buildSteps(){
   if(S.mode==="lift"){
     var T=c.lift.tune[c.lift.preset], counts={"in":+T["in"],hold:+T.hold,out:+T.out,empty:+T.empty};
     for(s=1;s<=S.sets;s++){
-      st.push(ph("getset",3,"getset",s,0)); var mark=st.length;
-      if(S.holdMode){ var cyc=counts["in"]+counts.hold+counts.out+counts.empty, reps=Math.ceil(S.holdSec/cyc)+1; for(r=1;r<=reps;r++) pushCycle(st,counts,"set",s,r); trimTo(st,mark,S.holdSec); }
-      else for(r=1;r<=S.reps;r++) pushCycle(st,counts,"set",s,r);
+      st.push(ph("getset",3,"getset",s,0));
+      for(r=1;r<=S.reps;r++) pushCycle(st,counts,"set",s,r);
       if(s<S.sets){ var rest=coherentSteps(S.restDur,"rest",s); for(i=0;i<rest.length;i++) st.push(rest[i]); }
     }
   }else{
@@ -760,8 +784,8 @@ function startSession(mode){
   S.mirror = mode==="breathe" && c.breathe.belly!=="off" && MIR.perm==="granted";
   S.tapOn = mode==="breathe" && c.breathe.tap==="on";
   S.poke={x:0,y:0,k:0,t:-9}; S.pin={x:0,y:0,on:false};
-  if(mode==="lift"){ S.reps=c.lift.reps; S.sets=c.lift.sets; S.restDur=c.lift.tune[c.lift.preset].rest; S.holdMode=c.lift.preset==="hold"?1:0; S.holdSec=c.lift.holdSec; }
-  else { S.reps=c.breathe.cycles; S.sets=1; S.holdMode=0; }
+  if(mode==="lift"){ S.reps=c.lift.reps[c.lift.preset]; S.sets=c.lift.sets; S.restDur=c.lift.tune[c.lift.preset].rest; }
+  else { S.reps=c.breathe.cycles; S.sets=1; }
   audioStart(mode, S.mirror ? "tone" : S.sound);     /* in the mirror the tone leads and the noise is you */
   if(S.mirror){ mirrorStart(); if(A) mirrorVoice=mkMirror(); }
   if(ENG.inst && ENG.inst.clear) ENG.inst.clear();          /* a clean field for every session */
@@ -780,12 +804,11 @@ function endSession(natural){
 }
 function recordSet(setNo, done){
   var id=S.mode+":"+setNo; if(S.recorded[id]) return; S.recorded[id]=1;
-  DB.stats.log.unshift({t:Date.now(), m:S.mode, s:setNo, of:S.sets, d:Math.round(done*10)/10, g:S.holdMode?S.holdSec:S.reps});
+  DB.stats.log.unshift({t:Date.now(), m:S.mode, s:setNo, of:S.sets, d:Math.round(done*10)/10, g:S.reps});
   if(DB.stats.log.length>400) DB.stats.log.length=400; save();
 }
 function setProgress(){
   var st=S.steps[S.idx]; if(!st||st.stage!=="set") return 0;
-  if(S.holdMode){ var el=0,i; for(i=0;i<S.idx;i++) if(S.steps[i].stage==="set"&&S.steps[i].set===st.set) el+=S.steps[i].dur; el+=Math.min(nowSec()-S.stepStart,st.dur); return Math.max(0,Math.min(el,S.holdSec)); }
   return Math.max(0, st.rep-1);
 }
 function saveSet(){ var st=S.steps[S.idx]; if(!st||st.stage!=="set") return; recordSet(st.set,setProgress()); var j=S.idx; while(j<S.steps.length&&S.steps[j].stage==="set"&&S.steps[j].set===st.set) j++; S.steps.splice(S.idx,j-S.idx); reanchor(true); }
@@ -892,7 +915,7 @@ function render(now){
   var pt=performance.now()/1000, seeing = S.mirror && MIR.conf>0.35 && !MIR.moving;
   if(seeing){ fs.fill=MIR.fill; fs.flow=MIR.flow; fs.amp=Math.min(1,Math.abs(MIR.flow)); }
   mirrorVoiceFrame();
-  fs.temp = st.stage==="set" && !S.holdMode && S.reps>1 ? (st.rep-1)/(S.reps-1) : st.stage==="set" && S.holdMode ? Math.min(1,setProgress()/S.holdSec) : st.stage==="rest"?0.5:0.15;
+  fs.temp = st.stage==="set" && S.reps>1 ? (st.rep-1)/(S.reps-1) : st.stage==="rest"?0.5:0.15;
   S.turb *= (1 - 0.12*Math.min(1, (now - (S._lt||now)))); S._lt=now;
   fs.turb=Math.min(1,S.turb);
   touchState(now, fs);
@@ -913,7 +936,6 @@ function render(now){
   setRail(ORDER[st.k]!==undefined?st.k:null, frac);
   var meta;
   if(isRest) meta="REST · SET "+st.set+"/"+S.sets;
-  else if(S.holdMode && isSet){ var pr=setProgress(); meta="SET "+st.set+"/"+S.sets+" · "+Math.ceil(S.holdSec-pr)+"S"; }
   else if(S.mode==="breathe"){ meta = isSet ? ("CYCLE "+st.rep+"/"+S.reps + (S.tapOn ? (st.k==="hold" ? " · PRESS" : " · TAP") : "")) : ""; }
   else meta="SET "+st.set+"/"+S.sets+(isSet?" · "+st.rep+"/"+S.reps:"");
   lastMeta=txt(elMeta, meta, lastMeta);
@@ -933,7 +955,7 @@ function tick(){
     var guard=0;
     while(S.idx<S.steps.length-1 && now>=S.stepStart+S.steps[S.idx].dur && guard++<400){
       var prev=S.steps[S.idx]; S.stepStart+=prev.dur; S.idx++; var cur=S.steps[S.idx];
-      if(prev.stage==="set" && !(cur.stage==="set"&&cur.set===prev.set)) recordSet(prev.set, S.holdMode?S.holdSec:S.reps);
+      if(prev.stage==="set" && !(cur.stage==="set"&&cur.set===prev.set)) recordSet(prev.set, S.reps);
     }
     scheduleAhead(now);
     if(S.steps[S.idx]&&S.steps[S.idx].k==="done") endSession(true);
@@ -952,15 +974,17 @@ function tick(){
 function fmtN(v){ return (Math.round(v*10)/10).toString(); }
 var setupMode="lift";
 function refresh(){
-  var L=DB.cfg.lift, P=DB.cfg.breathe, T=L.tune[L.preset], i, isHold=L.preset==="hold";
-  document.getElementById("v-reps").textContent=L.reps; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-holdSec").textContent=L.holdSec; document.getElementById("v-cycles").textContent=P.cycles;
-  document.getElementById("row-reps").classList.toggle("hid",isHold); document.getElementById("row-hsec").classList.toggle("hid",!isHold);
-  var seq = L.preset==="drive" ? "in "+T["in"]+" · brace "+T.hold+" · out "+T.out : L.preset==="squeeze" ? "in "+T["in"]+" · out "+T.out+" · squeeze "+T.empty : "in "+T["in"]+" · out "+T.out;
-  document.getElementById("preset-sub").textContent = seq+"   —   rest "+fmtClock(T.rest);
-  document.getElementById("preset-note").textContent = L.preset==="drive" ? "Squats, presses, hinges. Breathe in on the way down, brace at the bottom, drive up." : L.preset==="squeeze" ? "Rows, pulls, curls, raises, calves. Breathe in on the way down, lift, squeeze at the top." : "Planks, carries, wall sits. Breathe steadily; seconds, not reps.";
+  var L=DB.cfg.lift, P=DB.cfg.breathe, T=L.tune[L.preset], i;
+  document.getElementById("v-reps").textContent=L.reps[L.preset]; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-cycles").textContent=P.cycles;
+  /* the tempo strip reads exactly as the run screen will: the words in order, the seconds under them */
+  var phases = L.preset==="drive" ? [["in",T["in"]],["brace",T.hold],["out",T.out]] : [["in",T["in"]],["out",T.out],["squeeze",T.empty]];
+  var html=""; for(i=0;i<phases.length;i++) html+='<div class="ph"><span class="k">'+phases[i][0]+'</span><span class="n">'+phases[i][1]+'<small>s</small></span></div>';
+  html+='<div class="ph rest"><span class="k">rest</span><span class="n">'+fmtClock(T.rest)+'</span></div>';
+  document.getElementById("tempo").innerHTML=html;
+  document.getElementById("preset-hint").textContent = L.preset==="drive" ? "Squats · presses · hinges" : "Rows · curls · raises · calves";
   var belly=P.belly!=="off", tap=P.tap==="on", sound=DB.cfg.sound;
-  document.getElementById("pat-sub").textContent = P.pat==="coh" ? "Coherent, 5.5 a minute." : "Relaxing breath, long exhale.";
-  document.getElementById("sound-sub").textContent = sound==="breath" ? "A breath of wind, in and out." : "A soft pad.";
+  document.getElementById("pat-sub").textContent = P.pat==="coh" ? "Coherent · 5.5 a minute" : "Relaxing · long exhale";
+  document.getElementById("sound-sub").textContent = sound==="breath" ? "A breath of wind, in and out." : "A soft tone that rises as you breathe in and falls as you breathe out.";
   var seg=document.querySelectorAll("#seg-with button"); for(i=0;i<seg.length;i++){ var wk=seg[i].getAttribute("data-w"); seg[i].classList.toggle("sel", wk==="belly"?belly:tap); }
   var parts=[]; if(belly) parts.push("Belly: phone on your belly, it reads your breath."); if(tap) parts.push("Tap: tap the count, hold to hold.");
   document.getElementById("with-sub").textContent = parts.length ? parts.join(" ") : "Nothing extra.";
@@ -971,8 +995,13 @@ function refresh(){
   var segPat=document.querySelectorAll("#seg-pat button"); for(i=0;i<segPat.length;i++) segPat[i].classList.toggle("sel", segPat[i].getAttribute("data-pat")===P.pat);
   var snd=document.querySelectorAll("[data-sound]"); for(i=0;i<snd.length;i++) snd[i].classList.toggle("sel", sound===snd[i].getAttribute("data-sound"));
 }
-var LIM={reps:[1,60,1],sets:[1,20,1],holdSec:[5,300,5],cycles:[1,40,1]};
-function bump(key,delta){ var tgt=key==="cycles"?DB.cfg.breathe:DB.cfg.lift, lim=LIM[key], v=(+tgt[key])+delta; v=Math.max(lim[0],Math.min(lim[1],v)); tgt[key]=v; save(); refresh(); }
+var LIM={reps:[1,60,1],sets:[1,20,1],cycles:[1,40,1]};
+function bump(key,delta){
+  var lim=LIM[key], v;
+  if(key==="reps"){ var L=DB.cfg.lift; v=Math.max(lim[0],Math.min(lim[1],(+L.reps[L.preset])+delta)); L.reps[L.preset]=v; }
+  else { var tgt=key==="cycles"?DB.cfg.breathe:DB.cfg.lift; v=Math.max(lim[0],Math.min(lim[1],(+tgt[key])+delta)); tgt[key]=v; }
+  save(); refresh();
+}
 function show(id){
   var ids=["home","setup","run"]; for(var i=0;i<ids.length;i++) document.getElementById("s-"+ids[i]).classList.toggle("on", ids[i]===id);
   if(id==="setup") refresh();
@@ -1019,7 +1048,7 @@ window.WIND = {
   state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst?ENG.inst.info():""}; },
   probe:function(){ if(ENG.inst&&ENG.inst.probe) ENG.inst.probe(); },
   rects:function(){ var out={}, els=document.querySelectorAll("#s-run .slot, #word span, #num, .rail .r"); for(var i=0;i<els.length;i++){ var r=els[i].getBoundingClientRect(); out[(els[i].id||els[i].className)+"#"+i]=[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]; } out.wordSize=getComputedStyle(elWord).fontSize; return out; },
-  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ if(k==="sound") DB.cfg.sound=v; else DB.cfg.breathe[k]=v; }, palette:function(t){ return ground(0.5,t,1); }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
+  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, tone:function(){ return scheme&&scheme.kind==="tone" ? {f:Math.round(scheme.oscs[0].o.frequency.value), g:+scheme.g.gain.value.toFixed(3), lp:Math.round(scheme.lp.frequency.value)} : null; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ if(k==="sound") DB.cfg.sound=v; else DB.cfg.breathe[k]=v; }, palette:function(t){ return ground(0.5,t,1); }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
 };
 /* ---- boot ---- */
 fitWordOnce();

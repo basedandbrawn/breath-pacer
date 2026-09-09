@@ -1,4 +1,4 @@
-# Wind engine prototypes
+# Wind Bender: engine notes
 
 `wind.html` is a working prototype of the pacer built to the brief in
 `PROMPT-wind-engine.md`. One file, no build step, no web fonts, no CDN. It
@@ -29,45 +29,76 @@ Memory and Still exist only as automatic catches when the GPU cannot deliver.
 | **Memory** | The wind is the session data. Deterministic seed from date and config. Each rep releases a debris particle that the field carries for the rest of the set; a sync tap's miss becomes turbulence; on rest the debris settles into a pile. Momentum from drag, no solver. | Nothing | 99 | 1 to 2.5 ms | Automatic catch for no WebGL2, GPU context loss, low battery, or a blown frame budget. Particle count halves under budget pressure |
 | **Still** | Zero particles. The ground luminance ramp alone. | Nothing | 0 | 0.05 ms | Nothing. The floor, reachable now only via `?eng=still`. |
 
-## Lift: three presets, one per rep shape
+## Lift: two presets, one per rep shape
 
 The old split, compound, isolation, isometric, sorted lifts by taxonomy,
 and two lifts in the same bucket could need opposite breathing. What
 actually determines the breath is where the pause lives, and there are
-only two answers, plus isometrics. Every cycle opens on IN.
+two answers. Every cycle opens on IN. The isometric preset is gone; holds
+are breathed, not paced, and her page no longer carries them.
 
 | Preset | Sequence | Rep | Rest | Lifts |
 |---|---|---|---|---|
-| **Drive** | in 3 · brace 1 · out 2 | 6 s | 2:30 | Squats, presses, hinges, lunges, dips, push-ups |
-| **Squeeze** | in 2 · out 1 · squeeze 2 | 5 s | 1:30 | Rows, pulls, curls, raises, extensions, calves, hip thrusts |
-| **Hold** | in 3 · out 4, continuous | seconds | 1:00 | Planks, carries, wall sits, dead hangs |
+| **Drive** | in 4 · brace 2 · out 1 | 7 s | 2:00 | Squats, presses, hinges, lunges, step-ups |
+| **Squeeze** | in 3 · out 1 · squeeze 1 | 5 s | 1:30 | Rows, pulls, curls, raises, kickbacks, calves, crunches, hip thrusts |
 
 Drive pauses full: inhale on the way down, brace at the bottom with the
-air in, exhale through the drive. The bottom of a squat wants
-intra-abdominal pressure, and the one-second brace kills the bounce out of
-the hole. Squeeze pauses empty: inhale on the way down, exhale as you
-lift, and the exhale finishes through the squeeze at the top. The top of
-a curl needs no brace, and breath-holding on light high-rep work is the
-thing to avoid. The two are mirror images, three in against two out and
-two in against three out, and no phase exceeds three seconds.
+air in, exhale through the drive. The two-second brace kills the bounce
+out of the hole and is the pause she valued in 4·2·6; what blew up that
+sequence's arithmetic was the six-second exhale, and that is what went.
+The one-second concentric is an instruction to be fast, and the
+four-second eccentric absorbs a slow rep: overrun the drive by two and the
+next descent gives you the slack to fall back in step. Seven seconds a rep
+means Drive should run eight to ten reps, not twelve; ten reps is a
+seventy-second set, the honest ceiling.
 
-One preset per shape was a deliberate choice over six. The three-second
-lowering errs long on a bench press, which is a good hypertrophy
-prescription, rather than short on a heavy squat, which is a rushed
-eccentric. The two-second squeeze is the only length that works on every
-lift in its family: one is too short for calves and glutes, three is too
-long to hold a heavy row. The one named compromise is that pull-ups and
-barbell rows would take a three-second lowering if they had their own
-preset.
+Squeeze pauses empty: three down to match her standard for every lift,
+exhale as you lift, and the exhale finishes through one second of
+squeeze at the top. The two-second squeeze of the previous pass went;
+one is enough to kill momentum and confirm the contraction, and three
+down is worth more than the extra second at the top. Calves, shrugs and
+glute bridges are the lifts that wanted two, and that is an argument for
+a preset someday, not for changing this one.
+
+Where a lift goes is decided by where its pause lives, not by whether the
+trunk is braced. A one-arm row is braced for the whole set, so the brace
+is a property of the set rather than a phase of the rep, and its pause is
+at the top: Squeeze. Same for pull-ups, landmine rows, pull-throughs and
+hip thrusts. Walking lunges qualify for Drive but include travel, which
+is not a breath phase; reverse lunges are the same muscles without it.
+
+Reps are stored per preset, ten for Drive and twelve for Squeeze, because
+a lift that wants twelve reps at seven seconds is a lift that wants
+Squeeze. The setup shows the rep as a tempo strip, the phase words in
+order with the seconds under them and the rest at the end, so it reads
+exactly as the run screen will.
 
 On the run screen the two pauses are the same still state as Breathe's
 hold, a lit rim and a pulse each second, at opposite fills: BRACE is
 bright and still, SQUEEZE is dark and still. The squeeze is a fourth slot
 in the cycle and the timeline, the engine's old empty-lungs phase, which
-is literally what it is. The words are IN, BRACE, OUT and IN, OUT,
-SQUEEZE; SQUEEZE is now the widest word the fitter measures. Max-effort
-work under six reps is out of scope on purpose: at that load the breath
-is held for the whole rep and a pacer cannot help.
+is literally what it is. Max-effort work under six reps is out of scope on
+purpose: at that load the breath is held for the whole rep and a pacer
+cannot help.
+
+## The tone
+
+Tone is modelled on the guided coherence-breathing tracks she breathes to:
+one soft sustained pad whose pitch glides up through the inhale and back
+down through the exhale, a fifth each way, G3 to D4, with a small bell at
+each turn. The glide is the instruction, rising is in and falling is out,
+and it can be followed eyes shut. Held phases sit still and quiet at the
+top of the glide (brace, full) or the bottom (squeeze, empty). The
+reference track's audio could not be fetched from the build sandbox, so
+this is built from the genre's convention rather than a spectral match;
+if the real track's tone sits at a different pitch or interval, those are
+two constants.
+
+## The name
+
+Wind Bender. The home mark reads WIND over BENDER, the big word is still
+the obstacle in the field, and the manifest and home-screen title carry
+the name.
 
 ## Two methods
 

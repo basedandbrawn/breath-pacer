@@ -75,17 +75,51 @@ cannot help.
 
 ## The tone
 
-The guided coherence track she breathes to turns out not to glide at all.
-It strikes a windchime every 5.5 seconds on two notes, D and G, one for
-the exhale and one for the inhale. Tone is now that: a chime struck once
-at the start of each phase, G4 to breathe in and D4 to breathe out, so
-the note rises on the in and falls on the out. Each strike is three
-partials of a tube, 1 · 2.76 · 5.40, with their own decays, ringing for
-about four seconds. A held breath, a brace or a squeeze adds nothing; the
-last strike rings into the pause and is gone, which on 4 · 7 · 8 makes
-the seven silent by itself. A two-second phase gets the same strike as an
-eleven-second one, which is why it cannot turn into a siren, as the
-glide before it did on Lift's short counts.
+The chime, tried after a written description of the guided coherence track,
+was cut: a strike rings and is gone, so on a three-second in the last two
+seconds were silent, and it read as a chime rather than a pacer. Tone is
+now the orthodox thing: one plain sustained note that sounds for the whole
+of a phase and glides in pitch across it. A sine, with a quiet sine an
+octave below for body, through a low-pass at 1.4 kHz and a little room.
+Through the breath in it rises and arrives on G4 as the lungs fill;
+through the breath out it falls from G4. It fades in over the first third
+of the count and out over the last fifth, so it never starts or stops with
+a click, and it reaches the next phase's note exactly as that phase begins,
+so in and out join without a step. A held breath, a brace and a squeeze
+are silent: the note fades out on the count and the pause is quiet, which
+on 4 · 7 · 8 makes the seven silent by itself. The interval is a fourth on
+a phase of two seconds or more and narrows on shorter counts (two and a
+half semitones on a one-second drive), so a short phase is a soft lean of a
+note and never a whoop. Nothing is struck and nothing rings.
+
+## Five picks from the samples page
+
+Built from the directions artifact, all in the one file, all on the
+existing engines:
+
+- **Trail.** The wordmark carries four echoes of itself fading upwind,
+  in em units so they scale with the type. CSS only; the obstacle mask
+  ignores them.
+- **Depth.** A second layer of dye at sim resolution, carried at a third
+  of the field's speed and fading slower, drawn behind the main dye at a
+  fraction of its gain. The far air: coarse, slow, dim, so the near dye
+  reads as near. Two extra low-resolution passes a frame.
+- **Ink.** With Tap on the tap's dye is denser and the show pass adds a
+  small eight-tap bloom around whatever is brighter than the mid-tone, in
+  the moment of the tap or the drag only, so a tap reads as a drop of ink
+  and the field at rest is unchanged. Gated to Tap; off, the shader skips
+  the taps.
+- **Drag a gust.** Any finger moving across the field during a session
+  has its velocity, smoothed, injected into the fluid around the fingertip
+  for a fraction of a second after each move, and the dye takes a streak
+  along the path. A flick throws a gust. In the particle engine the same
+  force pulls particles toward the finger's velocity.
+- **Tilt.** Gravity from `devicemotion`, smoothed over 0.3 s with the
+  posture removed over 4 s, becomes a lean vector that slides the whole
+  field the way the phone tips and settles back to level. It listens only
+  where no new prompt is needed: where motion needs no permission, or once
+  Belly has already been granted it. On iOS without Belly there is no
+  tilt rather than a second permission sheet.
 
 ## The wind on short counts
 

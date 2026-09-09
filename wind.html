@@ -50,7 +50,8 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 /* ---------- home ---------- */
 .mark{display:grid;justify-items:center;gap:6px;padding-top:min(9vh,70px)}
 .mark .s{font-size:12px;letter-spacing:.5em;color:var(--mute);font-weight:600;padding-left:.5em}
-.mark .w{font-weight:800;font-size:min(17vw,100px);line-height:.95;letter-spacing:.02em}   /* BENDER, six letters, fits a 320 px phone */
+.mark .w{font-weight:800;font-size:min(17vw,100px);line-height:.95;letter-spacing:.02em;
+  text-shadow:-.045em .012em 0 rgba(236,240,255,.30),-.10em .028em 0 rgba(236,240,255,.16),-.165em .046em 0 rgba(236,240,255,.08),-.24em .066em 0 rgba(236,240,255,.035)}   /* BENDER, six letters, fits a 320 px phone; the trail: echoes of the letters fading upwind */
 .modes{display:grid;gap:12px;margin-bottom:min(6vh,52px)}
 .mode{display:flex;justify-content:space-between;align-items:baseline;padding:22px 22px;border-radius:20px;
   background:var(--ui);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
@@ -302,25 +303,36 @@ function initAudio(){
   return A;
 }
 function keep(n){ A.nodes.push(n); return n; }
-/* TONE, after the guided coherence tracks she breathes to: a windchime struck once at the start
-   of each phase, on two notes. G for the breath in, D for the breath out, so the note rises on
-   the in and falls on the out, and each strike rings for about four seconds and is gone. A held
-   breath adds nothing; the last strike simply decays into it. Two-second phases get the same
-   strike as eleven-second ones, which is why it cannot turn into a siren. */
-var CHIME_IN=392.0, CHIME_OUT=293.66;   /* G4 and D4 */
+/* TONE: one plain sustained note, nothing struck. A sine, with a quiet sine an octave below it
+   for body, that sounds for the whole of a phase and glides in pitch across it: up through the
+   breath in, arriving on G4 as the lungs fill; down from G4 through the breath out. It fades in
+   over the first part of the phase and out at its end, so it never starts or stops with a click.
+   A held breath, a brace and a squeeze are silent: the note fades out on the count and the
+   pause is quiet, which on 4 · 7 · 8 makes the seven silent by itself. The interval it glides
+   through is a fourth on a phase of two seconds or more and narrows on shorter counts, so a
+   one-second drive is a soft lean of a note and not a whoop. */
+var TONE_TOP=392.0;   /* G4: the full breath */
 function mkTone(k){
-  var ctx=A.ctx, lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=3200; lp.Q.value=0.3;
-  var g=ctx.createGain(); g.gain.value=1; g.connect(lp); lp.connect(A.wetIn);
-  return {kind:"tone", g:g, lp:lp, k:k, last:0, live:0};
+  var ctx=A.ctx, lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1400; lp.Q.value=0.2;
+  var g=ctx.createGain(); g.gain.value=0.0001; g.connect(lp); lp.connect(A.wetIn);
+  var o=ctx.createOscillator(); o.type="sine"; o.frequency.value=TONE_TOP; o.connect(g); o.start(); keep(o);
+  var lowG=ctx.createGain(); lowG.gain.value=0.32; lowG.connect(g);
+  var o2=ctx.createOscillator(); o2.type="sine"; o2.frequency.value=TONE_TOP/2; o2.connect(lowG); o2.start(); keep(o2);
+  return {kind:"tone", g:g, lp:lp, o:o, o2:o2, k:k, f0:0, f1:0, dir:"", on:false};
 }
-/* one strike: a tube's partials, 1 · 2.76 · 5.40, each with its own decay, soft 8 ms attack */
-function chime(s, f, at, amp){
-  if(!A) return; var ctx=A.ctx, parts=[[1,1.0,4.2],[2.76,0.42,2.4],[5.40,0.16,1.1]], i;
-  for(i=0;i<parts.length;i++){ (function(part){ var o=ctx.createOscillator(), og=ctx.createGain(); o.type="sine"; o.frequency.value=f*part[0];
-    og.gain.setValueAtTime(0.0001,at); og.gain.exponentialRampToValueAtTime(amp*part[1],at+0.008); og.gain.setTargetAtTime(0.0001,at+0.02,part[2]/4);
-    o.connect(og); og.connect(s.g); o.start(at); o.stop(at+part[2]+1.5); keep(o); s.live++; o.onended=function(){ s.live--; var j=A.nodes.indexOf(o); if(j>=0) A.nodes.splice(j,1); }; })(parts[i]); }
-  s.last=f;
+/* the glide: the interval in semitones the note travels over a phase of dur seconds */
+function toneSpan(dur){ return 5*Math.max(0.5, Math.min(1, dur/2)); }
+function toneGlide(s, f0, f1, at, dur){
+  env(s.o.frequency, f0, f1, at, dur, easeIO); env(s.o2.frequency, f0/2, f1/2, at, dur, easeIO);
+  s.f0=f0; s.f1=f1;
 }
+function toneOn(s, amp, at, dur){
+  var a=Math.min(0.9, dur*0.3), r=Math.min(0.5, dur*0.18);         /* attack and release, in proportion to the count */
+  env(s.g.gain, 0.0001, amp, at, a, easeIO);
+  env(s.g.gain, amp, 0.0001, at+dur-r, r, easeIO);
+  s.on=true;
+}
+function toneOff(s, at){ env(s.g.gain, 0.0001, 0.0001, at, 0.35, easeOut); s.on=false; }   /* the note before it has already released on the count; an early cut (a sync tap) ramps from wherever it is */
 function mkBreath(k){
   var ctx=A.ctx, src=ctx.createBufferSource(); src.buffer=noiseBuffer(ctx,5,true); src.loop=true;
   var bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=800; bp.Q.value=0.9;
@@ -335,10 +347,10 @@ function schemePhase(kind, at, dur){
   if(!scheme || !A) return;
   var s=scheme, k=s.k, g=Math.max(dur,0.35);
   if(s.kind==="tone"){
-    var amp=0.26*k;
-    if(kind==="in") chime(s, CHIME_IN, at, amp);            /* G: the note rises */
-    else if(kind==="out") chime(s, CHIME_OUT, at, amp);     /* D: the note falls */
-    /* hold, brace and squeeze: nothing new; the last strike rings into the pause and is gone */
+    var amp=0.30*k, low=TONE_TOP/Math.pow(2, toneSpan(g)/12);
+    if(kind==="in"){ toneGlide(s, low, TONE_TOP, at, g); toneOn(s, amp, at, g); s.dir="up"; }          /* the note rises through the breath in and arrives on G */
+    else if(kind==="out"){ toneGlide(s, TONE_TOP, low, at, g); toneOn(s, amp, at, g); s.dir="down"; }  /* and falls from G through the breath out */
+    else { toneOff(s, at); s.dir=""; }                                                                    /* hold, brace, squeeze, get set: quiet */
   }
   if(s.kind==="breath"){
     var top=1.05*k;
@@ -472,6 +484,10 @@ function Field2D(cv, opt){
       if(st.idle){ ax += 60; }
       /* the finger: a poke pushes particles out from the fingertip; a held finger pins them */
       if(st.tapK>0.01){ var tx=p.x-st.tapX, ty=p.y-st.tapY, tr=Math.hypot(tx,ty)+1e-3, tf=st.tapK*Math.exp(-tr*tr/(pokeR*pokeR))*36000; ax += tx/tr*tf; ay += ty/tr*tf; }
+      /* the drag: air near the moving finger takes up its velocity */
+      if(st.dragK>0.01){ var gx_=p.x-st.dragX, gy_=p.y-st.dragY, gw=st.dragK*Math.exp(-(gx_*gx_+gy_*gy_)/(pokeR*pokeR*0.5))*8; ax += (st.dragVX-p.vx)*gw; ay += (st.dragVY-p.vy)*gw; }
+      /* the lean: the whole field slides the way the phone tips */
+      ax += st.leanX*260; ay += st.leanY*260;
       p.vx += ax*dt; p.vy += ay*dt;
       var drag = 1 - Math.min(1, (st.still?4.5:1.6)*dt); p.vx*=drag; p.vy*=drag;
       if(st.pinK>0){ var px_=p.x-st.pinX, py_=p.y-st.pinY, pf=1-st.pinK*0.25*Math.exp(-(px_*px_+py_*py_)/(pokeR*pokeR)); p.vx*=pf; p.vy*=pf; }
@@ -542,7 +558,7 @@ function FieldGL(cv){
   var HEAD = "#version 300 es\nprecision highp float;precision highp sampler2D;in vec2 vUv;out vec4 o;uniform vec2 uTexel;";
   var F = {
     advect: HEAD+"uniform sampler2D uVel,uSrc;uniform float uDt,uDiss;void main(){vec2 v=texture(uVel,vUv).xy;vec2 p=vUv-uDt*v*uTexel;o=texture(uSrc,p)*uDiss;}",
-    force: HEAD+"uniform sampler2D uVel,uMask;uniform vec2 uCenter,uAspect,uTap,uPin;uniform float uDt,uFlow,uSwirl,uWind,uTime,uMax,uTapK,uPinK,uCurl;"+
+    force: HEAD+"uniform sampler2D uVel,uMask;uniform vec2 uCenter,uAspect,uTap,uPin,uDrag,uDragV,uLean;uniform float uDt,uFlow,uSwirl,uWind,uTime,uMax,uTapK,uPinK,uCurl,uDragK;"+
       "float ss(float a,float b,float x){return smoothstep(a,b,x);}"+
       "float hsh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}"+
       "float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hsh(i),hsh(i+vec2(1,0)),f.x),mix(hsh(i+vec2(0,1)),hsh(i+vec2(1,1)),f.x),f.y);}"+
@@ -554,7 +570,9 @@ function FieldGL(cv){
       "f+=t*uSwirl*ring*30.0*sin(rn*9.0+uTime*1.7);f+=vec2(uWind*28.0,0.0);"+
       "f+=curl(d*3.2+vec2(uTime*0.11,-uTime*0.07))*uCurl;"+
       /* the finger: a poke pushes air out from the fingertip; a held finger pins it */
-      "vec2 dt2=(vUv-uTap)*uAspect;float rt=length(dt2)+1e-4;f+=(dt2/rt)*uTapK*exp(-rt*rt/0.022)*2400.0;v+=f*uDt;"+
+      "vec2 dt2=(vUv-uTap)*uAspect;float rt=length(dt2)+1e-4;f+=(dt2/rt)*uTapK*exp(-rt*rt/0.022)*2400.0;"+
+      /* the drag: air near the moving finger takes up the finger's velocity; the lean: the whole field slides the way the phone tips */
+      "vec2 dg=(vUv-uDrag)*uAspect;float gw=uDragK*exp(-dot(dg,dg)/0.012)*10.0;f+=(uDragV-v)*gw;f+=uLean*60.0;v+=f*uDt;"+
       "vec2 dp=(vUv-uPin)*uAspect;v*=1.0-uPinK*0.9*exp(-dot(dp,dp)/0.004);"+
       "float m=texture(uMask,vUv).a;v*=(1.0-m);float L=length(v);if(L>uMax)v*=uMax/L;o=vec4(v,0.0,1.0);}",
     curl: HEAD+"uniform sampler2D uVel;void main(){float L=texture(uVel,vUv-vec2(uTexel.x,0)).y,R=texture(uVel,vUv+vec2(uTexel.x,0)).y,B=texture(uVel,vUv-vec2(0,uTexel.y)).x,T=texture(uVel,vUv+vec2(0,uTexel.y)).x;o=vec4(0.5*((R-L)-(T-B)),0,0,1);}",
@@ -563,13 +581,21 @@ function FieldGL(cv){
     div: HEAD+"uniform sampler2D uVel;void main(){float L=texture(uVel,vUv-vec2(uTexel.x,0)).x,R=texture(uVel,vUv+vec2(uTexel.x,0)).x,B=texture(uVel,vUv-vec2(0,uTexel.y)).y,T=texture(uVel,vUv+vec2(0,uTexel.y)).y;o=vec4(0.5*(R-L+T-B),0,0,1);}",
     press: HEAD+"uniform sampler2D uP,uDiv;void main(){float L=texture(uP,vUv-vec2(uTexel.x,0)).x,R=texture(uP,vUv+vec2(uTexel.x,0)).x,B=texture(uP,vUv-vec2(0,uTexel.y)).x,T=texture(uP,vUv+vec2(0,uTexel.y)).x,d=texture(uDiv,vUv).x;o=vec4((L+R+B+T-d)*0.25,0,0,1);}",
     grad: HEAD+"uniform sampler2D uP,uVel;void main(){float L=texture(uP,vUv-vec2(uTexel.x,0)).x,R=texture(uP,vUv+vec2(uTexel.x,0)).x,B=texture(uP,vUv-vec2(0,uTexel.y)).x,T=texture(uP,vUv+vec2(0,uTexel.y)).x;vec2 v=texture(uVel,vUv).xy-0.5*vec2(R-L,T-B);o=vec4(v,0,1);}",
-    dye: HEAD+"uniform sampler2D uDye,uMask;uniform vec2 uCenter,uAspect,uTap;uniform float uDt,uIn,uOut,uIdle,uTime,uTapK;uniform vec3 uColor;"+
+    dye: HEAD+"uniform sampler2D uDye,uMask;uniform vec2 uCenter,uAspect,uTap,uDrag;uniform float uDt,uIn,uOut,uIdle,uTime,uTapK,uDragK,uInk;uniform vec3 uColor;"+
       "void main(){vec4 d=texture(uDye,vUv);vec2 q=(vUv-uCenter)*uAspect;float rn=length(q)/0.5;float rb=max(abs(q.x)/(0.5*uAspect.x),abs(q.y)/0.5);"+
       "float edge=smoothstep(0.72,1.0,rb)*(0.55+0.45*sin(atan(q.y,q.x)*7.0+uTime*0.9));float core=1.0-smoothstep(0.0,0.28,rn);"+
-      "vec2 qt=(vUv-uTap)*uAspect;float rq=length(qt);d.rgb+=uColor*uTapK*(exp(-rq*rq/0.004)*22.0+exp(-pow(rq-0.16*(1.0-uTapK),2.0)/0.0012)*14.0)*uDt;"+      /* the puff at the fingertip and the ring it throws */
+      "vec2 qt=(vUv-uTap)*uAspect;float rq=length(qt);d.rgb+=uColor*uTapK*(1.0+0.6*uInk)*(exp(-rq*rq/0.004)*22.0+exp(-pow(rq-0.16*(1.0-uTapK),2.0)/0.0012)*14.0)*uDt;"+      /* the puff at the fingertip and the ring it throws; denser ink with Tap on */
+      "vec2 qg=(vUv-uDrag)*uAspect;d.rgb+=uColor*uDragK*exp(-dot(qg,qg)/0.0025)*9.0*uDt;"+      /* the drag leaves a streak */
       "d.rgb+=uColor*(uIn*core*1.6+uOut*edge*1.3)*uDt;d.rgb=min(d.rgb,vec3(1.0));d.rgb+=uColor*uIdle*(1.0-smoothstep(0.0,0.06,vUv.x))*(0.5+0.5*sin(vUv.y*34.0+uTime*1.3))*1.6*uDt;"+
       "d.rgb*=(1.0-texture(uMask,vUv).a*0.9);o=vec4(min(d.rgb,vec3(1.1)),1.0);}",
-    show: HEAD+"uniform sampler2D uDye;uniform vec3 uGround,uRim;uniform vec2 uAspect;uniform float uGain,uRimK;void main(){vec2 q=(vUv-vec2(0.5,0.53))*uAspect;float rb=max(abs(q.x)/(0.5*uAspect.x),abs(q.y)/0.5);float rim=smoothstep(0.4,1.08,rb);vec3 dy=texture(uDye,vUv).rgb;vec3 c=uGround+uRim*rim*uRimK+pow(max(dy,0.0),vec3(0.85))*uGain;o=vec4(c,1.0);}"
+    /* show: the deep layer first, coarse and dim, then the dye; with Ink on, a small bloom around whatever is bright */
+    show: HEAD+"uniform sampler2D uDye,uDeep;uniform vec3 uGround,uRim;uniform vec2 uAspect;uniform float uGain,uRimK,uBloom;"+
+      "void main(){vec2 q=(vUv-vec2(0.5,0.53))*uAspect;float rb=max(abs(q.x)/(0.5*uAspect.x),abs(q.y)/0.5);float rim=smoothstep(0.4,1.08,rb);"+
+      "vec3 dy=texture(uDye,vUv).rgb;vec3 dp=texture(uDeep,vUv).rgb;"+
+      "vec3 c=uGround+uRim*rim*uRimK+pow(max(dp,0.0),vec3(1.2))*uGain*0.22+pow(max(dy,0.0),vec3(0.85))*uGain;"+
+      "if(uBloom>0.001){vec2 e=uTexel*3.0;vec3 b=texture(uDye,vUv+vec2(e.x,0)).rgb+texture(uDye,vUv-vec2(e.x,0)).rgb+texture(uDye,vUv+vec2(0,e.y)).rgb+texture(uDye,vUv-vec2(0,e.y)).rgb"+
+      "+texture(uDye,vUv+e).rgb+texture(uDye,vUv-e).rgb+texture(uDye,vUv+vec2(e.x,-e.y)).rgb+texture(uDye,vUv-vec2(e.x,-e.y)).rgb;b*=0.125;"+
+      "c+=pow(max(b-vec3(0.3),vec3(0.0))*1.4,vec3(1.5))*uGain*uBloom*1.6;}o=vec4(c,1.0);}"
   };
   function sh(type,src){ var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){ throw new Error(gl.getShaderInfoLog(s)); } return s; }
   var vs; try{ vs = sh(gl.VERTEX_SHADER, VS); }catch(e){ return null; }
@@ -578,7 +604,7 @@ function FieldGL(cv){
     for(var k in F){ var p=gl.createProgram(); gl.attachShader(p,vs); gl.attachShader(p,sh(gl.FRAGMENT_SHADER,F[k])); gl.linkProgram(p); if(!gl.getProgramParameter(p,gl.LINK_STATUS)) return null;
       var u={}, n=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS); for(var i=0;i<n;i++){ var nm=gl.getActiveUniform(p,i).name; u[nm]=gl.getUniformLocation(p,nm); } PR[k]={p:p,u:u}; }
   }catch(e){ return null; }
-  var simW=0,simH=0,dyeW=0,dyeH=0,W=0,H=0, vel,vel2,pr,pr2,dv,cl,dye,dye2, maskTex, maskVer=-1, quality=1;
+  var simW=0,simH=0,dyeW=0,dyeH=0,W=0,H=0, vel,vel2,pr,pr2,dv,cl,dye,dye2,deep,deep2, maskTex, maskVer=-1, quality=1;
   function tex(w,h){ var t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA16F,w,h,0,gl.RGBA,gl.HALF_FLOAT,null); var fb=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,fb); gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);
     if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE) throw new Error("fbo"); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); return {t:t,fb:fb,w:w,h:h}; }
@@ -586,7 +612,7 @@ function FieldGL(cv){
     W=window.innerWidth; H=window.innerHeight; var D=Math.min(2,window.devicePixelRatio||1);
     cv.width=Math.round(W*D); cv.height=Math.round(H*D);
     simW=Math.round(160*quality); simH=Math.max(8,Math.round(simW*H/W)); dyeW=simW*2; dyeH=simH*2;
-    try{ vel=tex(simW,simH); vel2=tex(simW,simH); pr=tex(simW,simH); pr2=tex(simW,simH); dv=tex(simW,simH); cl=tex(simW,simH); dye=tex(dyeW,dyeH); dye2=tex(dyeW,dyeH); }catch(e){ return false; }
+    try{ vel=tex(simW,simH); vel2=tex(simW,simH); pr=tex(simW,simH); pr2=tex(simW,simH); dv=tex(simW,simH); cl=tex(simW,simH); dye=tex(dyeW,dyeH); dye2=tex(dyeW,dyeH); deep=tex(simW,simH); deep2=tex(simW,simH); }catch(e){ return false; }
     if(!maskTex){ maskTex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,maskTex); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE); }
     maskVer=-1; return true;
   }
@@ -594,7 +620,7 @@ function FieldGL(cv){
   function use(k){ var P=PR[k]; gl.useProgram(P.p); return P.u; }
   function bind(u,name,tx,unit){ gl.activeTexture(gl.TEXTURE0+unit); gl.bindTexture(gl.TEXTURE_2D,tx.t||tx); gl.uniform1i(u[name],unit); }
   function draw(target){ if(target){ gl.bindFramebuffer(gl.FRAMEBUFFER,target.fb); gl.viewport(0,0,target.w,target.h); } else { gl.bindFramebuffer(gl.FRAMEBUFFER,null); gl.viewport(0,0,cv.width,cv.height); } gl.drawArrays(gl.TRIANGLES,0,3); }
-  function swapV(){ var t=vel; vel=vel2; vel2=t; } function swapP(){ var t=pr; pr=pr2; pr2=t; } function swapD(){ var t=dye; dye=dye2; dye2=t; }
+  function swapV(){ var t=vel; vel=vel2; vel2=t; } function swapP(){ var t=pr; pr=pr2; pr2=t; } function swapD(){ var t=dye; dye=dye2; dye2=t; } function swapE(){ var t=deep; deep=deep2; deep2=t; }
   function frame(dt, st, t){
     if(MASK.ver!==maskVer){ gl.bindTexture(gl.TEXTURE_2D,maskTex); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,maskCv); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false); maskVer=MASK.ver; }
     var tx=1/simW, ty=1/simH, u, i;
@@ -606,9 +632,11 @@ function FieldGL(cv){
     u=use("vort"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uK, 22+30*st.turb); bind(u,"uVel",vel,0); bind(u,"uCurl",cl,1); draw(vel2); swapV();
     /* 3. the breath: inward divergence on IN, outward on OUT, nothing on HOLD */
     u=use("force"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
-    gl.uniform1f(u.uFlow, st.flow*(0.5+1.4*st.amp)); gl.uniform1f(u.uSwirl, 0.18+st.turb); gl.uniform1f(u.uWind, st.idle?1:0); gl.uniform1f(u.uTime,t); gl.uniform1f(u.uMax, 130+120*st.tapK);
+    gl.uniform1f(u.uFlow, st.flow*(0.5+1.4*st.amp)); gl.uniform1f(u.uSwirl, 0.18+st.turb); gl.uniform1f(u.uWind, st.idle?1:0); gl.uniform1f(u.uTime,t); gl.uniform1f(u.uMax, 130+120*st.tapK+160*st.dragK);
     gl.uniform1f(u.uCurl, (st.still?1.5:5.0)*(0.6+Math.abs(st.flow))+22*st.turb);
     gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK); gl.uniform2f(u.uPin, st.pinX/W, 1-st.pinY/H); gl.uniform1f(u.uPinK, st.pinK);
+    gl.uniform2f(u.uDrag, st.dragX/W, 1-st.dragY/H); gl.uniform2f(u.uDragV, st.dragVX/W*simW, -st.dragVY/H*simH); gl.uniform1f(u.uDragK, st.dragK);   /* the finger's speed, in sim texels a second */
+    gl.uniform2f(u.uLean, st.leanX, -st.leanY);
     bind(u,"uVel",vel,0); bind(u,"uMask",maskTex,1); draw(vel2); swapV();
     /* 4. project to divergence-free */
     u=use("div"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uVel",vel,0); draw(dv);
@@ -620,10 +648,17 @@ function FieldGL(cv){
     var c=tint(st.temp);
     u=use("dye"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
     gl.uniform1f(u.uIn, Math.max(0,st.flow)*(0.5+st.amp)); gl.uniform1f(u.uOut, Math.max(0,-st.flow)*(0.5+st.amp)); gl.uniform1f(u.uIdle, st.idle?1:0); gl.uniform1f(u.uTime,t);
-    gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK);
+    gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK); gl.uniform2f(u.uDrag, st.dragX/W, 1-st.dragY/H); gl.uniform1f(u.uDragK, st.dragK); gl.uniform1f(u.uInk, st.ink);
     gl.uniform3f(u.uColor,c[0],c[1],c[2]); bind(u,"uDye",dye,0); bind(u,"uMask",maskTex,1); draw(dye2); swapD();
-    /* 6. show: ground luminance carries the phase; dye carries the motion */
-    u=use("show"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform3f(u.uGround,st.ground[0],st.ground[1],st.ground[2]); gl.uniform3f(u.uRim,c[0],c[1],c[2]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uRimK, st.rim*st.dim); gl.uniform1f(u.uGain, 0.34*st.dim); bind(u,"uDye",dye,0); draw(null);
+    /* 5b. DEPTH: a second, coarser layer of dye at sim resolution, carried at a third of the speed and fading slower, drawn behind: the far air */
+    u=use("advect"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt*0.35); gl.uniform1f(u.uDiss,0.994); bind(u,"uVel",vel,0); bind(u,"uSrc",deep,1); draw(deep2); swapE();
+    u=use("dye"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
+    gl.uniform1f(u.uIn, Math.max(0,st.flow)*(0.5+st.amp)*0.25); gl.uniform1f(u.uOut, Math.max(0,-st.flow)*(0.5+st.amp)*0.25); gl.uniform1f(u.uIdle, st.idle?0.4:0); gl.uniform1f(u.uTime,t*0.6+7.0);
+    gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK*0.3); gl.uniform2f(u.uDrag, st.dragX/W, 1-st.dragY/H); gl.uniform1f(u.uDragK, st.dragK*0.3); gl.uniform1f(u.uInk, 0);
+    gl.uniform3f(u.uColor,c[0],c[1],c[2]); bind(u,"uDye",deep,0); bind(u,"uMask",maskTex,1); draw(deep2); swapE();
+    /* 6. show: ground luminance carries the phase; dye carries the motion; INK blooms with Tap on */
+    u=use("show"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform3f(u.uGround,st.ground[0],st.ground[1],st.ground[2]); gl.uniform3f(u.uRim,c[0],c[1],c[2]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uRimK, st.rim*st.dim); gl.uniform1f(u.uGain, 0.34*st.dim);
+    gl.uniform1f(u.uBloom, st.ink*Math.min(1,st.tapK*1.5+st.dragK));   /* the bloom lives only in the moment of the tap or the drag */ bind(u,"uDye",dye,0); bind(u,"uDeep",deep,1); draw(null);
     if(probeReq){ probeReq=false; probeGL(); }
   }
   var probeReq=false;
@@ -641,7 +676,7 @@ function FieldGL(cv){
   function halve(){ if(quality>0.5){ quality=0.5; resize(); return true; } return false; }
   cv.addEventListener("webglcontextlost", function(e){ e.preventDefault(); lost=true; });
   var lost=false;
-  function clear(){ [vel,vel2,pr,pr2,dv,cl,dye,dye2].forEach(function(t){ gl.bindFramebuffer(gl.FRAMEBUFFER,t.fb); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }); }
+  function clear(){ [vel,vel2,pr,pr2,dv,cl,dye,dye2,deep,deep2].forEach(function(t){ gl.bindFramebuffer(gl.FRAMEBUFFER,t.fb); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }); }
   return {kind:"field", resize:resize, frame:frame, halve:halve, clear:clear, addDebris:function(){}, isLost:function(){ return lost; }, probe:function(){ probeReq=true; }, destroy:function(){ try{ gl.getExtension("WEBGL_lose_context").loseContext(); }catch(e){} }, info:function(){ return "GPU fluid · "+simW+"×"+simH+" sim · "+dyeW+"×"+dyeH+" dye"; }};
 }
 
@@ -662,6 +697,27 @@ function motionRequest(){
     try{ return DeviceMotionEvent.requestPermission().then(function(r){ return r==="granted"; }, function(){ return false; }); }catch(e){ return Promise.resolve(false); }
   }
   return Promise.resolve(true);
+}
+/* TILT: tip the phone and the air slides that way. Gravity from devicemotion, smoothed over 0.3 s
+   with the slow posture removed over 4 s, so it is the change of tilt that leans the field and a
+   phone held at any angle settles back to level. It listens only where no new prompt is needed:
+   where motion needs no permission, or once Belly has already been granted it. */
+var LEAN={on:false, x:0, y:0, dc:[0,0], lp:[0,0], lastT:0, evt:0};
+function leanAllowed(){ if(!MIR.supported) return false; if(typeof DeviceMotionEvent.requestPermission!=="function") return true; return MIR.perm==="granted"; }
+function leanStart(){ LEAN.x=LEAN.y=0; LEAN.dc=[0,0]; LEAN.lp=[0,0]; LEAN.lastT=0; LEAN.evt=0; if(!leanAllowed()) return; LEAN.on=true; window.addEventListener("devicemotion", onLean); }
+function leanStop(){ LEAN.on=false; LEAN.x=LEAN.y=0; window.removeEventListener("devicemotion", onLean); }
+function onLean(e){
+  var a=e.accelerationIncludingGravity; if(!a||a.x==null) return;
+  var t=performance.now()/1000, dt=LEAN.lastT?Math.min(0.1,Math.max(0.004,t-LEAN.lastT)):0.016; LEAN.lastT=t; LEAN.evt++;
+  var g=Math.hypot(a.x,a.y,a.z)||9.81, raw=[a.x/g, a.y/g], i, hp=[0,0];
+  for(i=0;i<2;i++){
+    if(LEAN.evt===1) LEAN.dc[i]=raw[i];
+    LEAN.lp[i]+=(raw[i]-LEAN.lp[i])*Math.min(1,dt/0.3);
+    LEAN.dc[i]+=(LEAN.lp[i]-LEAN.dc[i])*Math.min(1,dt/4);
+    hp[i]=LEAN.lp[i]-LEAN.dc[i];
+  }
+  /* reaction force points away from the lowered edge: lower the right edge and a.x goes negative, so the lean is minus x; lower the top and a.y goes negative, and the screen's y runs down */
+  LEAN.x=Math.max(-1,Math.min(1,-hp[0]*2.2)); LEAN.y=Math.max(-1,Math.min(1, hp[1]*2.2));
 }
 function mirrorStart(){ mirrorReset(); MIR.on=true; window.addEventListener("devicemotion", onMotion); }
 function mirrorStop(){ MIR.on=false; window.removeEventListener("devicemotion", onMotion); }
@@ -732,7 +788,7 @@ var LEAD = 0.12;
 var S = {running:false, mode:"lift", sound:"tone", steps:[], idx:0, stepStart:0, schedIdx:-1,
          reps:10, sets:4, restDur:180, startedAt:0, recorded:{}, ended:false,
          turb:0, mirror:false, tapOn:false,
-         poke:{x:0,y:0,k:0,t:-9}, pin:{x:0,y:0,on:false}};
+         poke:{x:0,y:0,k:0,t:-9}, pin:{x:0,y:0,on:false}, drag:{on:false,x:0,y:0,vx:0,vy:0,t:-9}};
 function ph(kind, dur, stage, setNo, rep){ return {k:kind, dur:dur, stage:stage, set:setNo, rep:rep}; }
 function pushCycle(arr, c, stage, setNo, rep){
   if(c["in"]>0) arr.push(ph("in",c["in"],stage,setNo,rep)); if(c.hold>0) arr.push(ph("hold",c.hold,stage,setNo,rep));
@@ -765,21 +821,32 @@ function buildSteps(){
    The ideal version taps back. iOS Safari has no vibration API, so it cannot. */
 function poke(x,y,k){ S.poke={x:x,y:y,k:k,t:nowSec()}; }
 function tapDown(x,y){
-  if(!S.running) return false; var st=S.steps[S.idx]; if(!st || st.stage!=="set") return false;
+  if(!S.running) return false; dragStart(x,y);                             /* any finger on the field can drag a gust */
+  var st=S.steps[S.idx]; if(!st || st.stage!=="set") return false;
   if(S.mode==="lift"){ reanchor(false); poke(x,y,1); return true; }        /* Lift keeps the sync tap: this phase starts now */
   if(!S.tapOn) return false;
   poke(x,y,1); S.pin={x:x,y:y,on:true};
   if(st.k!=="hold"){ var into=nowSec()-S.stepStart, f=into-Math.floor(into), miss=Math.min(f,1-f); S.turb=Math.min(1, S.turb + miss*0.5); }
   return true;
 }
-function tapMove(x,y){ if(S.pin.on){ S.pin.x=x; S.pin.y=y; } }
-function tapUp(){ S.pin.on=false; }
+/* DRAG: a finger moving across the field drags the air with it. The pointer's velocity, smoothed,
+   is injected into the fluid along the path for a moment after each move, so a flick throws a gust */
+function tapMove(x,y){
+  if(S.pin.on){ S.pin.x=x; S.pin.y=y; }
+  if(!S.drag.on) return;
+  var t=nowSec(), dt=Math.max(0.004, t-S.drag.t), vx=(x-S.drag.x)/dt, vy=(y-S.drag.y)/dt;
+  if(dt>0.25){ vx=0; vy=0; }
+  S.drag.vx += (vx-S.drag.vx)*0.5; S.drag.vy += (vy-S.drag.vy)*0.5; S.drag.x=x; S.drag.y=y; S.drag.t=t;
+}
+function tapUp(){ S.pin.on=false; S.drag.on=false; }
+function dragStart(x,y){ S.drag={on:true, x:x, y:y, vx:0, vy:0, t:nowSec()}; }
 function startSession(mode){
   var c=DB.cfg; S.mode=mode; S.sound=c.sound;
   /* the two methods: belly (the accelerometer mirror) and tap (you drum the breath) */
   S.mirror = mode==="breathe" && c.breathe.belly!=="off" && MIR.perm==="granted";
   S.tapOn = mode==="breathe" && c.breathe.tap==="on";
-  S.poke={x:0,y:0,k:0,t:-9}; S.pin={x:0,y:0,on:false};
+  S.poke={x:0,y:0,k:0,t:-9}; S.pin={x:0,y:0,on:false}; S.drag={on:false,x:0,y:0,vx:0,vy:0,t:-9};
+  leanStart();
   if(mode==="lift"){ S.reps=c.lift.reps[c.lift.preset]; S.sets=c.lift.sets; S.restDur=c.lift.tune[c.lift.preset].rest; }
   else { S.reps=c.breathe.cycles; S.sets=1; }
   audioStart(mode, S.mirror ? "tone" : S.sound);     /* in the mirror the tone leads and the noise is you */
@@ -793,7 +860,7 @@ function startSession(mode){
   MASK.dirty=true;
 }
 function endSession(natural){
-  if(!S.running) return; S.running=false; S.pin.on=false;
+  if(!S.running) return; S.running=false; S.pin.on=false; S.drag.on=false; leanStop();
   DB.stats.sec += Math.max(0, nowSec()-S.startedAt); save();
   audioStop(); mirrorStop(); wake(false); S.ended=true;
   if(!natural){ show("home"); } else { paintDone(); }
@@ -890,11 +957,16 @@ function paintDone(){ lastWord=txt(elWordI,"DONE",lastWord); lastNum=txt(elNum,"
 
 var GEST_MIN=2.2, gest={k:"",t0:-1,T:1,gain:1,dir:0,prev:null};
 var frameState = {phase:"idle", fill:0, prog:0, flow:0, amp:0, temp:0, turb:0, ground:[0,0,0], idle:true, still:false, stage:"", rep:0, reps:1, set:0, sets:1, dim:1,
-                  tapX:0, tapY:0, tapK:0, pinX:0, pinY:0, pinK:0, rim:0, pulse:0};
+                  tapX:0, tapY:0, tapK:0, pinX:0, pinY:0, pinK:0, rim:0, pulse:0,
+                  dragX:0, dragY:0, dragVX:0, dragVY:0, dragK:0, leanX:0, leanY:0, ink:0};
 /* the finger in the field: a decaying poke and a held pin, in canvas pixels for the 2D engine and uv for the GPU */
 function touchState(now, fs){
   var pa=now-S.poke.t; fs.tapK = (pa>=0 && pa<0.9) ? S.poke.k*Math.exp(-pa/0.2) : 0; fs.tapX=S.poke.x; fs.tapY=S.poke.y;
   fs.pinK = S.pin.on ? 1 : 0; fs.pinX=S.pin.x; fs.pinY=S.pin.y;
+  var da=now-S.drag.t, sp=Math.hypot(S.drag.vx,S.drag.vy);
+  fs.dragK = (S.drag.on && da>=0 && da<0.15 && sp>40) ? Math.exp(-da/0.06) : 0; fs.dragX=S.drag.x; fs.dragY=S.drag.y; fs.dragVX=S.drag.vx; fs.dragVY=S.drag.vy;
+  fs.leanX=LEAN.x; fs.leanY=LEAN.y;
+  fs.ink = S.tapOn ? 1 : 0;      /* INK: with Tap on the dye is denser and blooms, so a tap reads as a drop of ink */
 }
 function render(now){
   var st=S.steps[S.idx], fs=frameState;
@@ -949,7 +1021,7 @@ function render(now){
 }
 function idleRender(t){
   var fs=frameState; fs.idle=true; fs.phase="idle"; fs.stage=""; fs.flow=0; fs.amp=0.2; fs.turb=Math.max(0, fs.turb-0.01);
-  fs.fill = 0.28 + 0.12*Math.sin(t*0.35); fs.temp=0.1; fs.dim=1; fs.ground=ground(fs.fill, fs.temp, 1); fs.tapK=0; fs.pinK=0; fs.rim=0.05; fs.pulse=0; fs.still=false;
+  fs.fill = 0.28 + 0.12*Math.sin(t*0.35); fs.temp=0.1; fs.dim=1; fs.ground=ground(fs.fill, fs.temp, 1); fs.tapK=0; fs.pinK=0; fs.dragK=0; fs.leanX=0; fs.leanY=0; fs.ink=0; fs.rim=0.05; fs.pulse=0; fs.still=false;
 }
 
 /* ============================ LOOP ============================ */
@@ -990,7 +1062,7 @@ function refresh(){
   var doors=document.querySelectorAll(".door"); for(i=0;i<doors.length;i++) doors[i].classList.toggle("sel", doors[i].getAttribute("data-preset")===L.preset);
   var belly=P.belly!=="off", tap=P.tap==="on", sound=DB.cfg.sound;
   document.getElementById("pat-sub").textContent = P.pat==="coh" ? "Coherent · 5.5 a minute" : "Relaxing · long exhale";
-  document.getElementById("sound-sub").textContent = sound==="breath" ? "A breath of wind, in and out." : "A soft chime: a higher note to breathe in, a lower note to breathe out.";
+  document.getElementById("sound-sub").textContent = sound==="breath" ? "A breath of wind, in and out." : "One soft note: it rises as you breathe in, falls as you breathe out.";
   var seg=document.querySelectorAll("#seg-with button"); for(i=0;i<seg.length;i++){ var wk=seg[i].getAttribute("data-w"); seg[i].classList.toggle("sel", wk==="belly"?belly:tap); }
   var parts=[]; if(belly) parts.push("Belly: phone on your belly, it reads your breath."); if(tap) parts.push("Tap: tap the count, hold to hold.");
   document.getElementById("with-sub").textContent = parts.length ? parts.join(" ") : "Nothing extra.";
@@ -1050,10 +1122,10 @@ try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function
 
 /* debug handle for the probe harness; harmless in production */
 window.WIND = {
-  state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst?ENG.inst.info():""}; },
+  state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, ink:frameState.ink, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst?ENG.inst.info():""}; },
   probe:function(){ if(ENG.inst&&ENG.inst.probe) ENG.inst.probe(); },
   rects:function(){ var out={}, els=document.querySelectorAll("#s-run .slot, #word span, #num, .rail .r"); for(var i=0;i<els.length;i++){ var r=els[i].getBoundingClientRect(); out[(els[i].id||els[i].className)+"#"+i]=[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]; } out.wordSize=getComputedStyle(elWord).fontSize; return out; },
-  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, tone:function(){ if(!scheme||scheme.kind!=="tone") return null; return {last:Math.round(scheme.last), live:scheme.live}; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ if(k==="sound") DB.cfg.sound=v; else DB.cfg.breathe[k]=v; }, palette:function(t){ return ground(0.5,t,1); }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
+  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, tone:function(){ if(!scheme||scheme.kind!=="tone") return null; return {f0:Math.round(scheme.f0), f1:Math.round(scheme.f1), dir:scheme.dir, on:scheme.on, f:Math.round(scheme.o.frequency.value), g:+scheme.g.gain.value.toFixed(3)}; }, lean:function(){ return {on:LEAN.on, x:+LEAN.x.toFixed(3), y:+LEAN.y.toFixed(3)}; }, tilt:function(x,y,z){ onLean({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, drag:function(){ return {k:+frameState.dragK.toFixed(3), vx:Math.round(frameState.dragVX), vy:Math.round(frameState.dragVY)}; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ if(k==="sound") DB.cfg.sound=v; else DB.cfg.breathe[k]=v; }, palette:function(t){ return ground(0.5,t,1); }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
 };
 /* ---- boot ---- */
 fitWordOnce();

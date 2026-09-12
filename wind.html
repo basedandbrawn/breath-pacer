@@ -305,36 +305,26 @@ function initAudio(){
   return A;
 }
 function keep(n){ A.nodes.push(n); return n; }
-/* TONE: a ladder, not a glide. One soft note a second, each held until the next: the notes step up a
-   pentatonic scale through the breath in and arrive on the top note as the lungs fill, and step down
-   from just under it through the breath out. Nothing slides in pitch, so nothing can sound like a
-   siren or a horn; the pitch rises because the next note is higher. Plain sines, no octave beneath,
-   no room, each softer the higher it is. A held breath, a brace and a squeeze are silent: on 4 · 7 · 8
-   the seven is quiet by itself. A one-second phase is one note. */
-var SCALE=[220.00,246.94,293.66,329.63,392.00,440.00,493.88,587.33,659.26,783.99];   /* A3 B3 D4 E4 G4 A4 B4 D5 E5 G5: G pentatonic */
-var TONE_TOP=SCALE.length-1;
+/* TONE: one note, and never another. A warm hum on G3, a sine with two soft harmonics, a second
+   fundamental a hair sharp for a slow inner motion, and a breath of pink air under it. It opens as the
+   lungs fill and closes as they empty: through the in the lowpass rises from dark to bright and the level
+   swells with it, through the out both fall. The pitch never moves, so it cannot be a siren; no second
+   note is ever struck, so nothing climbs a scale. A held breath sustains the note where it is, a little
+   softer and steady; a squeeze is the same still hum at its dark end. Everything is a ramp over the whole
+   count and nothing is a step, so a phase change is heard as a turn, not a hit. */
+var TONE_F=196.0;   /* G3 */
 function mkTone(k){
-  var ctx=A.ctx, lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2400; lp.Q.value=0.2;
-  var g=ctx.createGain(); g.gain.value=1; g.connect(lp); lp.connect(A.dryIn);
-  return {kind:"tone", g:g, lp:lp, k:k, plan:[], dir:"", end:0};
+  var ctx=A.ctx, lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=240; lp.Q.value=0.7;
+  var g=ctx.createGain(); g.gain.value=0.0001; g.connect(lp); lp.connect(A.wetIn);
+  var parts=[[1,1],[1.0015,0.5],[2,0.28],[3,0.12]], i;
+  for(i=0;i<parts.length;i++){ var o=ctx.createOscillator(), og=ctx.createGain(); o.type="sine"; o.frequency.value=TONE_F*parts[i][0]; og.gain.value=parts[i][1]; o.connect(og); og.connect(g); o.start(); keep(o); }
+  var air=ctx.createBufferSource(); air.buffer=noiseBuffer(ctx,4,"pink"); air.loop=true;
+  var ab=ctx.createBiquadFilter(); ab.type="bandpass"; ab.frequency.value=700; ab.Q.value=0.6; var ag=ctx.createGain(); ag.gain.value=0.06;
+  air.connect(ab); ab.connect(ag); ag.connect(g); air.start(); keep(air);
+  return {kind:"tone", g:g, lp:lp, k:k, dir:"", lvl:0.0001, fc:240};
 }
-function toneNotes(kind, dur){
-  var n=Math.max(1, Math.round(dur)), i, idx=[];
-  for(i=0;i<n;i++) idx.push(Math.max(0, kind==="in" ? TONE_TOP-n+1+i : TONE_TOP-1-i));
-  return idx.map(function(j){ return SCALE[j]; });
-}
-function toneLadder(s, kind, at, dur, amp){
-  if(!A) return; var ctx=A.ctx, notes=toneNotes(kind, dur), step=dur/notes.length, i;
-  s.plan=[]; s.dir=kind==="in"?"up":"down"; s.end=at+dur;
-  for(i=0;i<notes.length;i++){ (function(f, t0, t1, last){
-    var o=ctx.createOscillator(), og=ctx.createGain(), a=Math.min(0.09, step*0.25), r=last?Math.min(0.45, step*0.5):Math.min(0.14, step*0.3), lvl=amp*Math.sqrt(392/f);
-    o.type="sine"; o.frequency.value=f;
-    og.gain.setValueAtTime(0.0001, t0); og.gain.linearRampToValueAtTime(lvl, t0+a); og.gain.setValueAtTime(lvl, t1-r); og.gain.linearRampToValueAtTime(0.0001, t1);
-    o.connect(og); og.connect(s.g); o.start(t0); o.stop(t1+0.05); keep(o); o.onended=function(){ var j=A.nodes.indexOf(o); if(j>=0) A.nodes.splice(j,1); };
-    s.plan.push({t:t0, f:f});
-  })(notes[i], at+step*i, at+step*(i+1), i===notes.length-1); }
-}
-function toneNow(s){ var t=A.ctx.currentTime, f=0, i; if(t>=s.end) return 0; for(i=0;i<s.plan.length;i++) if(s.plan[i].t<=t) f=s.plan[i].f; return f; }
+/* the swell: level and brightness ramp together from where the last phase left them to where this one ends */
+function toneSwell(s, at, dur, lvl, fc, shape){ env(s.g.gain, s.lvl, lvl, at, dur, shape||easeIO); env(s.lp.frequency, s.fc, fc, at, dur, shape||easeIO); s.lvl=lvl; s.fc=fc; }
 function mkBreath(k){
   var ctx=A.ctx, src=ctx.createBufferSource(); src.buffer=noiseBuffer(ctx,5,true); src.loop=true;
   var bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=800; bp.Q.value=0.9;
@@ -349,8 +339,12 @@ function schemePhase(kind, at, dur){
   if(!scheme || !A) return;
   var s=scheme, k=s.k, g=Math.max(dur,0.35);
   if(s.kind==="tone"){
-    if(kind==="in"||kind==="out") toneLadder(s, kind, at, g, 0.20*k);   /* up the ladder on the in, down it on the out */
-    else { s.dir=""; }                                                    /* hold, brace, squeeze, get set: nothing is scheduled, so quiet */
+    var top=0.24*k, DARK=240, BRIGHT=1500;
+    if(kind==="in"){ s.dir="up"; toneSwell(s, at, g, top, BRIGHT); }                          /* opens and brightens as the lungs fill */
+    else if(kind==="out"){ s.dir="down"; toneSwell(s, at, g, top*0.10, DARK); }              /* closes and softens as they empty */
+    else if(kind==="hold"){ s.dir=""; toneSwell(s, at, Math.min(1.2,g), top*0.45, 1100, easeOut); }   /* held: the note stays, a little softer and steady */
+    else if(kind==="empty"){ s.dir=""; toneSwell(s, at, Math.min(0.8,g), top*0.06, 200, easeOut); }   /* the squeeze: the same hum at its darkest, nearly gone */
+    else { s.dir=""; toneSwell(s, at, 0.6, 0.0001, DARK, easeOut); }                          /* get set: fades out; the first in swells from silence */
   }
   if(s.kind==="breath"){
     var top=1.05*k;
@@ -628,7 +622,7 @@ function FieldGL(cv){
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA16F,w,h,0,gl.RGBA,gl.HALF_FLOAT,null); var fb=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,fb); gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);
     if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE) throw new Error("fbo"); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); return {t:t,fb:fb,w:w,h:h}; }
   function resize(){
-    W=window.innerWidth; H=window.innerHeight; var D=Math.min(2,window.devicePixelRatio||1);
+    W=window.innerWidth; H=window.innerHeight; var D=Math.min(1.5,window.devicePixelRatio||1);   /* the show pass is per pixel; 1.5 is enough for dye and halves the fill on a 3x phone */
     cv.width=Math.round(W*D); cv.height=Math.round(H*D);
     simW=Math.round(160*quality); simH=Math.max(8,Math.round(simW*H/W)); dyeW=simW*2; dyeH=simH*2;
     try{ vel=tex(simW,simH); vel2=tex(simW,simH); pr=tex(simW,simH); pr2=tex(simW,simH); dv=tex(simW,simH); cl=tex(simW,simH); dye=tex(dyeW,dyeH); dye2=tex(dyeW,dyeH); deep=tex(simW,simH); deep2=tex(simW,simH); }catch(e){ return false; }
@@ -645,7 +639,7 @@ function FieldGL(cv){
     var tx=1/simW, ty=1/simH, u, i;
     var aspect=[W/H,1], center=[0.5, 1-0.47];
     /* 1. advect velocity (dissipation = momentum decay: the hold settles) */
-    u=use("advect"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss, st.idle?0.985:st.still?0.972:0.992);   /* the hold settles fast: still air */ bind(u,"uVel",vel,0); bind(u,"uSrc",vel,1); draw(vel2); swapV();
+    u=use("advect"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss, Math.pow(st.idle?0.985:st.still?0.972:0.992, dt*60));   /* per second, not per frame, so the air decays the same at 30 fps as at 60; the hold settles fast: still air */ bind(u,"uVel",vel,0); bind(u,"uSrc",vel,1); draw(vel2); swapV();
     /* 2. vorticity confinement keeps the eddies alive */
     u=use("curl"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uVel",vel,0); draw(cl);
     u=use("vort"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uK, 22+30*st.turb); bind(u,"uVel",vel,0); bind(u,"uCurl",cl,1); draw(vel2); swapV();
@@ -930,10 +924,12 @@ function pickEngine(want){
   elGL.hidden = want!=="field"; elC2.hidden = want==="field";
 }
 /* frame budget: measure, then step down. */
-var cpuEMA=0, overSince=0;
-function budget(cpuMs, now){
-  cpuEMA += (cpuMs-cpuEMA)*0.05;
-  if(cpuEMA > 13){ if(!overSince) overSince=now; if(now-overSince>3){ overSince=0; if(ENG.inst && ENG.inst.halve && ENG.inst.halve()){ } else if(ENG.name==="field"){ pickEngine("memory"); ENG.reason="frame budget"; } } }
+var cpuEMA=0, wallEMA=16.7, overSince=0;
+function budget(cpuMs, wallMs, now){
+  cpuEMA += (cpuMs-cpuEMA)*0.05; wallEMA += (wallMs-wallEMA)*0.05;
+  /* the JS time, or the whole frame when it is the GPU that is late: the old guard measured JS alone and never
+     saw a GPU stall. Under 25 fps for 3 s steps down; iOS Low Power Mode caps rAF at 30 fps and stays above the line */
+  if(cpuEMA > 13 || wallEMA > 40){ if(!overSince) overSince=now; if(now-overSince>3){ overSince=0; if(ENG.inst && ENG.inst.halve && ENG.inst.halve()){ } else if(ENG.name==="field"){ pickEngine("memory"); ENG.reason="frame budget"; } } }
   else overSince=0;
 }
 
@@ -1019,7 +1015,7 @@ function render(now){
   fs.flow = Math.max(-2.4, Math.min(2.4, flow + residual)); if(fs.flow!==fs.flow) fs.flow=0;
   if(st.stage==="rest") fs.flow*=0.45;
   bell=Math.abs(fs.flow)>1?1:Math.abs(fs.flow);
-  var a=audioAmp(); if(a<0) a=bell*0.6; ampSm += (a-ampSm)*0.25; fs.amp=ampSm;
+  var a=audioAmp(); if(a<0) a=bell*0.6; ampSm += (a-ampSm)*0.25; fs.amp=Math.max(ampSm, bell*0.75);   /* the sound can add to the gust but never starve it: a quiet or silent phase still blows at three quarters */
   /* the mirror: when the sensor sees you, the wind is you and the tone is the pacer */
   var pt=performance.now()/1000, seeing = S.mirror && MIR.conf>0.35 && !MIR.moving;
   if(seeing){ fs.fill=MIR.fill; fs.flow=MIR.flow; fs.amp=Math.min(1,Math.abs(MIR.flow)); }
@@ -1059,7 +1055,7 @@ function idleRender(t){
 var raf=0, lastT=0, perfOn=!!Q.perf, fpsEMA=60, frameNo=0, probeStage=0, PROBE_AT=[1.5,4,7];
 function tick(){
   raf=requestAnimationFrame(tick);
-  var now=nowSec(), t=performance.now()/1000, dt=lastT?Math.min(1/30, t-lastT):1/60; lastT=t;
+  var now=nowSec(), t=performance.now()/1000, wall=lastT?Math.min(0.1, t-lastT):1/60, dt=Math.min(1/20, wall); lastT=t;   /* a late frame advances the air by the time that passed, up to 50 ms: the wind no longer plays in slow motion when the GPU falls behind */
   if(S.running){
     var guard=0;
     while(S.idx<S.steps.length-1 && now>=S.stepStart+S.steps[S.idx].dur && guard++<400){
@@ -1073,7 +1069,7 @@ function tick(){
   if(MASK.dirty){ buildMask(elRun.classList.contains("on") ? elWordI : (document.getElementById("s-home").classList.contains("on") ? elMark : null)); }
   var c0=performance.now();
   if(ENG.inst){ if(ENG.inst.isLost && ENG.inst.isLost()){ pickEngine("memory"); ENG.reason="GPU context lost"; } else ENG.inst.frame(dt, frameState, t); }
-  var cpu=performance.now()-c0; budget(cpu, t);
+  var cpu=performance.now()-c0; budget(cpu, wall*1000, t);
   frameNo++;
   if(Q.probe && ENG.inst && ENG.inst.probe && probeStage<PROBE_AT.length && t>=PROBE_AT[probeStage]){ probeStage++; console.log("PROBE t="+t.toFixed(1)+" frame "+frameNo+" phase="+frameState.phase+" fill="+frameState.fill.toFixed(2)+" flow="+frameState.flow.toFixed(2)+" amp="+frameState.amp.toFixed(2)+" vp="+window.innerWidth+"x"+window.innerHeight+" eng="+ENG.name+" reason="+ENG.reason+" dt="+dt.toFixed(4)); ENG.inst.probe(); }
   if(perfOn){ fpsEMA += (1/Math.max(dt,1e-3)-fpsEMA)*0.05; elPerf.style.display="block"; elPerf.textContent = ENG.name+"  "+(ENG.inst?ENG.inst.info():"")+"\n"+cpuEMA.toFixed(1)+" ms engine · "+fpsEMA.toFixed(0)+" fps"+(MIR.on?"\nmirror ax"+MIR.axis+" sign"+MIR.sign+" env "+(MIR.env[Math.max(0,MIR.axis)]*1000).toFixed(1)+"m · "+MIR.rate.toFixed(1)+"/min conf "+MIR.conf.toFixed(2)+(MIR.moving?" MOVING":""):""); }
@@ -1096,7 +1092,7 @@ function refresh(){
   function bbar(ph){ var h="", j; for(j=0;j<ph.length;j++) h+='<b style="flex:'+ph[j][1]+' 1 0"><i>'+ph[j][0]+'</i><u>'+fmtN(ph[j][1])+'</u></b>'; return h; }
   document.getElementById("bar-478").innerHTML=bbar([["in",4],["hold",7],["out",8]]); document.getElementById("bar-coh").innerHTML=bbar([["in",5.5],["out",5.5]]);
   document.getElementById("v-time").textContent=fmtClock(P.cycles*(P.pat==="coh"?11:19));
-  document.getElementById("sound-sub").textContent = sound==="breath" ? "A breath of wind, in and out." : "Soft notes, one a second: they step up as you breathe in, down as you breathe out.";
+  document.getElementById("sound-sub").textContent = sound==="breath" ? "A breath of wind, in and out." : "One warm note. It opens and brightens as you breathe in, closes and softens as you breathe out. Nothing climbs.";
   var seg=document.querySelectorAll("#seg-with button"); for(i=0;i<seg.length;i++){ var wk=seg[i].getAttribute("data-w"); seg[i].classList.toggle("sel", wk==="belly"?belly:tap); }
   var parts=[]; if(belly) parts.push("Belly: phone on your belly, it reads your breath."); if(tap) parts.push("Tap: tap the count, hold to hold.");
   document.getElementById("with-sub").textContent = parts.length ? parts.join(" ") : "Nothing extra.";
@@ -1159,7 +1155,7 @@ window.WIND = {
   stats:function(){ return ENG.inst&&ENG.inst.stats?ENG.inst.stats():null; }, state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, ink:frameState.ink, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst?ENG.inst.info():""}; },
   probe:function(){ if(ENG.inst&&ENG.inst.probe) ENG.inst.probe(); },
   rects:function(){ var out={}, els=document.querySelectorAll("#s-run .slot, #word span, #num, .rail .r"); for(var i=0;i<els.length;i++){ var r=els[i].getBoundingClientRect(); out[(els[i].id||els[i].className)+"#"+i]=[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]; } out.wordSize=getComputedStyle(elWord).fontSize; return out; },
-  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, tone:function(){ if(!scheme||scheme.kind!=="tone") return null; return {dir:scheme.dir, f:Math.round(toneNow(scheme)), notes:scheme.plan.map(function(p){ return Math.round(p.f); })}; }, lean:function(){ return {on:LEAN.on, x:+LEAN.x.toFixed(3), y:+LEAN.y.toFixed(3)}; }, tilt:function(x,y,z){ onLean({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, drag:function(){ return {k:+frameState.dragK.toFixed(3), vx:Math.round(frameState.dragVX), vy:Math.round(frameState.dragVY)}; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ if(k==="sound") DB.cfg.sound=v; else DB.cfg.breathe[k]=v; }, palette:function(t){ return ground(0.5,t,1); }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
+  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, tone:function(){ if(!scheme||scheme.kind!=="tone") return null; return {dir:scheme.dir, f:TONE_F, g:+scheme.g.gain.value.toFixed(4), fc:Math.round(scheme.lp.frequency.value)}; }, lean:function(){ return {on:LEAN.on, x:+LEAN.x.toFixed(3), y:+LEAN.y.toFixed(3)}; }, tilt:function(x,y,z){ onLean({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, drag:function(){ return {k:+frameState.dragK.toFixed(3), vx:Math.round(frameState.dragVX), vy:Math.round(frameState.dragVY)}; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ if(k==="sound") DB.cfg.sound=v; else DB.cfg.breathe[k]=v; }, palette:function(t){ return ground(0.5,t,1); }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
 };
 /* ---- boot ---- */
 fitWordOnce();

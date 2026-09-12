@@ -75,23 +75,50 @@ cannot help.
 
 ## The tone
 
-Three tones were built and two were cut. The chime, after a written
-description of the guided coherence track: a strike rings and is gone, so
-on a three-second in the last two seconds were silent. The glide, one
-sustained sine sliding up through the in and down through the out: that
-is the shape of a siren, and with a low octave under it, a horn. Nothing
-that slides in pitch can be made not to.
+Four tones were built and three were cut. The chime rang and was gone, so
+a three-second in was two seconds of silence. The glide, one sine sliding
+up through the in and down through the out, was a siren, and with a low
+octave under it a horn. The ladder, one note a second stepping up a
+pentatonic scale, was do-re-mi: a melody to follow, a hit every second,
+and silence on every hold and squeeze.
 
-Tone is now a ladder. One soft note a second, each held until the next,
-stepping up a G pentatonic scale (A3 to G5) through the breath in and
-arriving on the top note as the lungs fill, and stepping down from just
-under the top through the breath out. The pitch rises because the next
-note is higher, never because a note moved. Plain sines, no octave
-beneath, no room, each note quieter the higher it is, a 90 ms attack and
-a short release into the next. A held breath, a brace and a squeeze
-schedule nothing, so they are silent; on 4 · 7 · 8 the seven is quiet by
-itself. A one-second phase is one note; a three-second in is D5 E5 G5; an
-eight-second out walks E5 down to B3.
+Tone is now one note and never another. A warm hum on G3: a sine, two
+soft harmonics, a second fundamental a hair sharp so the note slowly moves
+inside, and a breath of pink air under it. Through the in the lowpass
+opens from 240 to 1500 Hz and the level swells with it; through the out
+both fall; a hold sustains the note where it is, a little softer; a
+squeeze is the same hum at its darkest. Every change is a ramp over the
+whole count and nothing is a step, so a phase change is heard as a turn,
+not a hit. The pitch never moves, so it cannot be a siren; no second note
+is ever struck, so nothing climbs. Seven variants with the reasoning are
+on `design/lab.html`.
+
+## The wind slowed down, and why
+
+Measured in the same headless harness, the field at 327b577 peaked near
+96 sim units a second on the in with the audio drive at 1.0; the current
+build peaked near 45 with the drive at 0.4 to 0.7. Two causes, and a
+third waiting on the phone:
+
+1. **The force was scaled by loudness.** `uFlow` is the gesture times
+   `0.5 + 1.4 × amp`, and `amp` is the RMS of whatever the app is playing.
+   The ladder was quieter than the glide, dropped the reverb send, and
+   was silent on every hold, so the wind lost a quarter of its push and
+   went slack between gusts. Now the sound can add to the gust but never
+   starve it: the gesture guarantees three quarters of the drive.
+2. **Slow motion under a late GPU.** `dt` was clamped at 1/30 s, so any
+   frame slower than 30 fps advanced the air by less time than had
+   passed, and the whole wind played back slow. The show pass at 2× pixel
+   ratio with the depth layer and bloom added, and thermal throttling
+   over a long session, are exactly what push an older phone under 30.
+   The clamp is now 1/20 s, the velocity decay is per second rather than
+   per frame so the air behaves the same at 30 fps as at 60, and the
+   show pass is capped at 1.5× like the 2D engine.
+3. **The budget guard was blind to the GPU.** It measured JS time alone,
+   which stays under a millisecond while the GPU stalls. It now watches
+   the whole frame interval too: under 25 fps for three seconds halves
+   the simulation, then falls to Memory. iOS Low Power Mode caps
+   requestAnimationFrame at 30 fps and stays above the line.
 
 ## The picture, fixed
 

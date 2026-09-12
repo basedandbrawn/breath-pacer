@@ -7,6 +7,36 @@ wake lock, iOS media routing) and replaces the ring with a full-screen wind
 that is the instrument. Open it in Safari on the phone; `?perf=1` shows a
 frame-time overlay.
 
+## Third pass: the smoke is back, as a move
+
+The lines were fast but they were not the smoke, and the smoke was the
+thing. So the fluid is back, rebuilt from the first build with everything
+learned since, as **Wisp**: a real velocity field on the GPU, a spiral force
+whose spin reverses with the breath (the in draws everything to the centre,
+the out throws it away), vorticity confinement so the eddies live, curl
+noise for wisps, and one channel of dye at three times the field's
+resolution, alive about two seconds, injected as filaments and never as a
+wash. The word is a no-slip obstacle that sheds wisps from its edges and
+draws the air to itself, so the smoke clings to the letters. Decay is per
+second, the frame clamp is 1/20 s, the show pass is capped at 1.5x, and the
+force has a floor under the loudness coupling, so none of the old slowdowns
+can return. If the GPU cannot, or the frame budget is blown for three
+seconds, the slipstream lines take over. In the harness the field peaks
+near 240 units a second on the in: five times the slow build, more than
+twice the first.
+
+**One palette, no picker.** Slate: a slate night, wisps of pale mist-blue on
+the way in turning to pale gold on the way out, bone type. The air's colour
+blends in RGB, because the hue path from blue to gold runs through green
+and there is no green here. `?pal=` and the Look card are gone.
+
+**Five rep shapes.** Drive and Squeeze as before; Stretch (LOWER 3 · HOLD 2
+· LIFT 2, the hold soft with the air in); Heavy (HOLD breathe in 2 · LOWER
+hold 2 · LIFT hold 1 · HOLD breathe out 1, one held breath under the whole
+rep); Steady (HOLD, 4 in 4 out, for time, with a Time stepper instead of
+Reps). Every step carries its own movement word now, so a hold can be
+LOWER or LIFT when the breath is held through a movement.
+
 ## Second pass: rebuilt from nothing
 
 The wind was still too slow after the first fix, and it had been right in

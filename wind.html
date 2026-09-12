@@ -34,6 +34,7 @@ body{
   overscroll-behavior:none;touch-action:manipulation;
 }
 canvas.field{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
+canvas.field[hidden]{display:none}
 #flash{position:fixed;inset:0;z-index:9;pointer-events:none;background:#fff;opacity:0}
 #flash.go{animation:fl .5s ease-out}
 @keyframes fl{0%{opacity:.14}100%{opacity:0}}
@@ -68,8 +69,6 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .seg button{flex:1 1 0;min-width:0;padding:13px 2px;border-radius:12px;background:var(--ui);border:1px solid var(--line);
   font-size:11px;letter-spacing:.12em;font-weight:700;color:var(--mute);text-transform:uppercase;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .seg button.sel{color:var(--fg);border-color:var(--fg);background:var(--sel)}
-.seg.look button{padding:11px 0;font-size:10px;letter-spacing:.08em}
-.seg.look button i{display:block;height:10px;border-radius:5px;margin:0 8px 7px;border:1px solid var(--line)}
 .sub{text-align:center;font-size:12px;letter-spacing:.1em;color:var(--mute);padding-bottom:6px;line-height:1.5}
 /* the doors: each preset is a tile that carries its own tempo as a proportional bar,
    the movement names in small caps above the segments and the seconds inside them */
@@ -139,6 +138,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 </style>
 </head>
 <body>
+<canvas id="gl" class="field" hidden></canvas>
 <canvas id="c2d" class="field"></canvas>
 <div id="flash"></div>
 <div id="perf"></div>
@@ -160,8 +160,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   <div class="scroll">
     <div id="setup-lift">
       <!-- the shape of the rep: two doors, each carrying its own tempo as a labelled bar. The words are what the body does. -->
-      <button class="door" data-preset="drive"><span class="dt">DRIVE</span><span class="bar" id="bar-drive"></span><span class="dr" id="rest-drive"></span><span class="dl">Pauses at the bottom with the air in. Squats, presses, hinges.</span></button>
-      <button class="door" data-preset="squeeze"><span class="dt">SQUEEZE</span><span class="bar" id="bar-squeeze"></span><span class="dr" id="rest-squeeze"></span><span class="dl">Pauses at the top, still breathing out. Rows, flies, curls, raises.</span></button>
+      <div id="doors"></div>
       <div class="card">
         <div class="row" id="row-reps"><span class="lbl">Reps</span><div class="step"><button data-s="reps:-1">−</button><span class="v" id="v-reps">10</span><button data-s="reps:1">+</button></div></div>
         <div class="row"><span class="lbl">Sets</span><div class="step"><button data-s="sets:-1">−</button><span class="v" id="v-sets">4</span><button data-s="sets:1">+</button></div></div>
@@ -179,10 +178,6 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
     <div class="card"><div class="row stack"><span class="lbl">Sound</span>
       <div class="seg" id="seg-sound"><button data-sound="tone">Tone</button><button data-sound="bells">Bells</button><button data-sound="breath">Breath</button></div>
       <div id="sound-sub" class="sub"></div></div></div>
-    <!-- the look: five palettes, each a whole world, one of them paper -->
-    <div class="card"><div class="row stack"><span class="lbl">Look</span>
-      <div class="seg look" id="seg-look"></div>
-      <div id="look-sub" class="sub"></div></div></div>
     <!-- the two ways the phone can read you, Breathe only -->
     <div class="card" id="card-with"><div class="row stack"><span class="lbl">With</span>
       <div class="seg" id="seg-with"><button data-w="belly">Belly</button><button data-w="tap">Tap</button></div>
@@ -216,14 +211,16 @@ var Q = {}; try{ location.search.slice(1).split("&").forEach(function(kv){ var p
 var KEY = "wind.v2", OLDKEY = "wind.v1";
 var DEF = {
   cfg: {
-    sound:"tone", pal:"slate",
-    /* LIFT presets, one per rep shape, as sequences so the cycle can open on whichever movement the lift
-       starts with. DRIVE: lower with the air coming in, hold at the bottom with the air in, lift it out.
-       SQUEEZE: lift on the way out, hold at the top still breathing out, lower with the air coming in.
-       The words on the screen are the movements; the breath is the line under them. */
-    lift: {preset:"drive", reps:{drive:10, squeeze:12}, sets:4,
-      tune:{drive:  {seq:[["in",3],["hold",1],["out",2]], rest:120},
-            squeeze:{seq:[["out",1],["empty",2],["in",3]], rest:90}}},
+    sound:"tone",
+    /* LIFT presets, one per rep shape, as sequences: [breath, seconds, movement word]. The word is what the
+       body does; the breath is the line under it. The cycle opens on whichever movement the lift starts
+       with. Steady has no rep: it runs for time. */
+    lift: {preset:"drive", reps:{drive:10, squeeze:12, stretch:10, heavy:5}, secs:{steady:60}, sets:4,
+      tune:{drive:  {name:"DRIVE",   seq:[["in",3,"LOWER"],["hold",1,"HOLD"],["out",2,"LIFT"]], rest:120, note:"Pauses at the bottom with the air in. Squats, presses, hinges."},
+            squeeze:{name:"SQUEEZE", seq:[["out",1,"LIFT"],["empty",2,"HOLD"],["in",3,"LOWER"]], rest:90, note:"Pauses at the top, still breathing out. Rows, flies, curls, raises."},
+            stretch:{name:"STRETCH", seq:[["in",3,"LOWER"],["hold",2,"HOLD"],["out",2,"LIFT"]], rest:90, note:"Pauses long at the bottom, air held in, soft. Flies, pullovers, deficit work."},
+            heavy:  {name:"HEAVY",   seq:[["in",2,"HOLD"],["hold",2,"LOWER"],["hold",1,"LIFT"],["out",1,"HOLD"]], rest:180, note:"One held breath under the whole rep. Five reps and under."},
+            steady: {name:"STEADY",  seq:[["in",4,"HOLD"],["out",4,"HOLD"]], rest:60, timed:true, note:"No rep. Breathe through a hold, for time. Planks, hangs, carries."}}},
     breathe: {cycles:8, pat:"478", belly:"on", tap:"off"}
   },
   stats: {sec:0, log:[]}
@@ -235,12 +232,12 @@ try{
   if(raw && raw.cfg){
     var L = raw.cfg.lift; if(L){ ["preset","sets"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
       if(L.reps && typeof L.reps==="object"){ for(var rk in DB.cfg.lift.reps) if(L.reps[rk]) DB.cfg.lift.reps[rk]=L.reps[rk]; }
+      if(L.secs && typeof L.secs==="object"){ for(var sk in DB.cfg.lift.secs) if(L.secs[sk]) DB.cfg.lift.secs[sk]=L.secs[sk]; }
       if(!DB.cfg.lift.tune[DB.cfg.lift.preset]) DB.cfg.lift.preset="drive"; }   /* the tempos are fixed; nothing stored overrides them */
     if(raw.cfg.breathe) for(var bk in DB.cfg.breathe) if(raw.cfg.breathe[bk]!==undefined) DB.cfg.breathe[bk]=raw.cfg.breathe[bk];
     if(DB.cfg.breathe.pat!=="478" && DB.cfg.breathe.pat!=="coh") DB.cfg.breathe.pat="478";
     if(DB.cfg.breathe.tap!=="off" && DB.cfg.breathe.tap!=="on") DB.cfg.breathe.tap="on";
     DB.cfg.sound = raw.cfg.sound || "tone"; if(["tone","bells","breath"].indexOf(DB.cfg.sound)<0) DB.cfg.sound="tone";
-    if(raw.cfg.pal) DB.cfg.pal = raw.cfg.pal;
   }
   if(raw && raw.stats){ DB.stats.sec = raw.stats.sec||0; DB.stats.log = raw.stats.log||[]; }
 }catch(e){}
@@ -402,21 +399,16 @@ document.addEventListener("visibilitychange", function(){ if(document.visibility
    falls with them. A palette is a whole world: the ground empty and full, the colour of the air on the
    way in and on the way out, the rim, and the type, because Parchment is paper and its type is ink.
    HSL triplets. Chosen in Setup, or with ?pal=name. */
-var PALETTES={
-  slate:    {name:"Slate",     bg:[214,18,9],  full:[212,22,21], air:[212,32,66], warm:[36,28,66],  rim:[212,36,74], text:"#e6ebf1", light:false, note:"Slate and a muted blue. The air warms to sand on the way out."},
-  parchment:{name:"Parchment", bg:[40,34,84],  full:[44,44,93],  air:[216,24,34], warm:[16,42,44],  rim:[38,52,66], text:"#2a3140", light:true,  note:"Paper. The air is ink, rust on the way out. The page brightens as you fill."},
-  moss:     {name:"Moss",      bg:[160,14,8],  full:[152,16,19], air:[118,20,62], warm:[46,40,62],  rim:[100,26,68], text:"#e7ede6", light:false, note:"Deep green-grey, sage air, straw on the way out."},
-  ember:    {name:"Ember",     bg:[18,12,8],   full:[16,18,18],  air:[22,40,58],  warm:[32,70,64],  rim:[26,60,64], text:"#f1eae2", light:false, note:"Charcoal. The air is clay that glows through the exhale."},
-  indigo:   {name:"Indigo",    bg:[240,28,9],  full:[250,34,20], air:[258,30,70], warm:[300,24,72], rim:[256,42,78], text:"#ece9f4", light:false, note:"Indigo, lavender air, a blush of plum on the way out."}
-};
-var PAL = PALETTES[Q.pal] || PALETTES[DB.cfg.pal] || PALETTES.slate;
+/* One palette, chosen for the aura of the wind: a slate night, wisps of pale mist-blue drawn in on the
+   breath in, turning to pale gold as they are sent out. The type is bone. No picker: the app is one world. */
+var PAL={name:"Slate", bg:[214,20,8], full:[212,24,19], air:[204,34,80], warm:[42,42,72], rim:[206,40,76], text:"#e6ebf1", light:false};
 function hsl(h,s,l){ h=((h%360)+360)%360/360; s/=100; l/=100; var q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q; function f(t){ t=(t+1)%1; if(t<1/6) return p+(q-p)*6*t; if(t<1/2) return q; if(t<2/3) return p+(q-p)*(2/3-t)*6; return p; } return [f(h+1/3), f(h), f(h-1/3)]; }
 function lerp3(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
 function css(c){ return "rgb("+Math.round(c[0]*255)+","+Math.round(c[1]*255)+","+Math.round(c[2]*255)+")"; }
 /* the ground: empty to full, the hue drifting a little across the set; dim shrinks the swing for Breathe */
 function ground(fill, temp, dim){ var f=Math.max(0,Math.min(1.2,fill))*dim, c=lerp3(PAL.bg, PAL.full, f); return hsl(c[0]+8*temp, c[1], c[2]); }
 /* the air: its colour on the way in, warming on the way out */
-function airColour(warm){ var c=lerp3(PAL.air, PAL.warm, warm); return hsl(c[0],c[1],c[2]); }
+function airColour(warm){ return lerp3(hsl(PAL.air[0],PAL.air[1],PAL.air[2]), hsl(PAL.warm[0],PAL.warm[1],PAL.warm[2]), Math.max(0,Math.min(1,warm))); }   /* blended in RGB: the hue path from blue to gold through the wheel is green, and there is no green here */
 function rimColour(){ return hsl(PAL.rim[0],PAL.rim[1],PAL.rim[2]); }
 function applyPalette(){
   var r=document.documentElement.style, t=PAL.text, bg=css(hsl(PAL.bg[0],PAL.bg[1],PAL.bg[2]));
@@ -463,6 +455,118 @@ function buildMask(el){
   MASK.w=w; MASK.h=h; MASK.data=m.getImageData(0,0,w,h).data; MASK.dirty=false; MASK.ver++;
 }
 function maskAt(x,y){ if(!MASK.data) return 0; var i=((y*MASK.sc)|0)*MASK.w+((x*MASK.sc)|0); if(i<0||i>=MASK.w*MASK.h) return 0; return MASK.data[i*4+3]/255; }
+
+/* ============================ ENGINE: WISP ============================
+   The fluid, back, rebuilt from the first build with everything learned since. A real velocity field
+   on the GPU: advect, vorticity confinement, force, a few Jacobi pressure passes, one channel of dye.
+   The breath is the force, and the force is a move: the in is a spiral drawing everything to the
+   centre, the out a spiral throwing it away, the spin reversing with the breath. Curl noise gives
+   the air wisps; vorticity confinement keeps the eddies alive. The dye lives about two seconds, so
+   the wind is seen to travel, and it goes in as filaments, never a wash. The word is a no-slip
+   obstacle that sheds wisps from its edges and draws the air to itself, so the smoke clings to the
+   letters. Decay is per second, so the air behaves the same at 30 fps as at 60; the show pass is
+   capped at 1.5x. If the GPU cannot, the slipstream lines take over. */
+function FieldGL(cv){
+  var gl = cv.getContext("webgl2", {alpha:false, antialias:false, depth:false, stencil:false, powerPreference:"high-performance", preserveDrawingBuffer:false});
+  if(!gl) return null;
+  if(!gl.getExtension("EXT_color_buffer_float") && !gl.getExtension("EXT_color_buffer_half_float")) return null;
+  var VS = "#version 300 es\nprecision highp float;out vec2 vUv;void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2));vUv=p;gl_Position=vec4(p*2.0-1.0,0.0,1.0);}";
+  var HEAD = "#version 300 es\nprecision highp float;precision highp sampler2D;in vec2 vUv;out vec4 o;uniform vec2 uTexel;";
+  var NOISE = "float hsh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}"+
+      "float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hsh(i),hsh(i+vec2(1,0)),f.x),mix(hsh(i+vec2(0,1)),hsh(i+vec2(1,1)),f.x),f.y);}";
+  var F = {
+    advect: HEAD+"uniform sampler2D uVel,uSrc;uniform float uDt,uDiss;void main(){vec2 v=texture(uVel,vUv).xy;vec2 p=vUv-uDt*v*uTexel;o=texture(uSrc,p)*uDiss;}",
+    force: HEAD+"uniform sampler2D uVel,uMask;uniform vec2 uCenter,uAspect,uTap;uniform float uDt,uFlow,uSwirl,uWind,uTime,uMax,uTapK,uCurl,uGust,uMag;"+NOISE+
+      "vec2 curl(vec2 p){float e=0.02;float a=vn(p+vec2(e,0)),b=vn(p-vec2(e,0)),c=vn(p+vec2(0,e)),d=vn(p-vec2(0,e));return vec2(c-d,b-a)/(2.0*e);}"+
+      "void main(){vec2 v=texture(uVel,vUv).xy;vec2 d=(vUv-uCenter)*uAspect;float r=length(d)+1e-4;vec2 n=d/r;float rn=r/0.5;float rb=max(abs(d.x)/(0.5*uAspect.x),abs(d.y)/0.5);"+
+      "float ring=smoothstep(0.05,0.3,rn)*(1.0-smoothstep(1.0,1.6,rb));vec2 t=vec2(-n.y,n.x);"+
+      "vec2 f=-n*uFlow*ring*150.0*(1.0+1.2*uGust);"+
+      "f+=t*uFlow*uSwirl*ring*150.0;"+
+      "f+=t*uWind*18.0*smoothstep(0.0,0.6,rn)+vec2(uWind*46.0,uWind*10.0*sin(vUv.x*6.0+uTime*0.5));"+
+      "f+=curl(d*3.0+vec2(uTime*0.12,-uTime*0.08))*uCurl;"+
+      "vec2 dt2=(vUv-uTap)*uAspect;float rt=length(dt2)+1e-4;f+=(dt2/rt)*uTapK*exp(-rt*rt/0.022)*2400.0;"+
+      "vec2 gm=vec2(texture(uMask,vUv+vec2(uTexel.x*2.0,0)).a-texture(uMask,vUv-vec2(uTexel.x*2.0,0)).a,texture(uMask,vUv+vec2(0,uTexel.y*2.0)).a-texture(uMask,vUv-vec2(0,uTexel.y*2.0)).a);f+=gm*uMag*60.0;"+
+      "v+=f*uDt;float m=texture(uMask,vUv).a;v*=(1.0-m);float L=length(v);if(L>uMax)v*=uMax/L;if(any(isnan(v)))v=vec2(0.0);o=vec4(v,0.0,1.0);}",
+    curl: HEAD+"uniform sampler2D uVel;void main(){float L=texture(uVel,vUv-vec2(uTexel.x,0)).y,R=texture(uVel,vUv+vec2(uTexel.x,0)).y,B=texture(uVel,vUv-vec2(0,uTexel.y)).x,T=texture(uVel,vUv+vec2(0,uTexel.y)).x;o=vec4(0.5*((R-L)-(T-B)),0,0,1);}",
+    vort: HEAD+"uniform sampler2D uVel,uCurl;uniform float uDt,uK;void main(){float L=texture(uCurl,vUv-vec2(uTexel.x,0)).x,R=texture(uCurl,vUv+vec2(uTexel.x,0)).x,B=texture(uCurl,vUv-vec2(0,uTexel.y)).x,T=texture(uCurl,vUv+vec2(0,uTexel.y)).x,C=texture(uCurl,vUv).x;"+
+      "vec2 f=0.5*vec2(abs(T)-abs(B),abs(R)-abs(L));f/=length(f)+1e-4;f*=uK*C;f.y*=-1.0;vec2 v=texture(uVel,vUv).xy+f*uDt;o=vec4(v,0,1);}",
+    div: HEAD+"uniform sampler2D uVel;void main(){float L=texture(uVel,vUv-vec2(uTexel.x,0)).x,R=texture(uVel,vUv+vec2(uTexel.x,0)).x,B=texture(uVel,vUv-vec2(0,uTexel.y)).y,T=texture(uVel,vUv+vec2(0,uTexel.y)).y;o=vec4(0.5*(R-L+T-B),0,0,1);}",
+    press: HEAD+"uniform sampler2D uP,uDiv;void main(){float L=texture(uP,vUv-vec2(uTexel.x,0)).x,R=texture(uP,vUv+vec2(uTexel.x,0)).x,B=texture(uP,vUv-vec2(0,uTexel.y)).x,T=texture(uP,vUv+vec2(0,uTexel.y)).x,d=texture(uDiv,vUv).x;o=vec4((L+R+B+T-d)*0.25,0,0,1);}",
+    grad: HEAD+"uniform sampler2D uP,uVel;void main(){float L=texture(uP,vUv-vec2(uTexel.x,0)).x,R=texture(uP,vUv+vec2(uTexel.x,0)).x,B=texture(uP,vUv-vec2(0,uTexel.y)).x,T=texture(uP,vUv+vec2(0,uTexel.y)).x;vec2 v=texture(uVel,vUv).xy-0.5*vec2(R-L,T-B);o=vec4(v,0,1);}",
+    dye: HEAD+"uniform sampler2D uDye,uMask;uniform vec2 uCenter,uAspect,uTap;uniform float uDt,uIn,uOut,uIdle,uTime,uTapK;"+NOISE+
+      "void main(){float d=texture(uDye,vUv).r;vec2 q=(vUv-uCenter)*uAspect;float rn=length(q)/0.5;float rb=max(abs(q.x)/(0.5*uAspect.x),abs(q.y)/0.5);"+
+      "float fil=pow(0.55*vn(q*6.0+vec2(uTime*0.25,-uTime*0.18))+0.45*vn(q*16.0+vec2(-uTime*0.33,uTime*0.42)),2.2)*3.0;"+
+      "float edge=smoothstep(0.6,1.0,rb)*(0.5+0.5*sin(atan(q.y,q.x)*6.0+uTime*0.8))*fil;float core=(1.0-smoothstep(0.0,0.3,rn))*fil;"+
+      "vec2 qt=(vUv-uTap)*uAspect;float rq=length(qt);d+=uTapK*(exp(-rq*rq/0.004)*20.0+exp(-pow(rq-0.16*(1.0-uTapK),2.0)/0.0012)*12.0)*uDt;"+
+      "d+=(uIn*edge*1.9+uOut*core*1.6)*uDt;"+
+      "float m=texture(uMask,vUv).a;float shed=max(0.0,texture(uMask,vUv-vec2(0.012,0.0)).a-m)+max(0.0,texture(uMask,vUv+vec2(0.0,0.012)).a-m);"+
+      "d+=(uIdle*fil*0.06+(uIdle*0.9+0.5*(uIn+uOut))*shed*fil*2.4)*uDt;"+
+      "d*=(1.0-m*0.85);o=vec4(min(d,1.0),0.0,0.0,1.0);}",
+    show: HEAD+"uniform sampler2D uDye;uniform vec3 uGround,uRim,uMist,uGold;uniform vec2 uAspect;uniform float uGain,uRimK,uWarm;"+
+      "void main(){vec2 q=(vUv-vec2(0.5,0.53))*uAspect;float re=length(vec2(q.x/(0.5*uAspect.x),q.y/0.5));float rim=smoothstep(0.55,1.35,re);"+
+      "float dy=texture(uDye,vUv).r;vec3 wisp=mix(uMist,uGold,uWarm);vec3 c=uGround+uRim*rim*uRimK+wisp*pow(max(dy,0.0),1.3)*uGain;o=vec4(c,1.0);}"
+  };
+  function sh(type,src){ var x=gl.createShader(type); gl.shaderSource(x,src); gl.compileShader(x); if(!gl.getShaderParameter(x,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(x)); return x; }
+  var vs; try{ vs=sh(gl.VERTEX_SHADER, VS); }catch(e){ return null; }
+  var PR={};
+  try{ for(var k in F){ var pgm=gl.createProgram(); gl.attachShader(pgm,vs); gl.attachShader(pgm,sh(gl.FRAGMENT_SHADER,F[k])); gl.linkProgram(pgm); if(!gl.getProgramParameter(pgm,gl.LINK_STATUS)) return null;
+      var u={}, n=gl.getProgramParameter(pgm,gl.ACTIVE_UNIFORMS); for(var i=0;i<n;i++){ var nm=gl.getActiveUniform(pgm,i).name; u[nm]=gl.getUniformLocation(pgm,nm); } PR[k]={p:pgm,u:u}; } }catch(e){ return null; }
+  var simW=0,simH=0,dyeW=0,dyeH=0,W=0,H=0, vel,vel2,pr,pr2,dv,cl,dye,dye2, maskTex, maskVer=-1, quality=1, warmSm=0, lost=false;
+  function tex(w,h){ var t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA16F,w,h,0,gl.RGBA,gl.HALF_FLOAT,null); var fb=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,fb); gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);
+    if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE) throw new Error("fbo"); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); return {t:t,fb:fb,w:w,h:h}; }
+  function resize(){
+    W=window.innerWidth; H=window.innerHeight; var D=Math.min(1.5,window.devicePixelRatio||1);
+    cv.width=Math.round(W*D); cv.height=Math.round(H*D);
+    simW=Math.round(128*quality); simH=Math.max(8,Math.round(simW*H/W)); dyeW=simW*3; dyeH=simH*3;   /* the dye three times the field: the swirls are the field's, the wisps are the dye's */
+    try{ vel=tex(simW,simH); vel2=tex(simW,simH); pr=tex(simW,simH); pr2=tex(simW,simH); dv=tex(simW,simH); cl=tex(simW,simH); dye=tex(dyeW,dyeH); dye2=tex(dyeW,dyeH); }catch(e){ return false; }
+    if(!maskTex){ maskTex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,maskTex); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE); }
+    maskVer=-1; return true;
+  }
+  if(!resize()) return null;
+  function use(k){ var P=PR[k]; gl.useProgram(P.p); return P.u; }
+  function bind(u,name,tx,unit){ gl.activeTexture(gl.TEXTURE0+unit); gl.bindTexture(gl.TEXTURE_2D,tx.t||tx); gl.uniform1i(u[name],unit); }
+  function draw(target){ if(target){ gl.bindFramebuffer(gl.FRAMEBUFFER,target.fb); gl.viewport(0,0,target.w,target.h); } else { gl.bindFramebuffer(gl.FRAMEBUFFER,null); gl.viewport(0,0,cv.width,cv.height); } gl.drawArrays(gl.TRIANGLES,0,3); }
+  function swapV(){ var t=vel; vel=vel2; vel2=t; } function swapP(){ var t=pr; pr=pr2; pr2=t; } function swapD(){ var t=dye; dye=dye2; dye2=t; }
+  function frame(dt, st, t){
+    if(MASK.ver!==maskVer){ gl.bindTexture(gl.TEXTURE_2D,maskTex); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,maskCv); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false); maskVer=MASK.ver; }
+    var tx=1/simW, ty=1/simH, u, i, aspect=[W/H,1], center=[0.5, 1-0.47];
+    warmSm += ((st.flow<-0.05?Math.min(1,-st.flow):0) - warmSm)*Math.min(1, dt*2.2);
+    /* 1. advect velocity; the decay is per second: the hold settles fast, still air */
+    u=use("advect"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss, Math.pow(st.idle?0.985:st.still?0.975:0.993, dt*60)); bind(u,"uVel",vel,0); bind(u,"uSrc",vel,1); draw(vel2); swapV();
+    /* 2. vorticity confinement keeps the eddies alive */
+    u=use("curl"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uVel",vel,0); draw(cl);
+    u=use("vort"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uK, 30+30*st.turb); bind(u,"uVel",vel,0); bind(u,"uCurl",cl,1); draw(vel2); swapV();
+    /* 3. the breath: the move. In draws to the centre, out sends away, both as a spiral whose spin reverses with the breath */
+    u=use("force"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
+    gl.uniform1f(u.uFlow, st.flow*(0.6+0.9*st.amp)); gl.uniform1f(u.uSwirl, 0.85+0.6*st.turb); gl.uniform1f(u.uWind, st.idle?1:0); gl.uniform1f(u.uTime,t); gl.uniform1f(u.uMax, 220+120*st.tapK);
+    gl.uniform1f(u.uCurl, (st.still?1.5:6.0)*(0.6+Math.abs(st.flow))+22*st.turb); gl.uniform1f(u.uGust, st.gust||0); gl.uniform1f(u.uMag, st.idle?1.0:0.45);
+    gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK);
+    bind(u,"uVel",vel,0); bind(u,"uMask",maskTex,1); draw(vel2); swapV();
+    /* 4. project to divergence-free */
+    u=use("div"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uVel",vel,0); draw(dv);
+    u=use("press"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uDiv",dv,1);
+    for(i=0;i<10;i++){ bind(u,"uP",pr,0); draw(pr2); swapP(); }
+    u=use("grad"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uP",pr,0); bind(u,"uVel",vel,1); draw(vel2); swapV();
+    /* 5. dye: carried by the field, alive about two seconds, so the wind is seen to travel */
+    u=use("advect"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss,Math.pow(0.70,dt)); bind(u,"uVel",vel,0); bind(u,"uSrc",dye,1); draw(dye2); swapD();
+    u=use("dye"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
+    gl.uniform1f(u.uIn, Math.max(0,st.flow)*(0.5+st.amp)); gl.uniform1f(u.uOut, Math.max(0,-st.flow)*(0.5+st.amp)); gl.uniform1f(u.uIdle, st.idle?1:0); gl.uniform1f(u.uTime,t);
+    gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK); bind(u,"uDye",dye,0); bind(u,"uMask",maskTex,1); draw(dye2); swapD();
+    /* 6. show: the ground carries the breath; the wisps are mist on the way in and gold on the way out */
+    var mist=airColour(0), gold=airColour(1), rim=rimColour();
+    u=use("show"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform3f(u.uGround,st.ground[0],st.ground[1],st.ground[2]); gl.uniform3f(u.uRim,rim[0],rim[1],rim[2]); gl.uniform3f(u.uMist,mist[0],mist[1],mist[2]); gl.uniform3f(u.uGold,gold[0],gold[1],gold[2]);
+    gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uRimK, st.rim*st.dim); gl.uniform1f(u.uGain, 0.55*st.dim); gl.uniform1f(u.uWarm, warmSm); bind(u,"uDye",dye,0); draw(null);
+  }
+  function texStats(tt){ var f=new Float32Array(tt.w*tt.h*4), i, mx=-1e9, sum=0, nan=0, n=0; gl.bindFramebuffer(gl.FRAMEBUFFER,tt.fb); gl.readPixels(0,0,tt.w,tt.h,gl.RGBA,gl.FLOAT,f);
+    for(i=0;i<f.length;i+=4){ var v=f[i]; if(v!==v){ nan++; continue; } n++; sum+=Math.abs(v); if(Math.abs(v)>mx) mx=Math.abs(v); } return {max:+mx.toFixed(3), mean:n?+(sum/n).toFixed(4):0, nan:nan}; }
+  cv.addEventListener("webglcontextlost", function(e){ e.preventDefault(); lost=true; });
+  return {kind:"wisp", resize:resize, frame:frame, isLost:function(){ return lost; }, stats:function(){ try{ return {vel:texStats(vel), dye:texStats(dye)}; }catch(e){ return {err:String(e)}; } },
+    halve:function(){ if(quality>0.8){ quality=0.75; resize(); return true; } return false; },   /* one step down, once; after that the lines take over */
+    clear:function(){ [vel,vel2,pr,pr2,dv,cl,dye,dye2].forEach(function(tt){ gl.bindFramebuffer(gl.FRAMEBUFFER,tt.fb); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }); },
+    destroy:function(){ try{ gl.getExtension("WEBGL_lose_context").loseContext(); }catch(e){} },
+    info:function(){ return "GPU wisp · "+simW+"×"+simH+" sim · "+dyeW+"×"+dyeH+" dye"; }};
+}
 
 /* ============================ ENGINE: SLIPSTREAM ============================
    One engine, one canvas. The air is a set of long lines with momentum. Each line is a chain of
@@ -641,19 +745,20 @@ function mirrorVoiceFrame(){
 /* ============================ SESSION ============================ */
 var LEAD = 0.12;
 var S = {running:false, mode:"lift", sound:"tone", steps:[], idx:0, stepStart:0, schedIdx:-1,
-         reps:10, sets:4, restDur:180, startedAt:0, recorded:{}, ended:false,
+         reps:10, sets:4, secs:60, timed:false, restDur:180, startedAt:0, recorded:{}, ended:false,
          turb:0, mirror:false, tapOn:false, poke:{x:0,y:0,k:0,t:-9}, pin:{x:0,y:0,on:false}};
-function ph(kind, dur, stage, setNo, rep){ return {k:kind, dur:dur, stage:stage, set:setNo, rep:rep}; }
-function pushSeq(arr, seq, stage, setNo, rep){ for(var i=0;i<seq.length;i++) if(seq[i][1]>0) arr.push(ph(seq[i][0],seq[i][1],stage,setNo,rep)); }
+function ph(kind, dur, stage, setNo, rep, mv){ return {k:kind, dur:dur, stage:stage, set:setNo, rep:rep, mv:mv||""}; }
+function pushSeq(arr, seq, stage, setNo, rep){ for(var i=0;i<seq.length;i++) if(seq[i][1]>0) arr.push(ph(seq[i][0],seq[i][1],stage,setNo,rep,seq[i][2])); }
 function trimTo(arr, from, total){ var acc=0,i; for(i=from;i<arr.length;i++){ if(acc+arr[i].dur>=total-0.001){ arr[i].dur=Math.max(total-acc,0); arr.length=i+1; if(arr[arr.length-1].dur<0.4&&arr.length>from+1) arr.length=arr.length-1; return; } acc+=arr[i].dur; } }
 function coherentSteps(seconds, stage, setNo){ var out=[], n=Math.ceil(seconds/11)*2+2, i; for(i=0;i<n;i++) out.push(ph(i%2?"out":"in",5.5,stage,setNo,Math.floor(i/2)+1)); trimTo(out,0,seconds); return out; }
 function buildSteps(){
   var st=[], c=DB.cfg, i, s, r;
   if(S.mode==="lift"){
-    var seq=c.lift.tune[c.lift.preset].seq;
+    var T=c.lift.tune[c.lift.preset], seq=T.seq;
     for(s=1;s<=S.sets;s++){
       st.push(ph("getset",3,"getset",s,0));
-      for(r=1;r<=S.reps;r++) pushSeq(st,seq,"set",s,r);
+      if(T.timed){ var from=st.length, cyc=seq.reduce(function(a,q){ return a+q[1]; },0), nrep=Math.ceil(S.secs/cyc)+1; for(r=1;r<=nrep;r++) pushSeq(st,seq,"set",s,r); trimTo(st,from,S.secs); }   /* for time: cycles until the seconds are up */
+      else for(r=1;r<=S.reps;r++) pushSeq(st,seq,"set",s,r);
       if(s<S.sets){ var rest=coherentSteps(S.restDur,"rest",s); for(i=0;i<rest.length;i++) st.push(rest[i]); }
     }
   }else{
@@ -679,11 +784,11 @@ function tapDown(x,y){
 function tapMove(x,y){ if(S.pin.on){ S.pin.x=x; S.pin.y=y; } }
 function tapUp(){ S.pin.on=false; }
 function startSession(mode){
-  var c=DB.cfg; S.mode=mode; S.sound=c.sound;
+  var c=DB.cfg; S.mode=mode; S.sound=c.sound; S.timed=false;
   S.mirror = mode==="breathe" && c.breathe.belly!=="off" && MIR.perm==="granted";
   S.tapOn = mode==="breathe" && c.breathe.tap==="on";
   S.poke={x:0,y:0,k:0,t:-9}; S.pin={x:0,y:0,on:false};
-  if(mode==="lift"){ S.reps=c.lift.reps[c.lift.preset]; S.sets=c.lift.sets; S.restDur=c.lift.tune[c.lift.preset].rest; }
+  if(mode==="lift"){ var TT=c.lift.tune[c.lift.preset]; S.timed=!!TT.timed; S.secs=c.lift.secs[c.lift.preset]||60; S.reps=S.timed?1:c.lift.reps[c.lift.preset]; S.sets=c.lift.sets; S.restDur=TT.rest; }
   else { S.reps=c.breathe.cycles; S.sets=1; }
   audioStart(mode, S.mirror ? "tone" : S.sound);     /* in the mirror the tone leads and the noise is you */
   if(S.mirror){ mirrorStart(); if(A) mirrorVoice=mkMirror(); }
@@ -722,16 +827,23 @@ function scheduleAhead(now){
 }
 
 /* ============================ ENGINE MANAGER ============================
-   One engine. The budget only thins the lines; there is no ladder to fall down and nothing that
-   can fail to render. */
-var elC2=document.getElementById("c2d");
-var ENG = {name:"slipstream", inst:null, reason:""};
-function pickEngine(){ ENG.inst = Slipstream(elC2); }
+   Wisp, the fluid, when the GPU can; the slipstream lines when it cannot, or when the frame budget is
+   blown for three seconds. Both read the same frame state. */
+var elGL=document.getElementById("gl"), elC2=document.getElementById("c2d");
+var ENG = {name:"", inst:null, reason:""};
+function pickEngine(want){
+  if(ENG.inst && ENG.inst.destroy){ try{ ENG.inst.destroy(); }catch(e){} }
+  var inst=null, reason="";
+  if(want!=="slipstream"){ try{ inst=FieldGL(elGL); }catch(e){ inst=null; } if(!inst) reason="no WebGL2 float render"; }
+  if(!inst){ inst=Slipstream(elC2); ENG.name="slipstream"; } else ENG.name="wisp";
+  ENG.inst=inst; ENG.reason=reason; elGL.hidden = ENG.name!=="wisp"; elC2.hidden = ENG.name==="wisp"; MASK.dirty=true;
+}
 var cpuEMA=0, wallEMA=16.7, overSince=0;
 function budget(cpuMs, wallMs, now){
+  if(Q.nobudget) return;
   cpuEMA += (cpuMs-cpuEMA)*0.05; wallEMA += (wallMs-wallEMA)*0.05;
-  /* under 25 fps for 3 s, or more than 9 ms of our own work, thins the lines; Low Power Mode's 30 fps cap stays above the line */
-  if(cpuEMA > 9 || wallEMA > 40){ if(!overSince) overSince=now; if(now-overSince>3){ overSince=0; if(ENG.inst.halve()) ENG.reason="thinned for the frame budget"; } }
+  /* under 25 fps for 3 s, or too much of our own work: the fluid first drops its resolution, then hands over to the lines. Low Power Mode's 30 fps cap stays above the line */
+  if(cpuEMA > 9 || wallEMA > 40){ if(!overSince) overSince=now; if(now-overSince>3){ overSince=0; if(ENG.inst.halve()) ENG.reason="thinned for the frame budget"; else if(ENG.name==="wisp"){ pickEngine("slipstream"); ENG.reason="lines: frame budget"; } } }
   else overSince=0;
 }
 
@@ -747,7 +859,7 @@ var lastWord=null, lastSub=null, lastNum=null, lastMeta=null, lastKind=null, las
 var WORDS={"in":"IN",hold:"HOLD",out:"OUT",empty:"HOLD",getset:"READY",done:"DONE",rest:"REST"};
 var MOVES={"in":"LOWER",out:"LIFT",hold:"HOLD",empty:"HOLD"};
 var SUBS={"in":"breathe in",out:"breathe out",hold:"hold your breath",empty:"keep breathing out"};
-function wordFor(st){ if(st.stage==="rest") return "REST"; if(S.mode==="lift" && st.stage==="set") return MOVES[st.k]; return WORDS[st.k]; }
+function wordFor(st){ if(st.stage==="rest") return "REST"; if(S.mode==="lift" && st.stage==="set") return st.mv||MOVES[st.k]; return WORDS[st.k]; }
 function subFor(st){ if(st.k==="getset") return "breathe in"; if(st.stage==="rest") return st.k==="in"?"in":"out"; if(S.mode==="lift") return SUBS[st.k]||""; return ""; }
 
 /* fitted ONCE for the widest word that can ever appear; never per word */
@@ -837,6 +949,7 @@ function render(now){
   var meta;
   if(isRest) meta="REST · SET "+st.set+"/"+S.sets;
   else if(S.mode==="breathe"){ meta = isSet ? ("CYCLE "+st.rep+"/"+S.reps + (S.tapOn ? (st.k==="hold" ? " · PRESS" : " · TAP") : "")) : ""; }
+  else if(S.timed && isSet){ var tl=rem,q; for(q=S.idx+1;q<S.steps.length&&S.steps[q].stage==="set"&&S.steps[q].set===st.set;q++) tl+=S.steps[q].dur; meta="SET "+st.set+"/"+S.sets+" · "+fmtClock(tl); }   /* for time: what is left of the hold */
   else meta="SET "+st.set+"/"+S.sets+(isSet?" · REP "+st.rep+"/"+S.reps:"");
   lastMeta=txt(elMeta, meta, lastMeta);
   setFoot(isRest?"skip": (isSet && S.mode==="lift") ? "save" : null);
@@ -863,6 +976,7 @@ function tick(){
   if(elRun.classList.contains("on")) render(now); else idleRender(t);
   if(MASK.dirty){ buildMask(elRun.classList.contains("on") ? elWordI : (document.getElementById("s-home").classList.contains("on") ? elMark : null)); }
   var c0=performance.now();
+  if(ENG.inst.isLost && ENG.inst.isLost()){ pickEngine("slipstream"); ENG.reason="lines: GPU context lost"; }
   ENG.inst.frame(dt, frameState, t);
   budget(performance.now()-c0, wall*1000, t);
   frameNo++;
@@ -876,19 +990,17 @@ var SOUND_SUB={tone:"Two notes. A high one opens as you breathe in, a low one cl
 var LABEL={"in":"lower",out:"lift",hold:"hold",empty:"hold"};
 function refresh(){
   var L=DB.cfg.lift, P=DB.cfg.breathe, i;
-  document.getElementById("v-reps").textContent=L.reps[L.preset]; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-cycles").textContent=P.cycles;
-  function bar(seq, names){ var h="", j; for(j=0;j<seq.length;j++) h+='<b style="flex:'+seq[j][1]+' 1 0"><i>'+names[seq[j][0]]+'</i><u>'+fmtN(seq[j][1])+'</u></b>'; return h; }
-  document.getElementById("bar-drive").innerHTML=bar(L.tune.drive.seq, LABEL); document.getElementById("bar-squeeze").innerHTML=bar(L.tune.squeeze.seq, LABEL);
-  document.getElementById("rest-drive").textContent="rest "+fmtClock(L.tune.drive.rest); document.getElementById("rest-squeeze").textContent="rest "+fmtClock(L.tune.squeeze.rest);
-  var doors=document.querySelectorAll(".door[data-preset]"); for(i=0;i<doors.length;i++) doors[i].classList.toggle("sel", doors[i].getAttribute("data-preset")===L.preset);
+  var T=L.tune[L.preset];
+  document.getElementById("row-reps").firstElementChild.textContent = T.timed ? "Time" : "Reps";
+  document.getElementById("v-reps").textContent = T.timed ? fmtClock(L.secs[L.preset]) : L.reps[L.preset]; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-cycles").textContent=P.cycles;
+  function bar(seq, names){ var h="", j; for(j=0;j<seq.length;j++) h+='<b style="flex:'+seq[j][1]+' 1 0"><i>'+(seq[j][2]?seq[j][2].toLowerCase():names[seq[j][0]])+'</i><u>'+fmtN(seq[j][1])+'</u></b>'; return h; }
+  /* the doors: one per rep shape, each carrying its tempo as a bar, the movement words above the seconds */
+  var dh=""; for(var pn in L.tune){ var Tq=L.tune[pn]; dh+='<button class="door'+(pn===L.preset?' sel':'')+'" data-preset="'+pn+'"><span class="dt">'+Tq.name+'</span><span class="bar">'+bar(Tq.seq, LABEL)+'</span><span class="dr">rest '+fmtClock(Tq.rest)+(Tq.timed?' · for time':'')+'</span><span class="dl">'+Tq.note+'</span></button>'; }
+  document.getElementById("doors").innerHTML=dh;
   var belly=P.belly!=="off", tap=P.tap==="on", sound=DB.cfg.sound;
   document.getElementById("bar-478").innerHTML=bar([["in",4],["hold",7],["out",8]], {"in":"in",hold:"hold",out:"out"}); document.getElementById("bar-coh").innerHTML=bar([["in",5.5],["out",5.5]], {"in":"in",out:"out"});
   document.getElementById("v-time").textContent=fmtClock(P.cycles*(P.pat==="coh"?11:19));
   document.getElementById("sound-sub").textContent = SOUND_SUB[sound];
-  /* the look: one chip per palette, each carrying its own ground and air as a swatch */
-  var lk=document.getElementById("seg-look"); if(!lk.children.length){ var h=""; for(var pn in PALETTES){ var pp=PALETTES[pn], g=hsl(pp.full[0],pp.full[1],pp.full[2]), ac=hsl(pp.air[0],pp.air[1],pp.air[2]); h+='<button data-pal="'+pn+'"><i style="background:linear-gradient(90deg,'+css(g)+' 55%,'+css(ac)+' 55%)"></i>'+pp.name+'</button>'; } lk.innerHTML=h; }
-  var lb=lk.querySelectorAll("button"); for(i=0;i<lb.length;i++) lb[i].classList.toggle("sel", lb[i].getAttribute("data-pal")===DB.cfg.pal);
-  document.getElementById("look-sub").textContent = PAL.note;
   var seg=document.querySelectorAll("#seg-with button"); for(i=0;i<seg.length;i++){ var wk=seg[i].getAttribute("data-w"); seg[i].classList.toggle("sel", wk==="belly"?belly:tap); }
   var parts=[]; if(belly) parts.push("Belly: phone on your belly, it reads your breath."); if(tap) parts.push("Tap: tap the count, hold to hold.");
   document.getElementById("with-sub").textContent = parts.length ? parts.join(" ") : "Nothing extra.";
@@ -901,25 +1013,23 @@ function refresh(){
 var LIM={reps:[1,60,1],sets:[1,20,1],cycles:[1,40,1]};
 function bump(key,delta){
   var lim=LIM[key], v;
-  if(key==="reps"){ var L=DB.cfg.lift; v=Math.max(lim[0],Math.min(lim[1],(+L.reps[L.preset])+delta)); L.reps[L.preset]=v; }
+  if(key==="reps"){ var L=DB.cfg.lift; if(L.tune[L.preset].timed){ v=Math.max(15,Math.min(600,(+L.secs[L.preset])+delta*15)); L.secs[L.preset]=v; } else { v=Math.max(lim[0],Math.min(lim[1],(+L.reps[L.preset])+delta)); L.reps[L.preset]=v; } }
   else { var tgt=key==="cycles"?DB.cfg.breathe:DB.cfg.lift; v=Math.max(lim[0],Math.min(lim[1],(+tgt[key])+delta)); tgt[key]=v; }
   save(); refresh();
 }
-function setPalette(name){ if(!PALETTES[name]) return; DB.cfg.pal=name; PAL=PALETTES[name]; applyPalette(); save(); refresh(); MASK.dirty=true; }
 function show(id){
   var ids=["home","setup","run"]; for(var i=0;i<ids.length;i++) document.getElementById("s-"+ids[i]).classList.toggle("on", ids[i]===id);
   if(id==="setup") refresh();
   MASK.dirty=true;
 }
 document.addEventListener("click", function(ev){
-  var t=ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-preset],[data-pat],[data-sound],[data-w],[data-pal]") : null; if(!t||t.disabled) return; var v;
+  var t=ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-preset],[data-pat],[data-sound],[data-w]") : null; if(!t||t.disabled) return; var v;
   if((v=t.getAttribute("data-go"))){ if(S.running) return; if(v==="lift"||v==="breathe"){ setupMode=v; show("setup"); } else show(v); return; }
   if((v=t.getAttribute("data-s"))){ var p=v.split(":"); bump(p[0],parseFloat(p[1])); return; }
   if((v=t.getAttribute("data-preset"))){ DB.cfg.lift.preset=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-pat"))){ DB.cfg.breathe.pat=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-w"))){ var B=DB.cfg.breathe; B[v] = (v==="belly" ? B[v]!=="off" : B[v]==="on") ? "off" : "on"; save(); refresh(); return; }
   if((v=t.getAttribute("data-sound"))){ DB.cfg.sound=v; save(); refresh(); return; }
-  if((v=t.getAttribute("data-pal"))){ setPalette(v); return; }
 });
 document.getElementById("b-start").addEventListener("click", function(){
   initAudio(); if(A){ try{ A.ctx.resume(); }catch(e){} try{ var p=audioEl.play(); if(p&&p.catch) p.catch(function(){}); }catch(e){} }
@@ -948,17 +1058,17 @@ try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function
 
 /* debug handle for the probe harness; harmless in production */
 window.WIND = {
-  state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst.info(), pal:DB.cfg.pal}; },
+  state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst.info()}; },
   start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp,
   steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; },
   tone:function(){ if(!scheme||!scheme.hi) return null; return {dir:scheme.dir, hi:+scheme.hi.g.gain.value.toFixed(4), lo:+scheme.lo.g.gain.value.toFixed(4), hifc:Math.round(scheme.hi.lp.frequency.value), lofc:Math.round(scheme.lo.lp.frequency.value)}; },
   words:function(){ return {word:elWordI.textContent, sub:elSub.textContent, num:elNum.textContent, meta:elMeta.textContent, rail:elTl.children.length}; },
-  palette:setPalette, palettes:function(){ return Object.keys(PALETTES); }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ if(k==="sound") DB.cfg.sound=v; else DB.cfg.breathe[k]=v; },
+  engine:pickEngine, stats:function(){ return ENG.inst.stats?ENG.inst.stats():null; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ if(k==="sound") DB.cfg.sound=v; else DB.cfg.breathe[k]=v; },
   grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
 };
 /* ---- boot ---- */
 fitWordOnce(); fitMark();
-pickEngine();
+pickEngine(Q.eng);
 show("home");
 if(Q.auto){ setupMode = Q.auto==="breathe"?"breathe":"lift"; setTimeout(function(){ startSession(setupMode); }, 300); }
 raf=requestAnimationFrame(tick);

@@ -49,9 +49,15 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .eyebrow{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--mute);font-weight:600}
 
 /* ---------- home ---------- */
-.mark{display:grid;justify-items:center;gap:6px;padding-top:min(9vh,70px)}
-.mark .s{font-size:12px;letter-spacing:.5em;color:var(--mute);font-weight:600;padding-left:.5em}
-.mark .w{font-weight:700;font-size:min(17vw,100px);line-height:.95;letter-spacing:.02em;-webkit-text-stroke:0 currentColor}
+.mark{display:grid;justify-items:center;gap:2px;padding-top:min(9vh,70px)}
+.mark .s{display:flex;align-items:center;gap:14px;font-size:13px;letter-spacing:.6em;color:var(--mute);font-weight:600;padding-left:.6em;width:min(78vw,420px);justify-content:center}
+.mark .s::before,.mark .s::after{content:"";flex:1 1 0;height:1px;background:linear-gradient(90deg,transparent,var(--line2,var(--mute)));opacity:.8}
+.mark .s::after{background:linear-gradient(90deg,var(--line2,var(--mute)),transparent)}
+/* BENDER: condensed and heavy, outlined so the wind shows through the letters, the fill breathing with the idle wind; the letters sway on it */
+.mark .w{font-family:"Avenir Next Condensed","AvenirNextCondensed-Heavy","Barlow Condensed","Roboto Condensed","Arial Narrow",-apple-system,system-ui,sans-serif;font-weight:900;
+  font-size:min(27vw,170px);line-height:.9;letter-spacing:.01em;display:flex;-webkit-text-stroke:1.5px var(--fg);color:var(--fg);text-shadow:0 0 30px var(--bg)}
+.mark .w b{display:block;font-weight:inherit;will-change:transform}
+.mark .u{font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--mute);font-weight:600;padding-left:.42em;margin-top:10px}
 .modes{display:grid;gap:12px;margin-bottom:min(6vh,52px)}
 .mode{display:flex;justify-content:space-between;align-items:baseline;padding:22px 22px;border-radius:20px;
   background:var(--ui);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
@@ -112,7 +118,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 #endbtn{position:absolute;right:calc(env(safe-area-inset-right) + 12px);top:0;height:44px;padding:0 10px;
   font-size:12px;letter-spacing:.24em;color:var(--mute);font-weight:700;text-transform:uppercase}
 .word{height:calc(var(--wordSize) * 1.25);display:flex;align-items:center;justify-content:center;
-  font-size:var(--wordSize);font-weight:700;line-height:1;letter-spacing:.06em;white-space:nowrap;-webkit-text-stroke:0 currentColor;
+  font-family:"Avenir Next Condensed","AvenirNextCondensed-Heavy","Barlow Condensed","Roboto Condensed","Arial Narrow",-apple-system,system-ui,sans-serif;font-size:var(--wordSize);font-weight:900;line-height:1;letter-spacing:.06em;white-space:nowrap;-webkit-text-stroke:0 currentColor;
   text-shadow:0 0 28px var(--bg),0 2px 8px var(--bg)}
 /* the breath under the movement: what the air is doing while the body does the word */
 .bsub{height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;letter-spacing:.26em;text-transform:uppercase;
@@ -140,7 +146,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 
 <!-- HOME -->
 <section id="s-home" class="screen on">
-  <div class="mark"><div class="s">WIND</div><div class="w" id="mark">BENDER</div></div>
+  <div class="mark"><div class="s">WIND</div><div class="w" id="mark"><b>B</b><b>E</b><b>N</b><b>D</b><b>E</b><b>R</b></div><div class="u">breathe like you lift</div></div>
   <div class="spacer"></div>
   <div class="modes">
     <button class="mode" data-go="lift"><span class="t">LIFT</span><span class="d">sets · reps · rest</span></button>
@@ -345,16 +351,16 @@ function schemePhase(kind, at, dur){
     var top=(s.kind==="bells"?0.07:0.22)*k, hi=s.hi, lo=s.lo;
     if(kind==="in"){ s.dir="up"; hi.to(at, g, top, 1700); lo.to(at, Math.min(1.0,g), 0.0001, 220); if(s.kind==="bells") bell(587.33, at, 0.16*k, A.wetIn); }        /* the high note opens through the in; a high bell at the turn */
     else if(kind==="out"){ s.dir="down"; lo.to(at, Math.min(0.5,g*0.2), top, 1200, easeOut); lo.to(at+Math.min(0.5,g*0.2), g-Math.min(0.5,g*0.2), top*0.12, 220); hi.to(at, Math.min(0.9,g), 0.0001, 320); if(s.kind==="bells") bell(293.66, at, 0.16*k, A.wetIn); }   /* the low note is full at the turn and closes as the air leaves; a low bell */
-    else if(kind==="hold"){ s.dir=""; if(hi.lvl>lo.lvl) hi.to(at, Math.min(1.2,g), top*0.45, 1200, easeOut); else lo.to(at, Math.min(1.2,g), top*0.45, 800, easeOut); }   /* held: the last note stays, a little softer */
-    else if(kind==="empty"){ s.dir=""; lo.to(at, Math.min(0.8,g), top*0.10, 220, easeOut); hi.to(at, 0.5, 0.0001, 320, easeOut); }   /* still breathing out: the low note at its darkest */
+    else if(kind==="hold"){ s.dir=""; if(hi.lvl>lo.lvl) hi.to(at, Math.min(1.0,g), top*0.62, hi.fc, easeOut); else lo.to(at, Math.min(1.0,g), top*0.62, lo.fc, easeOut); }   /* breath held: the last note stays where it is, steady and clearly there; it neither opens nor closes, which is what held sounds like */
+    else if(kind==="empty"){ s.dir=""; lo.to(at, g, top*0.12, 220); hi.to(at, 0.5, 0.0001, 320, easeOut); }   /* still breathing out on its own (not after an out): the low note goes on closing */
     else { s.dir=""; hi.to(at, 0.6, 0.0001, 320, easeOut); lo.to(at, 0.6, 0.0001, 220, easeOut); }
   }
   if(s.kind==="breath"){
     var bt=1.05*k;
     if(kind==="in"){ env(s.g.gain,0.0001,bt,at,g*0.6,easeIO); env(s.g.gain,bt,bt*0.35,at+g*0.6,g*0.35,easeIO); env(s.bp.frequency,520,1400,at,g,easeIO); env(s.lp.frequency,1800,2600,at,g,easeIO); }
-    else if(kind==="hold"){ env(s.g.gain,s.g.gain.value,0.0001,at,0.3,easeOut); }
-    else if(kind==="empty"){ env(s.g.gain,s.g.gain.value,0.16*bt,at,0.2,easeOut); env(s.g.gain,0.16*bt,0.0001,at+g*0.5,g*0.5,easeIn); env(s.bp.frequency,s.bp.frequency.value,300,at,g,easeOut); }
-    else if(kind==="out"){ env(s.g.gain,0.0001,0.9*k,at,g*0.14,easeOut); env(s.g.gain,0.9*k,0.0002,at+g*0.14,g*0.76,easeIO); env(s.bp.frequency,1200,380,at,g,easeIO); env(s.lp.frequency,2300,1100,at,g,easeIO); }
+    else if(kind==="hold"){ env(s.g.gain,s.g.gain.value,0.14*bt,at,0.5,easeOut); env(s.bp.frequency,s.bp.frequency.value,700,at,0.5,easeOut); }   /* breath held: a quiet steady air, never silence */
+    else if(kind==="empty"){ env(s.g.gain,s.g.gain.value,0.10*bt,at,g,easeOut); env(s.bp.frequency,s.bp.frequency.value,300,at,g,easeOut); }   /* still breathing out on its own: the last of the air, audible to the end */
+    else if(kind==="out"){ env(s.g.gain,0.0001,0.9*k,at,g*0.14,easeOut); env(s.g.gain,0.9*k,0.08*k,at+g*0.14,g*0.84,easeIO); env(s.bp.frequency,1200,380,at,g,easeIO); env(s.lp.frequency,2300,1100,at,g,easeIO); }
     else { env(s.g.gain,s.g.gain.value,0.0001,at,0.25,easeOut); }
   }
 }
@@ -372,12 +378,13 @@ function audioStart(mode, sound){
   try{ if(navigator.audioSession) navigator.audioSession.type = "playback"; }catch(e){}
   if(A.ctx.state!=="running"){ try{ A.ctx.resume(); }catch(e){} }
   try{ var _p=audioEl.play(); if(_p&&_p.catch) _p.catch(function(){}); }catch(e){}
-  teardownScheme(); scheme = makeScheme(sound, mode==="breathe");
+  clearTimeout(teardownTimer); teardownScheme(); scheme = makeScheme(sound, mode==="breathe");   /* a session started within a second of the last one must not be torn down by its timer */
   env(A.master.gain, 0.0001, mode==="breathe"?0.62:0.92, A.ctx.currentTime+0.02, 1.0, easeOut);
   try{ if(navigator.mediaSession) navigator.mediaSession.playbackState="playing"; }catch(e){}
 }
 function teardownScheme(){ mirrorVoice=null; if(!A) return; for(var i=0;i<A.nodes.length;i++){ try{A.nodes[i].stop();}catch(e){} try{A.nodes[i].disconnect();}catch(e){} } A.nodes=[]; scheme=null; }
-function audioStop(){ if(!A) return; env(A.master.gain, A.master.gain.value, 0.0001, A.ctx.currentTime, 1.2, easeIn); setTimeout(teardownScheme, 1500); try{ if(navigator.mediaSession) navigator.mediaSession.playbackState="paused"; }catch(e){} }
+var teardownTimer=0;
+function audioStop(){ if(!A) return; env(A.master.gain, A.master.gain.value, 0.0001, A.ctx.currentTime, 1.2, easeIn); clearTimeout(teardownTimer); teardownTimer=setTimeout(teardownScheme, 1500); try{ if(navigator.mediaSession) navigator.mediaSession.playbackState="paused"; }catch(e){} }
 /* the loudness of the sound the app is making right now, 0..1 */
 var ampSm = 0;
 function audioAmp(){
@@ -415,7 +422,7 @@ function applyPalette(){
   var r=document.documentElement.style, t=PAL.text, bg=css(hsl(PAL.bg[0],PAL.bg[1],PAL.bg[2]));
   function rgba(hex,a){ var n=parseInt(hex.slice(1),16); return "rgba("+(n>>16)+","+((n>>8)&255)+","+(n&255)+","+a+")"; }
   r.setProperty("--fg", t); r.setProperty("--mute", rgba(t, PAL.light?0.6:0.55)); r.setProperty("--line", rgba(t, PAL.light?0.22:0.16));
-  r.setProperty("--sel", rgba(t, PAL.light?0.10:0.14)); r.setProperty("--bg", bg);
+  r.setProperty("--sel", rgba(t, PAL.light?0.10:0.14)); r.setProperty("--bg", bg); r.setProperty("--line2", rgba(t, 0.5));
   var b=hsl(PAL.bg[0],PAL.bg[1],PAL.bg[2]); r.setProperty("--ui", "rgba("+Math.round(b[0]*255)+","+Math.round(b[1]*255)+","+Math.round(b[2]*255)+","+(PAL.light?0.5:0.55)+")");
   try{ document.getElementById("themecolor").setAttribute("content", bg); }catch(e){}
 }
@@ -476,7 +483,8 @@ function Slipstream(cv){
     L=[]; for(var i=0;i<n;i++) L.push(newLine()); MO=[]; for(i=0;i<40;i++) MO.push({x:Math.random()*W, y:Math.random()*H, s:.6+Math.random()*1.2, k:Math.random()*6.3});
   }
   function newLine(){ var n=9+Math.floor(Math.random()*12), x=Math.random()*W, y=Math.random()*H, pts=[], i; for(i=0;i<n;i++) pts.push([x,y]);
-    return {p:pts, vx:0, vy:0, w:.7+Math.random()*1.4, s:.75+Math.random()*.5, seg:4+Math.random()*3.5, k:Math.random(), born:0}; }
+    var rib=Math.random()<0.12;   /* one line in eight is a ribbon: wider, longer, slower, the visible body of the wind */
+    return {p:pts, vx:0, vy:0, w:rib?2.2+Math.random()*1.4:.7+Math.random()*1.2, s:rib?.6:.75+Math.random()*.5, seg:rib?6+Math.random()*3:4+Math.random()*3.5, k:Math.random(), born:0, rib:rib}; }
   function place(l, x, y){ for(var i=0;i<l.p.length;i++){ l.p[i][0]=x; l.p[i][1]=y; } l.vx=0; l.vy=0; }
   function respawn(l, st, cx, cy, R, t){
     var a=Math.random()*6.283;
@@ -488,14 +496,15 @@ function Slipstream(cv){
   function smooth(a,b,x){ var q=Math.max(0,Math.min(1,(x-a)/(b-a))); return q*q*(3-2*q); }
   function frame(dt, st, t){
     ctx.setTransform(D,0,0,D,0,0);
-    ctx.fillStyle=css(st.ground); ctx.fillRect(0,0,W,H);
+    /* the ground is laid down at half strength, so the last frame's lines linger a moment under it: the air leaves trails */
+    var gc=st.ground; ctx.fillStyle="rgba("+Math.round(gc[0]*255)+","+Math.round(gc[1]*255)+","+Math.round(gc[2]*255)+","+(st.still?0.42:0.55)+")"; ctx.fillRect(0,0,W,H);
     var cx=W/2, cy=H*0.47, R=Math.max(W,H)*0.5, i, k, l;
     warmSm += ((st.flow<-0.05?Math.min(1,-st.flow):0) - warmSm)*Math.min(1, dt*2.2);     /* the air warms through the out, cools through the in */
     fillSm += (st.fill-fillSm)*Math.min(1, dt*4);
     var air=airColour(warmSm), rim=rimColour(), light=PAL.light;
     /* the rim: the edge of the screen lights with the lungs and pulses in a hold */
     if(st.rim>0.005){ var rg=ctx.createRadialGradient(cx,cy,Math.min(W,H)*0.32,cx,cy,Math.max(W,H)*0.64);
-      rg.addColorStop(0,"rgba("+(rim[0]*255|0)+","+(rim[1]*255|0)+","+(rim[2]*255|0)+",0)"); rg.addColorStop(1,"rgba("+(rim[0]*255|0)+","+(rim[1]*255|0)+","+(rim[2]*255|0)+","+Math.min(1,st.rim*st.dim*(light?0.9:1.3)).toFixed(3)+")");
+      rg.addColorStop(0,"rgba("+(rim[0]*255|0)+","+(rim[1]*255|0)+","+(rim[2]*255|0)+",0)"); rg.addColorStop(1,"rgba("+(rim[0]*255|0)+","+(rim[1]*255|0)+","+(rim[2]*255|0)+","+Math.min(1,st.rim*st.dim*(light?0.5:0.7)).toFixed(3)+")");
       ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); }
     /* motes: the far air, carried slowly by the same breath, dim */
     var mg=(20+30*st.amp)*st.flow;
@@ -506,7 +515,7 @@ function Slipstream(cv){
       if(st.flow>0.2 && mr<8){ m.x=Math.random()*W; m.y=Math.random()*H; }
       ctx.beginPath(); ctx.arc(m.x,m.y,0.6+m.s*0.5,0,6.283); ctx.fill(); }
     /* the lines */
-    var gain=(150+230*st.amp)*st.flow;                 /* the audible gust is the visible gust, with a floor */
+    var gain=(150+230*st.amp)*st.flow*(1+0.9*st.gust);   /* the audible gust is the visible gust, with a floor; the turn of a breath is a rush */
     var turb=st.turb, kn=0.0042, e=6, tz=t*0.22, cs=(14+60*turb)*34, pokeR=Math.min(W,H)*0.22;
     var baseA = light ? 0.26+0.30*fillSm : 0.22+0.55*fillSm;
     ctx.lineCap="round"; ctx.lineJoin="round";
@@ -536,6 +545,8 @@ function Slipstream(cv){
       ctx.strokeStyle="rgba("+(air[0]*255|0)+","+(air[1]*255|0)+","+(air[2]*255|0)+","+al.toFixed(3)+")";
       ctx.lineWidth=l.w*(0.8+0.5*fillSm);
       ctx.beginPath(); ctx.moveTo(h[0],h[1]); for(k=1;k<l.p.length;k++) ctx.lineTo(l.p[k][0],l.p[k][1]); ctx.stroke();
+      /* the head is brighter: a bead of light the line trails from, the way a gust reads on water */
+      if(sp>30){ ctx.fillStyle="rgba("+(light?42:255)+","+(light?49:255)+","+(light?64:255)+","+(al*0.55*Math.min(1,sp/220)).toFixed(3)+")"; ctx.beginPath(); ctx.arc(h[0],h[1],l.w*0.9,0,6.283); ctx.fill(); }
     }
   }
   function halve(){ if(budgetN>0.4){ budgetN*=0.6; resize(); return true; } return false; }
@@ -704,7 +715,10 @@ function reanchor(hard){
 function startTimeOf(j){ var t=S.stepStart,k; for(k=S.idx;k<j;k++) t+=S.steps[k].dur; return t; }
 function scheduleAhead(now){
   if(!A||A.ctx.state!=="running") return; var guard=0;
-  while(S.schedIdx<S.steps.length-1&&guard++<6){ var j=S.schedIdx+1, t=startTimeOf(j); if(t>now+LEAD) break; var stp=S.steps[j]; if(stp.k!=="done") schemePhase(stp.k, toCtx(Math.max(t,now+0.004)), stp.dur); S.schedIdx=j; }
+  while(S.schedIdx<S.steps.length-1&&guard++<6){ var j=S.schedIdx+1, t=startTimeOf(j); if(t>now+LEAD) break; var stp=S.steps[j], nxt=S.steps[j+1];
+    /* an out followed by a hold that keeps breathing out is one exhale to the ear: one note, closing across both, never a second phase */
+    if(stp.k==="out" && nxt && nxt.k==="empty" && nxt.stage===stp.stage){ schemePhase("out", toCtx(Math.max(t,now+0.004)), stp.dur+nxt.dur); S.schedIdx=j+1; continue; }
+    if(stp.k!=="done") schemePhase(stp.k, toCtx(Math.max(t,now+0.004)), stp.dur); S.schedIdx=j; }
 }
 
 /* ============================ ENGINE MANAGER ============================
@@ -737,13 +751,15 @@ function wordFor(st){ if(st.stage==="rest") return "REST"; if(S.mode==="lift" &&
 function subFor(st){ if(st.k==="getset") return "breathe in"; if(st.stage==="rest") return st.k==="in"?"in":"out"; if(S.mode==="lift") return SUBS[st.k]||""; return ""; }
 
 /* fitted ONCE for the widest word that can ever appear; never per word */
-var meas=document.createElement("span"); meas.style.cssText="position:fixed;left:-9999px;top:0;visibility:hidden;white-space:nowrap;font-weight:800;letter-spacing:.04em;line-height:1;pointer-events:none"; document.body.appendChild(meas);
+var meas=document.createElement("span"); meas.style.cssText="position:fixed;left:-9999px;top:0;visibility:hidden;white-space:nowrap;font-weight:900;letter-spacing:.04em;line-height:1;pointer-events:none"; meas.className="word"; meas.style.height="auto"; document.body.appendChild(meas);
 function fitWordOnce(){
-  var words=["LOWER","READY","HOLD","LIFT","REST","DONE","OUT"], size=Math.min(window.innerWidth*0.26, window.innerHeight*0.15), avail=window.innerWidth*0.82;
+  var words=["LOWER","READY","HOLD","LIFT","REST","DONE","OUT"], size=Math.min(window.innerWidth*0.30, window.innerHeight*0.16), avail=window.innerWidth*0.84;
   meas.style.fontSize=size+"px"; var maxW=0; for(var i=0;i<words.length;i++){ meas.textContent=words[i]; maxW=Math.max(maxW, meas.offsetWidth); }
   if(maxW>avail) size=size*avail/maxW;
   document.documentElement.style.setProperty("--wordSize", Math.floor(size)+"px");
 }
+/* the mark is fitted once too: BENDER at 88% of the width whatever face the phone has */
+function fitMark(){ elMark.style.fontSize=""; var w=elMark.getBoundingClientRect().width, avail=window.innerWidth*0.88; if(w>avail && w>0){ elMark.style.fontSize=(parseFloat(getComputedStyle(elMark).fontSize)*avail/w).toFixed(1)+"px"; } }
 function txt(el,v,cache){ if(cache!==v) el.textContent=v; return v; }
 /* BREATHING WEIGHT: the letters thicken and close as the lungs fill, thin and open as they empty. */
 var lastWt={};
@@ -751,6 +767,13 @@ function breathe(el, fill, id){
   var w=Math.round(fill*24)/24; if(lastWt[id]===w) return; lastWt[id]=w;
   el.style.webkitTextStroke=(w*0.028).toFixed(4)+"em currentColor"; el.style.letterSpacing=(0.06-0.045*w).toFixed(4)+"em";
 }
+/* the wordmark on the wind: each letter lifts and tilts a little on its own gust, and the fill breathes with the idle breath */
+var markLetters=elMark.children, markFill=-1;
+function swayMark(t, fill){
+  for(var i=0;i<markLetters.length;i++){ var y=Math.sin(t*0.9+i*0.8)*3.5, r=Math.sin(t*0.7+i*1.1)*1.6; markLetters[i].style.transform="translateY("+y.toFixed(1)+"px) rotate("+r.toFixed(2)+"deg)"; }
+  var f=Math.round(fill*20)/20; if(f!==markFill){ markFill=f; var c=PAL.light?"rgba(42,49,64,":"rgba(230,235,241,"; elMark.style.color=(PAL.text.length===7?hexA(PAL.text,0.25+0.75*f):c+(0.25+0.75*f)+")"); }
+}
+function hexA(hex,a){ var n=parseInt(hex.slice(1),16); return "rgba("+(n>>16)+","+((n>>8)&255)+","+(n&255)+","+a.toFixed(3)+")"; }
 function fmtClock(s){ s=Math.max(0,Math.ceil(s)); var m=Math.floor(s/60), r=s%60; return m+":"+(r<10?"0":"")+r; }
 function setFoot(which){ if(which===lastFoot) return; bSkip.classList.toggle("show",which==="skip"); bSave.classList.toggle("show",which==="save"); bBack.classList.toggle("show",which==="back"); lastFoot=which; }
 /* the rail: one segment per phase of the cycle the current step belongs to, in proportion */
@@ -771,7 +794,7 @@ function setRail(frac){
 }
 function paintDone(){ lastWord=txt(elWordI,"DONE",lastWord); lastSub=txt(elSub,"",lastSub); lastNum=txt(elNum,"",lastNum); lastMeta=txt(elMeta,"",lastMeta); setFoot("back"); elTl.innerHTML=""; tlKey="done"; elEnd.classList.add("hid"); MASK.dirty=true; }
 
-var frameState = {phase:"idle", fill:0, prog:0, flow:0, amp:0, temp:0, turb:0, ground:[0,0,0], idle:true, still:false, stage:"", dim:1,
+var frameState = {phase:"idle", fill:0, prog:0, flow:0, amp:0, temp:0, turb:0, ground:[0,0,0], idle:true, still:false, stage:"", dim:1, gust:0,
                   tapX:0, tapY:0, tapK:0, pinX:0, pinY:0, pinK:0, rim:0, pulse:0};
 function touchState(now, fs){
   var pa=now-S.poke.t; fs.tapK = (pa>=0 && pa<0.9) ? S.poke.k*Math.exp(-pa/0.2) : 0; fs.tapX=S.poke.x; fs.tapY=S.poke.y;
@@ -801,8 +824,9 @@ function render(now){
   fs.still = st.k==="hold" || st.k==="empty";
   fs.pulse=0; if(fs.still && into>=1){ var hb=into-Math.floor(into); fs.pulse=Math.exp(-hb/0.12); }
   fs.rim = 0.09*fs.fill + 0.16*fs.pulse + (fs.still?0.04:0);
+  fs.gust = (st.k==="in"||st.k==="out") ? Math.exp(-into/0.3) : 0;   /* the first third of a second of a breath is a rush */
   fs.ground=ground(Math.min(1.2, fs.fill + 0.14*beat + 0.18*fs.tapK + 0.05*fs.pulse), fs.temp, fs.dim);
-  if(st.k==="done"){ if(lastWord!=="DONE") paintDone(); return; }
+  if(st.k==="done"){ if(lastWord!=="DONE") paintDone(); fs.flow=-0.9*Math.exp(-into/2.5); fs.gust=Math.exp(-into/0.6); fs.fill=0.6*Math.exp(-into/3); return; }   /* done: the air blooms out once, slowly, and settles */
   elEnd.classList.remove("hid");
   var isRest=st.stage==="rest", isSet=st.stage==="set";
   lastWord=txt(elWordI, wordFor(st), lastWord); breathe(elWord, fs.fill, "w");
@@ -819,7 +843,7 @@ function render(now){
 }
 function idleRender(t){
   var fs=frameState; fs.idle=true; fs.phase="idle"; fs.stage=""; fs.flow=0; fs.amp=0.2; fs.turb=Math.max(0, fs.turb-0.01);
-  fs.fill = 0.28 + 0.12*Math.sin(t*0.35); fs.temp=0.1; breathe(elMark, 0.5+0.5*Math.sin(t*0.35), "m"); fs.dim=1; fs.ground=ground(fs.fill, fs.temp, 1); fs.tapK=0; fs.pinK=0; fs.rim=0.05; fs.pulse=0; fs.still=false;
+  fs.fill = 0.28 + 0.12*Math.sin(t*0.35); fs.temp=0.1; swayMark(t, 0.5+0.5*Math.sin(t*0.35)); fs.dim=1; fs.gust=0; fs.ground=ground(fs.fill, fs.temp, 1); fs.tapK=0; fs.pinK=0; fs.rim=0.05; fs.pulse=0; fs.still=false;
 }
 
 /* ============================ LOOP ============================ */
@@ -919,8 +943,8 @@ window.addEventListener("pointerup", tapUp);
 window.addEventListener("pointercancel", tapUp);
 document.addEventListener("gesturestart", function(e){ e.preventDefault(); });
 document.addEventListener("dblclick", function(e){ e.preventDefault(); });
-window.addEventListener("resize", function(){ fitWordOnce(); ENG.inst.resize(); MASK.dirty=true; });
-try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ fitWordOnce(); MASK.dirty=true; }); }catch(e){}
+window.addEventListener("resize", function(){ fitWordOnce(); fitMark(); ENG.inst.resize(); MASK.dirty=true; });
+try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ fitWordOnce(); fitMark(); MASK.dirty=true; }); }catch(e){}
 
 /* debug handle for the probe harness; harmless in production */
 window.WIND = {
@@ -933,7 +957,7 @@ window.WIND = {
   grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
 };
 /* ---- boot ---- */
-fitWordOnce();
+fitWordOnce(); fitMark();
 pickEngine();
 show("home");
 if(Q.auto){ setupMode = Q.auto==="breathe"?"breathe":"lift"; setTimeout(function(){ startSession(setupMode); }, 300); }

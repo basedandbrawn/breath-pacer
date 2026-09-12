@@ -286,7 +286,8 @@ function Slipstream(cv){
     L=[]; for(var i=0;i<n;i++) L.push(newLine()); MO=[]; for(i=0;i<40;i++) MO.push({x:Math.random()*W, y:Math.random()*H, s:.6+Math.random()*1.2, k:Math.random()*6.3});
   }
   function newLine(){ var n=9+Math.floor(Math.random()*12), x=Math.random()*W, y=Math.random()*H, pts=[], i; for(i=0;i<n;i++) pts.push([x,y]);
-    return {p:pts, vx:0, vy:0, w:.7+Math.random()*1.4, s:.75+Math.random()*.5, seg:4+Math.random()*3.5, k:Math.random(), born:0}; }
+    var rib=Math.random()<0.12;   /* one line in eight is a ribbon: wider, longer, slower, the visible body of the wind */
+    return {p:pts, vx:0, vy:0, w:rib?2.2+Math.random()*1.4:.7+Math.random()*1.2, s:rib?.6:.75+Math.random()*.5, seg:rib?6+Math.random()*3:4+Math.random()*3.5, k:Math.random(), born:0, rib:rib}; }
   function place(l, x, y){ for(var i=0;i<l.p.length;i++){ l.p[i][0]=x; l.p[i][1]=y; } l.vx=0; l.vy=0; }
   function respawn(l, st, cx, cy, R, t){
     var a=Math.random()*6.283;
@@ -298,14 +299,15 @@ function Slipstream(cv){
   function smooth(a,b,x){ var q=Math.max(0,Math.min(1,(x-a)/(b-a))); return q*q*(3-2*q); }
   function frame(dt, st, t){
     ctx.setTransform(D,0,0,D,0,0);
-    ctx.fillStyle=css(st.ground); ctx.fillRect(0,0,W,H);
+    /* the ground is laid down at half strength, so the last frame's lines linger a moment under it: the air leaves trails */
+    var gc=st.ground; ctx.fillStyle="rgba("+Math.round(gc[0]*255)+","+Math.round(gc[1]*255)+","+Math.round(gc[2]*255)+","+(st.still?0.42:0.55)+")"; ctx.fillRect(0,0,W,H);
     var cx=W/2, cy=H*0.47, R=Math.max(W,H)*0.5, i, k, l;
     warmSm += ((st.flow<-0.05?Math.min(1,-st.flow):0) - warmSm)*Math.min(1, dt*2.2);     /* the air warms through the out, cools through the in */
     fillSm += (st.fill-fillSm)*Math.min(1, dt*4);
     var air=airColour(warmSm), rim=rimColour(), light=PAL.light;
     /* the rim: the edge of the screen lights with the lungs and pulses in a hold */
     if(st.rim>0.005){ var rg=ctx.createRadialGradient(cx,cy,Math.min(W,H)*0.32,cx,cy,Math.max(W,H)*0.64);
-      rg.addColorStop(0,"rgba("+(rim[0]*255|0)+","+(rim[1]*255|0)+","+(rim[2]*255|0)+",0)"); rg.addColorStop(1,"rgba("+(rim[0]*255|0)+","+(rim[1]*255|0)+","+(rim[2]*255|0)+","+Math.min(1,st.rim*st.dim*(light?0.9:1.3)).toFixed(3)+")");
+      rg.addColorStop(0,"rgba("+(rim[0]*255|0)+","+(rim[1]*255|0)+","+(rim[2]*255|0)+",0)"); rg.addColorStop(1,"rgba("+(rim[0]*255|0)+","+(rim[1]*255|0)+","+(rim[2]*255|0)+","+Math.min(1,st.rim*st.dim*(light?0.5:0.7)).toFixed(3)+")");
       ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); }
     /* motes: the far air, carried slowly by the same breath, dim */
     var mg=(20+30*st.amp)*st.flow;
@@ -316,7 +318,7 @@ function Slipstream(cv){
       if(st.flow>0.2 && mr<8){ m.x=Math.random()*W; m.y=Math.random()*H; }
       ctx.beginPath(); ctx.arc(m.x,m.y,0.6+m.s*0.5,0,6.283); ctx.fill(); }
     /* the lines */
-    var gain=(150+230*st.amp)*st.flow;                 /* the audible gust is the visible gust, with a floor */
+    var gain=(150+230*st.amp)*st.flow*(1+0.9*st.gust);   /* the audible gust is the visible gust, with a floor; the turn of a breath is a rush */
     var turb=st.turb, kn=0.0042, e=6, tz=t*0.22, cs=(14+60*turb)*34, pokeR=Math.min(W,H)*0.22;
     var baseA = light ? 0.26+0.30*fillSm : 0.22+0.55*fillSm;
     ctx.lineCap="round"; ctx.lineJoin="round";
@@ -346,6 +348,8 @@ function Slipstream(cv){
       ctx.strokeStyle="rgba("+(air[0]*255|0)+","+(air[1]*255|0)+","+(air[2]*255|0)+","+al.toFixed(3)+")";
       ctx.lineWidth=l.w*(0.8+0.5*fillSm);
       ctx.beginPath(); ctx.moveTo(h[0],h[1]); for(k=1;k<l.p.length;k++) ctx.lineTo(l.p[k][0],l.p[k][1]); ctx.stroke();
+      /* the head is brighter: a bead of light the line trails from, the way a gust reads on water */
+      if(sp>30){ ctx.fillStyle="rgba("+(light?42:255)+","+(light?49:255)+","+(light?64:255)+","+(al*0.55*Math.min(1,sp/220)).toFixed(3)+")"; ctx.beginPath(); ctx.arc(h[0],h[1],l.w*0.9,0,6.283); ctx.fill(); }
     }
   }
   function halve(){ if(budgetN>0.4){ budgetN*=0.6; resize(); return true; } return false; }
@@ -360,7 +364,7 @@ var PAL=PALETTES.slate;                       /* the engine reads PAL; each tile
 var MASK={data:null}; function maskAt(){ return 0; }   /* no word to part around in the tiles */
 var lookGrid=document.getElementById("look-grid"), LOOK=[];
 function fsFrom(pal){ var fs={idle:false, dim:1, temp:.3, turb:0, tapK:0, pinK:0, tapX:0, tapY:0, pinX:0, pinY:0};
-  fs.fill=B.fill; fs.flow=B.flow*(0.5+0.5); fs.amp=Math.min(1,Math.abs(B.flow))*0.85; fs.still=B.still; fs.pulse=B.pulse||0; fs.rim=0.09*B.fill+0.16*fs.pulse+(B.still?0.04:0);
+  fs.fill=B.fill; fs.flow=B.flow; fs.gust=(B.k==="in"||B.k==="out")?Math.exp(-B.into/0.3):0; fs.amp=Math.min(1,Math.abs(B.flow))*0.85; fs.still=B.still; fs.pulse=B.pulse||0; fs.rim=0.09*B.fill+0.16*fs.pulse+(B.still?0.04:0);
   var g=PAL; PAL=pal; fs.ground=groundRGB(Math.min(1.2,fs.fill+0.05*fs.pulse), fs.temp, 1); PAL=g; return fs; }
 Object.keys(PALETTES).forEach(function(pn){
   var pal=PALETTES[pn], tile=document.createElement("div"); tile.className="tile"; var gcol=css(hsl(pal.bg[0],pal.bg[1],pal.bg[2])), tcol=pal.text;
@@ -590,8 +594,8 @@ function pair(c, d, o){
   return {phase:function(k,at,dur){ var g=Math.max(dur,.35), q=Math.min(.5,g*.2);
     if(k==="in"){ hi.to(at,g,top,o.hiFc[1]); lo.to(at,Math.min(1,g),.0001,o.loFc[0]); if(o.bells) bellNode(c,d,o.hiF*2,at,.16); }
     else if(k==="out"){ lo.to(at,q,top,o.loFc[1],easeOut); lo.to(at+q,g-q,top*.12,o.loFc[0]); hi.to(at,Math.min(.9,g),.0001,o.hiFc[0]); if(o.bells) bellNode(c,d,o.loF*1.5,at,.16); }
-    else if(k==="hold"){ if(hi.lvl>lo.lvl) hi.to(at,Math.min(1.2,g),top*.45,(o.hiFc[0]+o.hiFc[1])/2,easeOut); else lo.to(at,Math.min(1.2,g),top*.45,(o.loFc[0]+o.loFc[1])/2,easeOut); }
-    else if(k==="empty"){ lo.to(at,Math.min(.8,g),top*.10,o.loFc[0],easeOut); hi.to(at,.5,.0001,o.hiFc[0],easeOut); }
+    else if(k==="hold"){ if(hi.lvl>lo.lvl) hi.to(at,Math.min(1,g),top*.62,hi.fc,easeOut); else lo.to(at,Math.min(1,g),top*.62,lo.fc,easeOut); }
+    else if(k==="empty"){ lo.to(at,g,top*.12,o.loFc[0]); hi.to(at,.5,.0001,o.hiFc[0],easeOut); }
     else { hi.to(at,.6,.0001,o.hiFc[0],easeOut); lo.to(at,.6,.0001,o.loFc[0],easeOut); } }, stop:function(at){ hi.stop(at); lo.stop(at); }};
 }
 var HI4=[[1,1],[1.0015,.45],[2,.18],[3,.07]], LO4=[[1,1],[1.0015,.5],[2,.28],[3,.12],[.5,.22]], BOWL=[[1,1],[1.003,.7],[2.71,.3],[2.725,.18],[5.15,.07]];
@@ -721,7 +725,7 @@ goBtn.addEventListener("click", function(){ if(RUN.on) stopRun(); else startRun(
 function phoneFrame(dt,t){
   var pr=document.getElementById("phone").getBoundingClientRect(); if(!(pr.bottom>0 && pr.top<window.innerHeight)) return;
   var st=PB.idle ? {fill:.28+.12*Math.sin(t*.35), flow:0, still:false, pulse:0} : PB;
-  var fs={idle:PB.idle, dim:1, temp:.3, turb:0, tapK:0, pinK:0, tapX:0, tapY:0, pinX:0, pinY:0, fill:st.fill, flow:st.flow, amp:Math.max(Math.min(1,Math.abs(st.flow))*0.85,.2), still:st.still, pulse:st.pulse};
+  var fs={idle:PB.idle, dim:1, temp:.3, turb:0, tapK:0, pinK:0, tapX:0, tapY:0, pinX:0, pinY:0, fill:st.fill, flow:st.flow, gust:(PB.idle?0:((PB.k==="in"||PB.k==="out")?Math.exp(-(PB.frac*4)):0)), amp:Math.max(Math.min(1,Math.abs(st.flow))*0.85,.2), still:st.still, pulse:st.pulse};
   fs.rim=0.09*fs.fill+0.16*fs.pulse+(fs.still?0.04:0); var g=PAL; PAL=PALETTES.slate; fs.ground=groundRGB(Math.min(1.2,fs.fill+0.05*fs.pulse),.3,1); phoneInst.frame(dt,fs,t); PAL=g;
 }
 

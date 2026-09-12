@@ -1,5 +1,10 @@
 # Lift modes: the gym test, and what to do about it
 
+> Second pass: the cue words below (BRACE, DRIVE, SET, SQUEEZE, TOP) were
+> themselves too many to hold under a load, and SET was the worst of them.
+> The app now uses three words, LOWER, LIFT and HOLD, with the breath as a
+> line under the word; see "Three words" at the end.
+
 Written after a failed session on a rear delt fly machine in Squeeze mode
 (in 2 · out 1 · squeeze 2). The lifter could not tell whether to keep
 exhaling through the squeeze or stop breathing, did not know what the
@@ -92,3 +97,30 @@ play, and the five modes as runnable three-rep sets with the cues, the
 two-track bar, the tone, the knock and an optional voice. The app itself
 carries the tone change and the wind speed fix; the modes are a proposal
 in the lab until they are approved for `wind.html`.
+
+
+## Three words
+
+SET meant the one breath in you take after you are in position and before
+the first pull: handles in hand, chest up, breathe in, go. A real thing,
+and a bad word for it, because SET already means a set of reps and it
+named a breath rather than a movement. READY is that breath now: the
+count-in says "breathe in" under it and the first movement word follows.
+
+Brace, drive, squeeze and top were each a coaching cue for one kind of
+lift, so there were five words for two things the body does. The way down
+and the way up are the same for every lift, so those are the words: LOWER
+and LIFT. A pause is a pause: HOLD. What differs between lifts is only what
+the air does in the hold, and that is the small line under the word, not a
+new word.
+
+| Mode | Words · breath under them |
+|---|---|
+| Drive | LOWER · breathe in 3 → HOLD · hold your breath 1 → LIFT · breathe out 2 |
+| Squeeze | LIFT · breathe out 1 → HOLD · keep breathing out 2 → LOWER · breathe in 3 |
+| Stretch | LOWER · breathe in 3 → HOLD · hold your breath 2 → LIFT · breathe out 2 |
+| Heavy | HOLD · breathe in 2 → LOWER · hold 2 → LIFT · hold 1 → HOLD · breathe out 1 |
+| Steady | HOLD · breathe in 4 → HOLD · breathe out 4, for time |
+
+Drive and Squeeze ship in wind.html with these words. Stretch, Heavy and
+Steady are runnable in the lab.

@@ -7,6 +7,58 @@ wake lock, iOS media routing) and replaces the ring with a full-screen wind
 that is the instrument. Open it in Safari on the phone; `?perf=1` shows a
 frame-time overlay.
 
+## Second pass: rebuilt from nothing
+
+The wind was still too slow after the first fix, and it had been right in
+the very first build. The difference was not one constant; it was the
+layers added since: a GPU fluid with a depth pass, a bloom, dye that faded
+in a second so the air never travelled, a gesture smoother, a frame clamp
+that played slow motion when the phone fell behind, and a force scaled by
+how loud the tone happened to be. So the engine was stripped and built
+once more.
+
+**Slipstream** is the one engine now. Long lines of air on a plain 2D
+canvas, each a chain of points of fixed length riding behind its head,
+so a line keeps its shape when the air stops and streams when it blows.
+The breath is the force: the in draws every line to the centre of the
+screen, the out sends them away, with a turn in the field so the air
+spirals rather than beams. A hold applies no force; the air coasts to a
+stop and sits there, held, lit by a pulse each second. Curl noise gives
+texture at rest and turbulence when the count is missed. The word is an
+obstacle the lines part around. A tap pushes the air out from the finger.
+Behind the lines, motes: the far air, slow and dim. It costs 0.3 ms a
+frame at 60 fps in the harness, and there is no fallback ladder because
+there is nothing that can fail to render; the frame budget only thins
+the lines. The GPU fluid, Memory and Still engines, the depth layer, the
+ink bloom, the drag and the tilt are gone; all of it is in the history
+before 51664da if it is ever wanted back.
+
+**Palettes.** Five, chosen in Setup under Look or with `?pal=`. A
+palette is a whole world: the ground empty and full, the colour of the
+air on the way in and on the way out, the rim, and the type. Slate is
+the default: slate ground, muted blue air that warms to sand through the
+exhale. Parchment is paper, the air is ink, rust through the exhale, and
+the type is dark, so it is ink on a light page. Moss, Ember and Indigo
+are the others.
+
+**Tone.** Two notes, and only two. The in is D4, opening and swelling as
+the lungs fill; the out is G3, a fifth below, full at the turn and
+closing as the air leaves. That is what the reference coherence tracks
+do: Coherence's 2 Bells cues the in with a high bell and the out with a
+low bell, the Harmonium track rises and falls, Sym uses two bowl tones.
+Sustained rather than struck, so nothing hits, and fixed in pitch, so
+nothing slides or climbs. A hold keeps the last note where it is, softer;
+a squeeze keeps the low note at its darkest. **Bells** is the same with
+the two bells themselves, struck softly at each turn, over the notes at
+a quarter level. Breath is unchanged.
+
+**Words.** Lift says the movement, three words only: LOWER while the air
+comes in, LIFT while it goes out, HOLD for any pause, with a line under
+the word saying what the air is doing (breathe in, breathe out, hold your
+breath, keep breathing out). READY is the breath in before the set.
+Brace, drive, squeeze, set and top are gone from the screen. Squeeze's
+cycle now opens on LIFT, because those lifts start with the pull.
+
 ## The thesis it was built against
 
 The pacer is used in peripheral vision: mid-set with a bar in your hands, or
@@ -17,7 +69,7 @@ ground of the whole screen brightens as the lungs fill and dims as they empty
 exhale, and hue slides from cool to warm across the set. The word and count
 are a caption for the moments you look straight at it.
 
-## One engine, with a ladder under it
+## History: the GPU field and the ladder under it (removed in the second pass)
 
 Field is the engine. There is no picker: the motion is the pacing signal, not
 decoration, so the app does not fall back on the OS reduce-motion hint either.

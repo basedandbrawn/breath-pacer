@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Wind Bender">
-<meta name="theme-color" content="#0a0c14">
+<meta name="theme-color" id="themecolor" content="#131922">
 <title>Wind Bender</title>
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -16,15 +16,17 @@
    WIND BENDER
    The whole screen is the instrument. Text is the caption.
    No web fonts, no CDN, no build: this file is the app.
+   One engine: the slipstream, long lines of air with momentum on a
+   2D canvas. The palette sets every colour, including the type,
+   because Parchment is a light ground.
    --------------------------------------------------------------- */
 :root{
-  --fg:#eef3f7; --mute:rgba(238,243,247,.55); --line:rgba(238,243,247,.16);
-  --ui:rgba(8,12,18,.55);
+  --fg:#e6ebf1; --mute:rgba(230,235,241,.55); --line:rgba(230,235,241,.16); --ui:rgba(19,25,34,.55); --bg:#131922; --sel:rgba(230,235,241,.14);
   --wordSize:64px;             /* set ONCE by fitWordOnce(), never per word */
   --countSize:min(14vw,9vh);
 }
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;height:100%;background:#0a0c14}
+html,body{margin:0;padding:0;height:100%;background:var(--bg)}
 body{
   font-family:-apple-system,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   color:var(--fg);-webkit-font-smoothing:antialiased;
@@ -32,7 +34,6 @@ body{
   overscroll-behavior:none;touch-action:manipulation;
 }
 canvas.field{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
-canvas.field[hidden]{display:none}
 #flash{position:fixed;inset:0;z-index:9;pointer-events:none;background:#fff;opacity:0}
 #flash.go{animation:fl .5s ease-out}
 @keyframes fl{0%{opacity:.14}100%{opacity:0}}
@@ -50,33 +51,33 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 /* ---------- home ---------- */
 .mark{display:grid;justify-items:center;gap:6px;padding-top:min(9vh,70px)}
 .mark .s{font-size:12px;letter-spacing:.5em;color:var(--mute);font-weight:600;padding-left:.5em}
-.mark .w{font-weight:700;font-size:min(17vw,100px);line-height:.95;letter-spacing:.02em;-webkit-text-stroke:0 currentColor}   /* BENDER, six letters, fits a 320 px phone; the trail is real dye shed off the letters into the idle wind; the weight breathes (see breathe()) */
+.mark .w{font-weight:700;font-size:min(17vw,100px);line-height:.95;letter-spacing:.02em;-webkit-text-stroke:0 currentColor}
 .modes{display:grid;gap:12px;margin-bottom:min(6vh,52px)}
 .mode{display:flex;justify-content:space-between;align-items:baseline;padding:22px 22px;border-radius:20px;
   background:var(--ui);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.mode:active{background:rgba(238,243,247,.12)}
+.mode:active{background:var(--sel)}
 .mode .t{font-weight:800;font-size:min(9vw,40px);letter-spacing:.04em;line-height:1}
 .mode .d{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute);font-weight:600}
 .seg{display:flex;gap:6px}
-.seg button{flex:1 1 0;min-width:0;padding:13px 4px;border-radius:12px;background:var(--ui);border:1px solid var(--line);
-  font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--mute);text-transform:uppercase;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.seg button.sel{color:var(--fg);border-color:rgba(238,243,247,.6);background:rgba(238,243,247,.14)}
-.seg button[disabled]{opacity:.35}
-.note{font-size:12px;line-height:1.45;color:var(--mute);min-height:2.9em;letter-spacing:.02em}
+.seg button{flex:1 1 0;min-width:0;padding:13px 2px;border-radius:12px;background:var(--ui);border:1px solid var(--line);
+  font-size:11px;letter-spacing:.12em;font-weight:700;color:var(--mute);text-transform:uppercase;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg button.sel{color:var(--fg);border-color:var(--fg);background:var(--sel)}
+.seg.look button{padding:11px 0;font-size:10px;letter-spacing:.08em}
+.seg.look button i{display:block;height:10px;border-radius:5px;margin:0 8px 7px;border:1px solid var(--line)}
 .sub{text-align:center;font-size:12px;letter-spacing:.1em;color:var(--mute);padding-bottom:6px;line-height:1.5}
 /* the doors: each preset is a tile that carries its own tempo as a proportional bar,
-   the phase names in small caps above the segments and the seconds inside them */
+   the movement names in small caps above the segments and the seconds inside them */
 .door{display:block;width:100%;text-align:left;background:var(--ui);border:1px solid var(--line);border-radius:18px;padding:16px 18px 14px;margin-bottom:12px;
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);position:relative}
-.door.sel{border-color:rgba(238,243,247,.6);background:rgba(238,243,247,.09)}
+.door.sel{border-color:var(--fg);background:var(--sel)}
 .door .dt{display:block;font-weight:800;font-size:26px;letter-spacing:.06em;line-height:1;margin-bottom:12px}
 .door .dr{position:absolute;right:18px;top:18px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute);font-weight:700}
 .door .bar{display:flex;gap:4px}
 .door .bar b{display:flex;flex-direction:column;gap:6px;min-width:0}
 .door .bar b i{display:block;font-style:normal;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);font-weight:700;white-space:nowrap}
-.door .bar b u{display:flex;align-items:center;justify-content:center;text-decoration:none;height:30px;border-radius:7px;background:rgba(238,243,247,.10);
+.door .bar b u{display:flex;align-items:center;justify-content:center;text-decoration:none;height:30px;border-radius:7px;background:var(--sel);
   font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;letter-spacing:.02em}
-.door.sel .bar b u{background:rgba(238,243,247,.16)}
+.door .dl{display:block;font-size:11px;letter-spacing:.06em;color:var(--mute);margin-top:10px;line-height:1.4}
 
 /* ---------- setup ---------- */
 .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;height:40px}
@@ -84,15 +85,14 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   color:var(--fg);font-size:13px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;text-align:center;
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .btn.ghost{width:auto;padding:10px 16px;color:var(--mute);font-size:12px}
-.btn.go{font-size:min(12vw,46px);letter-spacing:.14em;padding:16px 16px 12px;line-height:1;font-weight:800;
-  background:rgba(238,243,247,.14);border-color:rgba(238,243,247,.5)}
+.btn.go{font-size:min(12vw,46px);letter-spacing:.14em;padding:16px 16px 12px;line-height:1;font-weight:800;background:var(--sel);border-color:var(--fg)}
 .card{background:var(--ui);border:1px solid var(--line);border-radius:18px;padding:4px 18px;margin-bottom:12px;
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
 .row:last-child{border-bottom:0}
 .row.stack{flex-direction:column;align-items:stretch;gap:10px}
 .step{display:flex;align-items:center;gap:2px}
-.step button{width:52px;height:52px;border-radius:14px;background:rgba(238,243,247,.08);border:1px solid var(--line);
+.step button{width:52px;height:52px;border-radius:14px;background:var(--sel);border:1px solid var(--line);
   font-size:26px;line-height:1;display:flex;align-items:center;justify-content:center}
 .step .v{min-width:74px;text-align:center;font-weight:700;font-size:34px;line-height:1;font-variant-numeric:tabular-nums}
 .v2{font-weight:700;font-size:22px;font-variant-numeric:tabular-nums;color:var(--mute);padding-right:6px}
@@ -113,25 +113,26 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   font-size:12px;letter-spacing:.24em;color:var(--mute);font-weight:700;text-transform:uppercase}
 .word{height:calc(var(--wordSize) * 1.25);display:flex;align-items:center;justify-content:center;
   font-size:var(--wordSize);font-weight:700;line-height:1;letter-spacing:.06em;white-space:nowrap;-webkit-text-stroke:0 currentColor;
-  text-shadow:0 0 28px rgba(0,0,0,.6),0 2px 8px rgba(0,0,0,.5)}
+  text-shadow:0 0 28px var(--bg),0 2px 8px var(--bg)}
+/* the breath under the movement: what the air is doing while the body does the word */
+.bsub{height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;letter-spacing:.26em;text-transform:uppercase;
+  font-weight:700;color:var(--mute);white-space:nowrap;text-shadow:0 0 12px var(--bg)}
 .count{height:calc(var(--countSize) * 1.3);display:flex;align-items:center;justify-content:center;
   font-size:var(--countSize);font-weight:700;line-height:1;font-variant-numeric:tabular-nums;min-width:4ch;opacity:.9;
-  text-shadow:0 0 28px rgba(0,0,0,.6),0 2px 8px rgba(0,0,0,.5)}
-/* the breath as a line: three segments in proportion to in, hold and out; the current one fills */
+  text-shadow:0 0 28px var(--bg),0 2px 8px var(--bg)}
+/* the breath as a line: one segment per phase of the cycle, in proportion; the current one fills */
 .rail{height:36px;display:flex;align-items:center;justify-content:center}
 .tl{display:flex;gap:6px;width:min(58vw,250px);height:3px}
-.tl>div{position:relative;height:100%;border-radius:2px;background:rgba(238,243,247,.16);overflow:hidden;flex:1 1 0;min-width:0}
-.tl>div.gone{display:none}
-.tl i{position:absolute;inset:0;background:rgba(238,243,247,.92);transform-origin:left center;transform:scaleX(0)}
+.tl>div{position:relative;height:100%;border-radius:2px;background:var(--line);overflow:hidden;flex:1 1 0;min-width:0}
+.tl i{position:absolute;inset:0;background:var(--fg);opacity:.92;transform-origin:left center;transform:scaleX(0)}
 .foot.slot{height:66px;margin:0 20px;position:relative}
-.foot.slot .btn{position:absolute;inset:0;width:auto;visibility:hidden;border-color:rgba(238,243,247,.4);
+.foot.slot .btn{position:absolute;inset:0;width:auto;visibility:hidden;border-color:var(--line);
   font-size:min(9vw,40px);letter-spacing:.14em;padding:0;font-weight:800;line-height:66px}
 .foot.slot .btn.show{visibility:visible}
 .foot.slot .btn.sm{font-size:13px;letter-spacing:.24em;font-weight:700}
 </style>
 </head>
 <body>
-<canvas id="gl" class="field" hidden></canvas>
 <canvas id="c2d" class="field"></canvas>
 <div id="flash"></div>
 <div id="perf"></div>
@@ -145,7 +146,6 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
     <button class="mode" data-go="lift"><span class="t">LIFT</span><span class="d">sets · reps · rest</span></button>
     <button class="mode" data-go="breathe"><span class="t">BREATHE</span><span class="d">cycles</span></button>
   </div>
-
 </section>
 
 <!-- SETUP -->
@@ -153,16 +153,15 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   <div class="top"><button class="btn ghost" data-go="home">Back</button><span class="eyebrow" id="setup-title">Lift</span></div>
   <div class="scroll">
     <div id="setup-lift">
-      <!-- the shape of the rep: two doors, each carrying its own tempo as a labelled bar -->
-      <button class="door" data-preset="drive"><span class="dt">DRIVE</span><span class="bar" id="bar-drive"></span><span class="dr" id="rest-drive"></span></button>
-      <button class="door" data-preset="squeeze"><span class="dt">SQUEEZE</span><span class="bar" id="bar-squeeze"></span><span class="dr" id="rest-squeeze"></span></button>
+      <!-- the shape of the rep: two doors, each carrying its own tempo as a labelled bar. The words are what the body does. -->
+      <button class="door" data-preset="drive"><span class="dt">DRIVE</span><span class="bar" id="bar-drive"></span><span class="dr" id="rest-drive"></span><span class="dl">Pauses at the bottom with the air in. Squats, presses, hinges.</span></button>
+      <button class="door" data-preset="squeeze"><span class="dt">SQUEEZE</span><span class="bar" id="bar-squeeze"></span><span class="dr" id="rest-squeeze"></span><span class="dl">Pauses at the top, still breathing out. Rows, flies, curls, raises.</span></button>
       <div class="card">
         <div class="row" id="row-reps"><span class="lbl">Reps</span><div class="step"><button data-s="reps:-1">−</button><span class="v" id="v-reps">10</span><button data-s="reps:1">+</button></div></div>
         <div class="row"><span class="lbl">Sets</span><div class="step"><button data-s="sets:-1">−</button><span class="v" id="v-sets">4</span><button data-s="sets:1">+</button></div></div>
       </div>
     </div>
     <div id="setup-breathe">
-      <!-- the shape of the breath: two doors, the same as Lift's, each carrying its tempo as a labelled bar -->
       <button class="door" data-pat="478"><span class="dt">RELAX</span><span class="bar" id="bar-478"></span><span class="dr">long exhale</span></button>
       <button class="door" data-pat="coh"><span class="dt">COHERENT</span><span class="bar" id="bar-coh"></span><span class="dr">5.5 a minute</span></button>
       <div class="card">
@@ -170,10 +169,14 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
         <div class="row"><span class="lbl">Time</span><span class="v2" id="v-time"></span></div>
       </div>
     </div>
-    <!-- one sound for the whole app -->
+    <!-- one sound for the whole app: two notes, two bells, or a breath of wind -->
     <div class="card"><div class="row stack"><span class="lbl">Sound</span>
-      <div class="seg" id="seg-sound"><button data-sound="tone">Tone</button><button data-sound="breath">Breath</button></div>
+      <div class="seg" id="seg-sound"><button data-sound="tone">Tone</button><button data-sound="bells">Bells</button><button data-sound="breath">Breath</button></div>
       <div id="sound-sub" class="sub"></div></div></div>
+    <!-- the look: five palettes, each a whole world, one of them paper -->
+    <div class="card"><div class="row stack"><span class="lbl">Look</span>
+      <div class="seg look" id="seg-look"></div>
+      <div id="look-sub" class="sub"></div></div></div>
     <!-- the two ways the phone can read you, Breathe only -->
     <div class="card" id="card-with"><div class="row stack"><span class="lbl">With</span>
       <div class="seg" id="seg-with"><button data-w="belly">Belly</button><button data-w="tap">Tap</button></div>
@@ -187,8 +190,9 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
   <div class="meta slot"><span id="rmeta"></span><button id="endbtn">End</button></div>
   <div class="spacer"></div>
   <div class="word slot" id="word"><span></span></div>
+  <div class="bsub slot" id="bsub"></div>
   <div class="count slot" id="num"></div>
-  <div class="rail slot"><div class="tl" id="tl"><div id="tl-in"><i></i></div><div id="tl-hold"><i></i></div><div id="tl-out"><i></i></div><div id="tl-empty"><i></i></div></div></div>
+  <div class="rail slot"><div class="tl" id="tl"></div></div>
   <div class="spacer"></div>
   <div class="foot slot">
     <button class="btn" id="b-skip">Skip rest</button>
@@ -203,16 +207,17 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 var Q = {}; try{ location.search.slice(1).split("&").forEach(function(kv){ var p=kv.split("="); if(p[0]) Q[p[0]] = p[1]===undefined?1:decodeURIComponent(p[1]); }); }catch(e){}
 
 /* ============================ STORAGE ============================ */
-var KEY = "wind.v1";
+var KEY = "wind.v2", OLDKEY = "wind.v1";
 var DEF = {
   cfg: {
-    sound:"tone",
-    /* LIFT presets, one per rep shape. DRIVE pauses full at the bottom: squats, presses, hinges.
-       SQUEEZE pauses empty at the top: rows, pulls, curls, raises, calves. Every cycle opens on IN.
-       The one-second concentric is an instruction to be fast; the long eccentric absorbs a slow rep. */
+    sound:"tone", pal:"slate",
+    /* LIFT presets, one per rep shape, as sequences so the cycle can open on whichever movement the lift
+       starts with. DRIVE: lower with the air coming in, hold at the bottom with the air in, lift it out.
+       SQUEEZE: lift on the way out, hold at the top still breathing out, lower with the air coming in.
+       The words on the screen are the movements; the breath is the line under them. */
     lift: {preset:"drive", reps:{drive:10, squeeze:12}, sets:4,
-      tune:{drive:  {"in":3, hold:1, out:2, empty:0, rest:120},
-            squeeze:{"in":2, hold:0, out:1, empty:2, rest:90}}},
+      tune:{drive:  {seq:[["in",3],["hold",1],["out",2]], rest:120},
+            squeeze:{seq:[["out",1],["empty",2],["in",3]], rest:90}}},
     breathe: {cycles:8, pat:"478", belly:"on", tap:"off"}
   },
   stats: {sec:0, log:[]}
@@ -220,20 +225,16 @@ var DEF = {
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
 var DB = clone(DEF);
 try{
-  var raw = JSON.parse(localStorage.getItem(KEY) || "null");
+  var raw = JSON.parse(localStorage.getItem(KEY) || localStorage.getItem(OLDKEY) || "null");
   if(raw && raw.cfg){
     var L = raw.cfg.lift; if(L){ ["preset","sets"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
-      if(L.reps && typeof L.reps==="object"){ for(var rk in DB.cfg.lift.reps) if(L.reps[rk]) DB.cfg.lift.reps[rk]=L.reps[rk]; }   /* reps are per preset now */
-      /* the tempos are fixed now; nothing stored overrides them. Old preset names map onto the new shapes. */
-      if(DB.cfg.lift.preset==="compound"||DB.cfg.lift.preset==="hold") DB.cfg.lift.preset="drive"; else if(DB.cfg.lift.preset==="isolation") DB.cfg.lift.preset="squeeze";
-      if(!DB.cfg.lift.tune[DB.cfg.lift.preset]) DB.cfg.lift.preset="drive"; }
+      if(L.reps && typeof L.reps==="object"){ for(var rk in DB.cfg.lift.reps) if(L.reps[rk]) DB.cfg.lift.reps[rk]=L.reps[rk]; }
+      if(!DB.cfg.lift.tune[DB.cfg.lift.preset]) DB.cfg.lift.preset="drive"; }   /* the tempos are fixed; nothing stored overrides them */
     if(raw.cfg.breathe) for(var bk in DB.cfg.breathe) if(raw.cfg.breathe[bk]!==undefined) DB.cfg.breathe[bk]=raw.cfg.breathe[bk];
-    if(DB.cfg.breathe.pat!=="478" && DB.cfg.breathe.pat!=="coh") DB.cfg.breathe.pat="478";          /* Follow is gone */
-    /* one Sound for the app; sounds were once per mode, and Ears, now gone, becomes Breath */
-    var oldEars = raw.cfg.ears==="on" || (raw.cfg.breathe&&raw.cfg.breathe.ears==="on") || (raw.cfg.lift&&raw.cfg.lift.ears==="on");
-    DB.cfg.sound = oldEars ? "breath" : (raw.cfg.sound || (raw.cfg.breathe&&raw.cfg.breathe.sound) || (raw.cfg.lift&&raw.cfg.lift.sound) || "tone");
-    if(DB.cfg.sound==="ears") DB.cfg.sound="breath"; if(["tone","breath"].indexOf(DB.cfg.sound)<0) DB.cfg.sound="tone";
-    if(DB.cfg.breathe.tap!=="off" && DB.cfg.breathe.tap!=="on") DB.cfg.breathe.tap="on";            /* Sync and Inhale became the one Tap */
+    if(DB.cfg.breathe.pat!=="478" && DB.cfg.breathe.pat!=="coh") DB.cfg.breathe.pat="478";
+    if(DB.cfg.breathe.tap!=="off" && DB.cfg.breathe.tap!=="on") DB.cfg.breathe.tap="on";
+    DB.cfg.sound = raw.cfg.sound || "tone"; if(["tone","bells","breath"].indexOf(DB.cfg.sound)<0) DB.cfg.sound="tone";
+    if(raw.cfg.pal) DB.cfg.pal = raw.cfg.pal;
   }
   if(raw && raw.stats){ DB.stats.sec = raw.stats.sec||0; DB.stats.log = raw.stats.log||[]; }
 }catch(e){}
@@ -305,26 +306,58 @@ function initAudio(){
   return A;
 }
 function keep(n){ A.nodes.push(n); return n; }
-/* TONE: one note, and never another. A warm hum on G3, a sine with two soft harmonics, a second
-   fundamental a hair sharp for a slow inner motion, and a breath of pink air under it. It opens as the
-   lungs fill and closes as they empty: through the in the lowpass rises from dark to bright and the level
-   swells with it, through the out both fall. The pitch never moves, so it cannot be a siren; no second
-   note is ever struck, so nothing climbs a scale. A held breath sustains the note where it is, a little
-   softer and steady; a squeeze is the same still hum at its dark end. Everything is a ramp over the whole
-   count and nothing is a step, so a phase change is heard as a turn, not a hit. */
-var TONE_F=196.0;   /* G3 */
-function mkTone(k){
-  var ctx=A.ctx, lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=240; lp.Q.value=0.7;
-  var g=ctx.createGain(); g.gain.value=0.0001; g.connect(lp); lp.connect(A.wetIn);
-  var parts=[[1,1],[1.0015,0.5],[2,0.28],[3,0.12]], i;
-  for(i=0;i<parts.length;i++){ var o=ctx.createOscillator(), og=ctx.createGain(); o.type="sine"; o.frequency.value=TONE_F*parts[i][0]; og.gain.value=parts[i][1]; o.connect(og); og.connect(g); o.start(); keep(o); }
-  var air=ctx.createBufferSource(); air.buffer=noiseBuffer(ctx,4,"pink"); air.loop=true;
-  var ab=ctx.createBiquadFilter(); ab.type="bandpass"; ab.frequency.value=700; ab.Q.value=0.6; var ag=ctx.createGain(); ag.gain.value=0.06;
-  air.connect(ab); ab.connect(ag); ag.connect(g); air.start(); keep(air);
-  return {kind:"tone", g:g, lp:lp, k:k, dir:"", lvl:0.0001, fc:240};
+/* TONE: two notes, and only two. The breath in is the high note, D4, which opens and swells as the
+   lungs fill; the breath out is the low note, G3, a fifth below, which is full at the turn and closes
+   as the air leaves. That is the convention of the best coherence tracks (a high bell for the in, a
+   low bell for the out) done as sustained notes rather than strikes, so nothing hits and nothing
+   slides: you always know which breath you are on because the two breaths are two different notes.
+   Each note is a sine with soft harmonics and a twin a hair sharp so it moves slowly inside, through
+   one lowpass that opens with the breath. A hold keeps the last note where it is, a little softer;
+   the squeeze keeps the low note at its darkest. Everything is a ramp over the whole count. */
+var TONE_HI=293.66, TONE_LO=196.00;   /* D4 and G3 */
+function mkVoice(f, parts, fc0, dest){
+  var ctx=A.ctx, lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=fc0; lp.Q.value=0.7;
+  var g=ctx.createGain(); g.gain.value=0.0001; g.connect(lp); lp.connect(dest);
+  for(var i=0;i<parts.length;i++){ var o=ctx.createOscillator(), og=ctx.createGain(); o.type="sine"; o.frequency.value=f*parts[i][0]; og.gain.value=parts[i][1]; o.connect(og); og.connect(g); o.start(); keep(o); }
+  var v={g:g, lp:lp, lvl:0.0001, fc:fc0};
+  v.to=function(at,dur,lvl,fc,shape){ env(g.gain, v.lvl, lvl, at, dur, shape||easeIO); env(lp.frequency, v.fc, fc, at, dur, shape||easeIO); v.lvl=lvl; v.fc=fc; };
+  return v;
 }
-/* the swell: level and brightness ramp together from where the last phase left them to where this one ends */
-function toneSwell(s, at, dur, lvl, fc, shape){ env(s.g.gain, s.lvl, lvl, at, dur, shape||easeIO); env(s.lp.frequency, s.fc, fc, at, dur, shape||easeIO); s.lvl=lvl; s.fc=fc; }
+function mkTone(k){
+  var hi=mkVoice(TONE_HI, [[1,1],[1.0015,.45],[2,.18],[3,.07]], 320, A.wetIn);
+  var lo=mkVoice(TONE_LO, [[1,1],[1.0015,.5],[2,.28],[3,.12],[0.5,.22]], 220, A.wetIn);
+  return {kind:"tone", hi:hi, lo:lo, k:k, dir:""};
+}
+/* BELLS: the two bells themselves, struck softly at each turn, a high one for the in and a low one for
+   the out, each with a slow attack and a long ring, over the two notes at a quarter of their level so
+   the direction stays audible after the ring has faded. */
+function bell(f, at, amp, dest){
+  var ctx=A.ctx, parts=[[1,1,3.2],[2.76,.32,1.4],[5.4,.10,.6]], lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2600; lp.connect(dest);
+  for(var i=0;i<parts.length;i++){ var o=ctx.createOscillator(), g=ctx.createGain(); o.type="sine"; o.frequency.value=f*parts[i][0];
+    g.gain.setValueAtTime(0.0001, at); g.gain.linearRampToValueAtTime(amp*parts[i][1], at+0.03); g.gain.exponentialRampToValueAtTime(0.0001, at+parts[i][2]);
+    o.connect(g); g.connect(lp); o.start(at); o.stop(at+parts[i][2]+0.05); }
+}
+function makeScheme(name, dim){ if(!A) return null; var k=dim?0.7:1; A.roll.frequency.value=dim?2600:4200; if(name==="breath") return mkBreath(k); var s=mkTone(k); s.kind=name; return s; }
+function schemePhase(kind, at, dur){
+  if(!scheme || !A) return;
+  var s=scheme, k=s.k, g=Math.max(dur,0.35);
+  if(s.kind==="tone"||s.kind==="bells"){
+    var top=(s.kind==="bells"?0.07:0.22)*k, hi=s.hi, lo=s.lo;
+    if(kind==="in"){ s.dir="up"; hi.to(at, g, top, 1700); lo.to(at, Math.min(1.0,g), 0.0001, 220); if(s.kind==="bells") bell(587.33, at, 0.16*k, A.wetIn); }        /* the high note opens through the in; a high bell at the turn */
+    else if(kind==="out"){ s.dir="down"; lo.to(at, Math.min(0.5,g*0.2), top, 1200, easeOut); lo.to(at+Math.min(0.5,g*0.2), g-Math.min(0.5,g*0.2), top*0.12, 220); hi.to(at, Math.min(0.9,g), 0.0001, 320); if(s.kind==="bells") bell(293.66, at, 0.16*k, A.wetIn); }   /* the low note is full at the turn and closes as the air leaves; a low bell */
+    else if(kind==="hold"){ s.dir=""; if(hi.lvl>lo.lvl) hi.to(at, Math.min(1.2,g), top*0.45, 1200, easeOut); else lo.to(at, Math.min(1.2,g), top*0.45, 800, easeOut); }   /* held: the last note stays, a little softer */
+    else if(kind==="empty"){ s.dir=""; lo.to(at, Math.min(0.8,g), top*0.10, 220, easeOut); hi.to(at, 0.5, 0.0001, 320, easeOut); }   /* still breathing out: the low note at its darkest */
+    else { s.dir=""; hi.to(at, 0.6, 0.0001, 320, easeOut); lo.to(at, 0.6, 0.0001, 220, easeOut); }
+  }
+  if(s.kind==="breath"){
+    var bt=1.05*k;
+    if(kind==="in"){ env(s.g.gain,0.0001,bt,at,g*0.6,easeIO); env(s.g.gain,bt,bt*0.35,at+g*0.6,g*0.35,easeIO); env(s.bp.frequency,520,1400,at,g,easeIO); env(s.lp.frequency,1800,2600,at,g,easeIO); }
+    else if(kind==="hold"){ env(s.g.gain,s.g.gain.value,0.0001,at,0.3,easeOut); }
+    else if(kind==="empty"){ env(s.g.gain,s.g.gain.value,0.16*bt,at,0.2,easeOut); env(s.g.gain,0.16*bt,0.0001,at+g*0.5,g*0.5,easeIn); env(s.bp.frequency,s.bp.frequency.value,300,at,g,easeOut); }
+    else if(kind==="out"){ env(s.g.gain,0.0001,0.9*k,at,g*0.14,easeOut); env(s.g.gain,0.9*k,0.0002,at+g*0.14,g*0.76,easeIO); env(s.bp.frequency,1200,380,at,g,easeIO); env(s.lp.frequency,2300,1100,at,g,easeIO); }
+    else { env(s.g.gain,s.g.gain.value,0.0001,at,0.25,easeOut); }
+  }
+}
 function mkBreath(k){
   var ctx=A.ctx, src=ctx.createBufferSource(); src.buffer=noiseBuffer(ctx,5,true); src.loop=true;
   var bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=800; bp.Q.value=0.9;
@@ -333,27 +366,6 @@ function mkBreath(k){
   var g=ctx.createGain(); g.gain.value=0.0001;
   src.connect(bp); bp.connect(pk); pk.connect(lp); lp.connect(g); g.connect(A.dryIn); src.start(); keep(src);
   return {kind:"breath", g:g, bp:bp, lp:lp, k:k};
-}
-function makeScheme(name, dim){ if(!A) return null; var k=dim?0.7:1; A.roll.frequency.value=dim?2600:4200; return name==="breath"?mkBreath(k):mkTone(k); }
-function schemePhase(kind, at, dur){
-  if(!scheme || !A) return;
-  var s=scheme, k=s.k, g=Math.max(dur,0.35);
-  if(s.kind==="tone"){
-    var top=0.24*k, DARK=240, BRIGHT=1500;
-    if(kind==="in"){ s.dir="up"; toneSwell(s, at, g, top, BRIGHT); }                          /* opens and brightens as the lungs fill */
-    else if(kind==="out"){ s.dir="down"; toneSwell(s, at, g, top*0.10, DARK); }              /* closes and softens as they empty */
-    else if(kind==="hold"){ s.dir=""; toneSwell(s, at, Math.min(1.2,g), top*0.45, 1100, easeOut); }   /* held: the note stays, a little softer and steady */
-    else if(kind==="empty"){ s.dir=""; toneSwell(s, at, Math.min(0.8,g), top*0.06, 200, easeOut); }   /* the squeeze: the same hum at its darkest, nearly gone */
-    else { s.dir=""; toneSwell(s, at, 0.6, 0.0001, DARK, easeOut); }                          /* get set: fades out; the first in swells from silence */
-  }
-  if(s.kind==="breath"){
-    var top=1.05*k;
-    if(kind==="in"){ env(s.g.gain,0.0001,top,at,g*0.6,easeIO); env(s.g.gain,top,top*0.35,at+g*0.6,g*0.35,easeIO); env(s.bp.frequency,520,1400,at,g,easeIO); env(s.lp.frequency,1800,2600,at,g,easeIO); }
-    else if(kind==="hold"){ env(s.g.gain,s.g.gain.value,0.0001,at,0.3,easeOut); }
-    else if(kind==="empty"){ env(s.g.gain,s.g.gain.value,0.16*top,at,0.2,easeOut); env(s.g.gain,0.16*top,0.0001,at+g*0.5,g*0.5,easeIn); env(s.bp.frequency,s.bp.frequency.value,300,at,g,easeOut); }   /* the squeeze: the last of the air leaving */
-    else if(kind==="out"){ env(s.g.gain,0.0001,0.9*k,at,g*0.14,easeOut); env(s.g.gain,0.9*k,0.0002,at+g*0.14,g*0.76,easeIO); env(s.bp.frequency,1200,380,at,g,easeIO); env(s.lp.frequency,2300,1100,at,g,easeIO); }
-    else { env(s.g.gain,s.g.gain.value,0.0001,at,0.25,easeOut); }
-  }
 }
 function audioStart(mode, sound){
   initAudio(); if(!A) return;
@@ -379,31 +391,35 @@ function wake(on){ try{ if(on){ if("wakeLock" in navigator && !wl) navigator.wak
 document.addEventListener("visibilitychange", function(){ if(document.visibilityState==="visible" && S.running){ wake(true); if(A && A.ctx.state!=="running"){ try{A.ctx.resume();}catch(e){} } try{ var _q=audioEl.play(); if(_q&&_q.catch) _q.catch(function(){}); }catch(e){} } });
 
 /* ============================ COLOUR ============================
-   The pacing signal, first and foremost: large-area luminance.
-   Ground luminance rises with the lungs and falls with them; hue slides
-   from cool to warm across the set. Everything else is carried on top. */
-function hsl(h,s,l){ h=((h%360)+360)%360/360; var q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q; function f(t){ t=(t+1)%1; if(t<1/6) return p+(q-p)*6*t; if(t<1/2) return q; if(t<2/3) return p+(q-p)*(2/3-t)*6; return p; } return [f(h+1/3), f(h), f(h-1/3)]; }
-/* ink to dusk: a deep, quiet navy that never turns royal, drifting toward a muted mauve across the
-   set. The ground stays dark even at full lungs; the light lives in the dye and the rim. */
-/* the palettes, every one of them blue at heart: h0→h1 is the ground's hue across the set, s0→s1 its
-   saturation empty→full, lk scales its luminance; the dye and rim take hue th at saturation ts,
-   lightness tl. Chosen with ?pal=name; ink is the default */
+   The pacing signal, first and foremost: large-area luminance. The ground rises with the lungs and
+   falls with them. A palette is a whole world: the ground empty and full, the colour of the air on the
+   way in and on the way out, the rim, and the type, because Parchment is paper and its type is ink.
+   HSL triplets. Chosen in Setup, or with ?pal=name. */
 var PALETTES={
-  ink:      {h0:216,h1:266,s0:0.34,s1:0.46,lk:1.00,th:222,ts:0.50,tl:0.64},   /* navy to dusk, silver-lavender dye */
-  midnight: {h0:224,h1:236,s0:0.52,s1:0.62,lk:0.92,th:208,ts:0.55,tl:0.70},   /* deep saturated navy, icy dye */
-  storm:    {h0:208,h1:222,s0:0.20,s1:0.30,lk:1.08,th:204,ts:0.22,tl:0.72},   /* slate, steel, sea-grey dye */
-  abyss:    {h0:232,h1:250,s0:0.60,s1:0.70,lk:0.86,th:246,ts:0.48,tl:0.66},   /* indigo, near black, violet-blue dye */
-  glacier:  {h0:198,h1:214,s0:0.40,s1:0.50,lk:1.00,th:188,ts:0.55,tl:0.76},   /* cold teal-blue, cyan-white dye */
-  dusk:     {h0:226,h1:296,s0:0.36,s1:0.44,lk:1.00,th:276,ts:0.36,tl:0.66}    /* blue at the first rep, plum by the last */
+  slate:    {name:"Slate",     bg:[214,18,9],  full:[212,22,21], air:[212,32,66], warm:[36,28,66],  rim:[212,36,74], text:"#e6ebf1", light:false, note:"Slate and a muted blue. The air warms to sand on the way out."},
+  parchment:{name:"Parchment", bg:[40,34,84],  full:[44,44,93],  air:[216,24,34], warm:[16,42,44],  rim:[38,52,66], text:"#2a3140", light:true,  note:"Paper. The air is ink, rust on the way out. The page brightens as you fill."},
+  moss:     {name:"Moss",      bg:[160,14,8],  full:[152,16,19], air:[118,20,62], warm:[46,40,62],  rim:[100,26,68], text:"#e7ede6", light:false, note:"Deep green-grey, sage air, straw on the way out."},
+  ember:    {name:"Ember",     bg:[18,12,8],   full:[16,18,18],  air:[22,40,58],  warm:[32,70,64],  rim:[26,60,64], text:"#f1eae2", light:false, note:"Charcoal. The air is clay that glows through the exhale."},
+  indigo:   {name:"Indigo",    bg:[240,28,9],  full:[250,34,20], air:[258,30,70], warm:[300,24,72], rim:[256,42,78], text:"#ece9f4", light:false, note:"Indigo, lavender air, a blush of plum on the way out."}
 };
-var PAL = PALETTES[Q.pal] || PALETTES.ink;
-function hueOf(temp){ return PAL.h0 + (PAL.h1-PAL.h0)*temp; }
-function ground(fill, temp, dim){
-  var l = (0.03 + 0.12*fill) * dim * PAL.lk;       /* capped low: full lungs are dense, not pale */
-  return hsl(hueOf(temp), PAL.s0 + (PAL.s1-PAL.s0)*fill, l);
-}
-function tint(temp){ return hsl(PAL.th + (PAL.h1-PAL.h0)*0.4*temp, PAL.ts, PAL.tl); }   /* the dye and the rim: dim enough to add colour and not white */
+var PAL = PALETTES[Q.pal] || PALETTES[DB.cfg.pal] || PALETTES.slate;
+function hsl(h,s,l){ h=((h%360)+360)%360/360; s/=100; l/=100; var q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q; function f(t){ t=(t+1)%1; if(t<1/6) return p+(q-p)*6*t; if(t<1/2) return q; if(t<2/3) return p+(q-p)*(2/3-t)*6; return p; } return [f(h+1/3), f(h), f(h-1/3)]; }
+function lerp3(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
 function css(c){ return "rgb("+Math.round(c[0]*255)+","+Math.round(c[1]*255)+","+Math.round(c[2]*255)+")"; }
+/* the ground: empty to full, the hue drifting a little across the set; dim shrinks the swing for Breathe */
+function ground(fill, temp, dim){ var f=Math.max(0,Math.min(1.2,fill))*dim, c=lerp3(PAL.bg, PAL.full, f); return hsl(c[0]+8*temp, c[1], c[2]); }
+/* the air: its colour on the way in, warming on the way out */
+function airColour(warm){ var c=lerp3(PAL.air, PAL.warm, warm); return hsl(c[0],c[1],c[2]); }
+function rimColour(){ return hsl(PAL.rim[0],PAL.rim[1],PAL.rim[2]); }
+function applyPalette(){
+  var r=document.documentElement.style, t=PAL.text, bg=css(hsl(PAL.bg[0],PAL.bg[1],PAL.bg[2]));
+  function rgba(hex,a){ var n=parseInt(hex.slice(1),16); return "rgba("+(n>>16)+","+((n>>8)&255)+","+(n&255)+","+a+")"; }
+  r.setProperty("--fg", t); r.setProperty("--mute", rgba(t, PAL.light?0.6:0.55)); r.setProperty("--line", rgba(t, PAL.light?0.22:0.16));
+  r.setProperty("--sel", rgba(t, PAL.light?0.10:0.14)); r.setProperty("--bg", bg);
+  var b=hsl(PAL.bg[0],PAL.bg[1],PAL.bg[2]); r.setProperty("--ui", "rgba("+Math.round(b[0]*255)+","+Math.round(b[1]*255)+","+Math.round(b[2]*255)+","+(PAL.light?0.5:0.55)+")");
+  try{ document.getElementById("themecolor").setAttribute("content", bg); }catch(e){}
+}
+applyPalette();
 
 /* ============================ NOISE ============================ */
 function makeNoise(seed){
@@ -441,261 +457,92 @@ function buildMask(el){
 }
 function maskAt(x,y){ if(!MASK.data) return 0; var i=((y*MASK.sc)|0)*MASK.w+((x*MASK.sc)|0); if(i<0||i>=MASK.w*MASK.h) return 0; return MASK.data[i*4+3]/255; }
 
-/* ============================ ENGINE: 2D FIELD ============================
-   Particles with momentum: force from the breath, curl noise for texture,
-   drag for decay. Hold = no force, velocity decays on its own.
-   Used by MEMORY (debris, deterministic seed)
-   and STILL (zero particles: the ground colour alone paces). */
-function Field2D(cv, opt){
+/* ============================ ENGINE: SLIPSTREAM ============================
+   One engine, one canvas. The air is a set of long lines with momentum. Each line is a chain of
+   points of fixed length that rides behind its head like a ribbon, so the lines keep their shape
+   when the air stops and stream when it blows. The breath is the force: the in draws every line to
+   the centre of the screen and the out sends them away from it, with a slow turn in the field so the
+   air spirals rather than beams; a hold applies no force and the air coasts to a stop and sits
+   there, held, lit by a pulse each second. Curl noise gives the field texture at rest and turbulence
+   when the count is missed. The word is an obstacle the lines part around. A tap pushes the air out
+   from the finger; a held finger pins it. Behind the lines, motes: the far air, slow and dim. */
+function Slipstream(cv){
   var ctx = cv.getContext("2d", {alpha:false});
-  var W=0,H=0,D=1,P=[],DEB=[],noise=makeNoise(opt.seed||1),rnd=opt.rnd||Math.random,density=opt.density||0;
-  var pile=[], maskVer=-1;
+  var W=0,H=0,D=1,L=[],MO=[],noise=makeNoise(11),budgetN=1,warmSm=0,fillSm=0;
   function resize(){
     W=window.innerWidth; H=window.innerHeight; D=Math.min(1.5, window.devicePixelRatio||1);
     cv.width=Math.round(W*D); cv.height=Math.round(H*D);
-    var n = Math.round(W*H/1000*density);
-    P=[]; for(var i=0;i<n;i++) P.push(spawn(true));
+    var n=Math.round(Math.min(120, Math.max(56, W*H/4800))*budgetN);
+    L=[]; for(var i=0;i<n;i++) L.push(newLine()); MO=[]; for(i=0;i<40;i++) MO.push({x:Math.random()*W, y:Math.random()*H, s:.6+Math.random()*1.2, k:Math.random()*6.3});
   }
-  function spawn(any){ return {x:rnd()*W, y:rnd()*H, vx:0, vy:0, s:0.6+rnd()*0.9, k:rnd()}; }
-  function halve(){ P.length = Math.floor(P.length/2); }
-  function addDebris(temp){
-    if(!opt.debris) return;
-    var a=rnd()*6.283, r=Math.min(W,H)*0.12;
-    DEB.push({x:W/2+Math.cos(a)*r, y:H*0.47+Math.sin(a)*r, vx:0, vy:0, sz:2.5+rnd()*2.5, c:tint(temp), settled:false});
-    if(DEB.length>500) DEB.shift();
+  function newLine(){ var n=9+Math.floor(Math.random()*12), x=Math.random()*W, y=Math.random()*H, pts=[], i; for(i=0;i<n;i++) pts.push([x,y]);
+    return {p:pts, vx:0, vy:0, w:.7+Math.random()*1.4, s:.75+Math.random()*.5, seg:4+Math.random()*3.5, k:Math.random(), born:0}; }
+  function place(l, x, y){ for(var i=0;i<l.p.length;i++){ l.p[i][0]=x; l.p[i][1]=y; } l.vx=0; l.vy=0; }
+  function respawn(l, st, cx, cy, R, t){
+    var a=Math.random()*6.283;
+    if(st.flow>0.15){ var rr=R*(1.05+Math.random()*.35); place(l, cx+Math.cos(a)*rr, cy+Math.sin(a)*rr*1.15); }   /* the in: born at the edge, drawn to the centre */
+    else if(st.flow<-0.15){ var r2=R*.05*Math.random(); place(l, cx+Math.cos(a)*r2, cy+Math.sin(a)*r2); }         /* the out: born at the centre, sent away */
+    else if(st.idle) place(l, -30, Math.random()*H); else place(l, Math.random()*W, Math.random()*H);
+    l.born=t;
   }
-  function kickTurb(){ }
+  function smooth(a,b,x){ var q=Math.max(0,Math.min(1,(x-a)/(b-a))); return q*q*(3-2*q); }
   function frame(dt, st, t){
     ctx.setTransform(D,0,0,D,0,0);
-    ctx.fillStyle = css(st.ground); ctx.fillRect(0,0,W,H);
-    var cx=W/2, cy=H*0.47, R=Math.max(W,H)*0.55;
-    if(st.rim>0.005){ var rc=tint(st.temp), rg=ctx.createRadialGradient(cx,cy,Math.min(W,H)*0.3,cx,cy,Math.max(W,H)*0.62);   /* the luminous rim */
-      rg.addColorStop(0,"rgba("+(rc[0]*255|0)+","+(rc[1]*255|0)+","+(rc[2]*255|0)+",0)"); rg.addColorStop(1,"rgba("+(rc[0]*255|0)+","+(rc[1]*255|0)+","+(rc[2]*255|0)+","+Math.min(1,st.rim*st.dim*1.2).toFixed(3)+")");
+    ctx.fillStyle=css(st.ground); ctx.fillRect(0,0,W,H);
+    var cx=W/2, cy=H*0.47, R=Math.max(W,H)*0.5, i, k, l;
+    warmSm += ((st.flow<-0.05?Math.min(1,-st.flow):0) - warmSm)*Math.min(1, dt*2.2);     /* the air warms through the out, cools through the in */
+    fillSm += (st.fill-fillSm)*Math.min(1, dt*4);
+    var air=airColour(warmSm), rim=rimColour(), light=PAL.light;
+    /* the rim: the edge of the screen lights with the lungs and pulses in a hold */
+    if(st.rim>0.005){ var rg=ctx.createRadialGradient(cx,cy,Math.min(W,H)*0.32,cx,cy,Math.max(W,H)*0.64);
+      rg.addColorStop(0,"rgba("+(rim[0]*255|0)+","+(rim[1]*255|0)+","+(rim[2]*255|0)+",0)"); rg.addColorStop(1,"rgba("+(rim[0]*255|0)+","+(rim[1]*255|0)+","+(rim[2]*255|0)+","+Math.min(1,st.rim*st.dim*(light?0.9:1.3)).toFixed(3)+")");
       ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); }
-    if(!P.length && !DEB.length) return;
-    var gain = (130 + 300*st.amp) * st.flow;        /* the audible gust is the visible gust */
-    var turb = st.turb, k=0.0045, e=6, tz=t*0.25;
-    var col = tint(st.temp), bright = 0.35 + 0.65*st.fill, pokeR = Math.min(W,H)*0.2;
-    ctx.lineCap="round";
-    var i, p;
-    for(i=0;i<P.length;i++){
-      p=P[i];
-      var dx=p.x-cx, dy=p.y-cy, r=Math.hypot(dx,dy)+1e-3, nx=dx/r, ny=dy/r, rn=r/R;
-      var ring = smooth(0.05,0.3,rn)*(1-smooth(0.9,1.4,rn));
-      var ax = nx*gain*ring*p.s, ay = ny*gain*ring*p.s;      /* IN looms outward toward you, OUT recedes to the centre */
-      /* curl noise: texture at rest, turbulence when the user drifts */
-      var n1=noise((p.x+e)*k,p.y*k,tz), n2=noise((p.x-e)*k,p.y*k,tz), n3=noise(p.x*k,(p.y+e)*k,tz), n4=noise(p.x*k,(p.y-e)*k,tz);
-      var cs=(14+70*turb)*40;
-      ax += (n3-n4)/(2*e)*cs; ay -= (n1-n2)/(2*e)*cs;
-      if(st.idle){ ax += 60; }
-      /* the finger: a poke pushes particles out from the fingertip; a held finger pins them */
-      if(st.tapK>0.01){ var tx=p.x-st.tapX, ty=p.y-st.tapY, tr=Math.hypot(tx,ty)+1e-3, tf=st.tapK*Math.exp(-tr*tr/(pokeR*pokeR))*36000; ax += tx/tr*tf; ay += ty/tr*tf; }
-      /* the drag: air near the moving finger takes up its velocity */
-      if(st.dragK>0.01){ var gx_=p.x-st.dragX, gy_=p.y-st.dragY, gw=st.dragK*Math.exp(-(gx_*gx_+gy_*gy_)/(pokeR*pokeR*0.5))*8; ax += (st.dragVX-p.vx)*gw; ay += (st.dragVY-p.vy)*gw; }
-      /* the lean: the whole field slides the way the phone tips */
-      ax += st.leanX*260; ay += st.leanY*260;
-      p.vx += ax*dt; p.vy += ay*dt;
-      var drag = 1 - Math.min(1, (st.still?4.5:1.6)*dt); p.vx*=drag; p.vy*=drag;
-      if(st.pinK>0){ var px_=p.x-st.pinX, py_=p.y-st.pinY, pf=1-st.pinK*0.25*Math.exp(-(px_*px_+py_*py_)/(pokeR*pokeR)); p.vx*=pf; p.vy*=pf; }
-      /* obstacle: the word */
-      if(maskAt(p.x,p.y) > 0.5){
-        var gx = maskAt(p.x+4,p.y)-maskAt(p.x-4,p.y), gy = maskAt(p.x,p.y+4)-maskAt(p.x,p.y-4), gl=Math.hypot(gx,gy)+1e-4;
-        gx/=gl; gy/=gl; p.x -= gx*6; p.y -= gy*6;
-        var vd = p.vx*gx + p.vy*gy; if(vd>0){ p.vx -= vd*gx*1.6; p.vy -= vd*gy*1.6; }
-      }
-      p.x += p.vx*dt; p.y += p.vy*dt;
-      if(p.x<-20||p.x>W+20||p.y<-20||p.y>H+20||(st.flow<-0.2&&rn<0.06)||(st.flow>0.2&&rn>1.35)){
-        if(st.flow<-0.2){ var a=rnd()*6.283; p.x=cx+Math.cos(a)*R*1.25; p.y=cy+Math.sin(a)*R*1.25; }
-        else if(st.flow>0.2){ var a2=rnd()*6.283, rr=R*0.05*rnd(); p.x=cx+Math.cos(a2)*rr; p.y=cy+Math.sin(a2)*rr; }
-        else { p.x=st.idle?-10:rnd()*W; p.y=rnd()*H; }
-        p.vx=0; p.vy=0;
-      }
-      var sp=Math.hypot(p.vx,p.vy), al=Math.min(0.95, 0.16 + sp/160)*bright;
-      if(al<0.03) continue;
-      ctx.strokeStyle="rgba("+(col[0]*255|0)+","+(col[1]*255|0)+","+(col[2]*255|0)+","+al.toFixed(3)+")";
-      ctx.lineWidth=1.6;
-      ctx.beginPath(); ctx.moveTo(p.x - p.vx*0.2, p.y - p.vy*0.2); ctx.lineTo(p.x, p.y); ctx.stroke();
-    }
-    /* debris: one per rep, carried by the field, settles on rest */
-    if(DEB.length){
-      var settle = st.stage==="rest" || st.stage==="done" || st.idle;
-      for(i=0;i<DEB.length;i++){
-        var d=DEB[i];
-        if(d.settled){ ctx.fillStyle=css(d.c); ctx.globalAlpha=0.85; ctx.beginPath(); ctx.arc(d.x,d.y,d.sz,0,6.283); ctx.fill(); ctx.globalAlpha=1; continue; }
-        var ddx=d.x-cx, ddy=d.y-cy, dr=Math.hypot(ddx,ddy)+1e-3, drn=dr/R;
-        var dring = smooth(0.05,0.3,drn)*(1-smooth(0.9,1.4,drn));
-        d.vx += (-ddx/dr*gain*dring*0.45)*dt; d.vy += (-ddy/dr*gain*dring*0.45 + (settle?260:0))*dt;
-        var m1=noise(d.x*k,d.y*k,tz+3); d.vx += (m1-0.5)*40*dt;
-        var dd=1-Math.min(1,1.2*dt); d.vx*=dd; d.vy*=dd;
-        d.x += d.vx*dt; d.y += d.vy*dt;
-        if(d.x<4){d.x=4;d.vx=Math.abs(d.vx);} if(d.x>W-4){d.x=W-4;d.vx=-Math.abs(d.vx);}
-        if(d.y<4){d.y=4;d.vy=Math.abs(d.vy);}
-        var floor = H - 6 - pileHeight(d.x);
-        if(d.y >= floor){ d.y=floor; if(settle){ d.settled=true; pile.push(d); } else { d.vy=-Math.abs(d.vy)*0.3; } }
-        if(st.flow>0.2 && drn>1.3){ d.x=cx+(rnd()-0.5)*R*0.1; d.y=cy+(rnd()-0.5)*R*0.1; d.vx=d.vy=0; }
-        ctx.fillStyle=css(d.c); ctx.globalAlpha=0.9; ctx.beginPath(); ctx.arc(d.x,d.y,d.sz,0,6.283); ctx.fill(); ctx.globalAlpha=1;
-      }
+    /* motes: the far air, carried slowly by the same breath, dim */
+    var mg=(20+30*st.amp)*st.flow;
+    ctx.fillStyle="rgba("+(air[0]*255|0)+","+(air[1]*255|0)+","+(air[2]*255|0)+","+(light?0.22:0.28)+")";
+    for(i=0;i<MO.length;i++){ var m=MO[i], mdx=m.x-cx, mdy=m.y-cy, mr=Math.hypot(mdx,mdy)+1;
+      m.x += (-mdx/mr*mg + (noise(m.x*.003,m.y*.003,t*.05)-.5)*18 + (st.idle?9:0))*dt*m.s; m.y += (-mdy/mr*mg + (noise(m.y*.003+4,m.x*.003,t*.05)-.5)*18)*dt*m.s;
+      if(m.x<-6) m.x=W+6; if(m.x>W+6) m.x=-6; if(m.y<-6) m.y=H+6; if(m.y>H+6) m.y=-6;
+      if(st.flow>0.2 && mr<8){ m.x=Math.random()*W; m.y=Math.random()*H; }
+      ctx.beginPath(); ctx.arc(m.x,m.y,0.6+m.s*0.5,0,6.283); ctx.fill(); }
+    /* the lines */
+    var gain=(150+230*st.amp)*st.flow;                 /* the audible gust is the visible gust, with a floor */
+    var turb=st.turb, kn=0.0042, e=6, tz=t*0.22, cs=(14+60*turb)*34, pokeR=Math.min(W,H)*0.22;
+    var baseA = light ? 0.26+0.30*fillSm : 0.22+0.55*fillSm;
+    ctx.lineCap="round"; ctx.lineJoin="round";
+    for(i=0;i<L.length;i++){
+      l=L[i]; var h=l.p[0], dx=h[0]-cx, dy=h[1]-cy, r=Math.hypot(dx,dy)+1e-3, nx=dx/r, ny=dy/r, rn=r/R;
+      var ring=smooth(0.03,0.22,rn)*(1-smooth(1.05,1.6,rn));
+      var ax=-nx*gain*ring*l.s, ay=-ny*gain*ring*l.s;                  /* the in draws to the centre, the out sends away */
+      var turn=0.34*ring*smooth(0.12,0.45,rn);                          /* the field turns, so the air spirals rather than beams; the turn dies near the eye so nothing orbits there */
+      ax += -ny*gain*turn*l.s; ay += nx*gain*turn*l.s;
+      var n1=noise((h[0]+e)*kn,h[1]*kn,tz), n2=noise((h[0]-e)*kn,h[1]*kn,tz), n3=noise(h[0]*kn,(h[1]+e)*kn,tz), n4=noise(h[0]*kn,(h[1]-e)*kn,tz);
+      ax += (n3-n4)/(2*e)*cs; ay -= (n1-n2)/(2*e)*cs;                   /* curl noise: texture at rest, turbulence when the count is missed */
+      if(st.idle) ax += 70;
+      if(st.tapK>0.01){ var tx=h[0]-st.tapX, ty=h[1]-st.tapY, tr=Math.hypot(tx,ty)+1e-3, tf=st.tapK*Math.exp(-tr*tr/(pokeR*pokeR))*30000; ax += tx/tr*tf; ay += ty/tr*tf; }
+      l.vx += ax*dt; l.vy += ay*dt;
+      var drag = 1 - Math.min(1, (st.still?4.5:1.25)*dt); l.vx*=drag; l.vy*=drag;   /* the hold: no force, the air coasts to a stop */
+      if(st.pinK>0){ var px_=h[0]-st.pinX, py_=h[1]-st.pinY, pf=1-st.pinK*0.3*Math.exp(-(px_*px_+py_*py_)/(pokeR*pokeR)); l.vx*=pf; l.vy*=pf; }
+      /* the word is an obstacle: the head slides round it */
+      if(maskAt(h[0],h[1]) > 0.5){ var gx=maskAt(h[0]+4,h[1])-maskAt(h[0]-4,h[1]), gy=maskAt(h[0],h[1]+4)-maskAt(h[0],h[1]-4), gl=Math.hypot(gx,gy)+1e-4;
+        gx/=gl; gy/=gl; h[0]-=gx*5; h[1]-=gy*5; var vd=l.vx*gx+l.vy*gy; if(vd>0){ l.vx-=vd*gx*1.5; l.vy-=vd*gy*1.5; } }
+      h[0] += l.vx*dt; h[1] += l.vy*dt;
+      /* the chain follows the head at a fixed spacing: a ribbon of constant length riding the air */
+      for(k=1;k<l.p.length;k++){ var q=l.p[k], pq=l.p[k-1], ddx=pq[0]-q[0], ddy=pq[1]-q[1], dd=Math.hypot(ddx,ddy); if(dd>l.seg){ q[0]=pq[0]-ddx/dd*l.seg; q[1]=pq[1]-ddy/dd*l.seg; } }
+      var out=h[0]<-40||h[0]>W+40||h[1]<-40||h[1]>H+40;
+      if(out || (st.flow>-0.1 && rn<0.09) || (st.flow<-0.2 && rn>1.5)){ respawn(l, st, cx, cy, R, t); continue; }   /* arrived at the centre: gone, and born again at the edge; nothing piles up under the word */
+      var sp=Math.hypot(l.vx,l.vy), al=Math.min(0.95, baseA*(0.55+Math.min(1,sp/200)))*Math.min(1,(t-l.born)*1.5+0.15)*smooth(0.08,0.22,rn);   /* the eye of the field is quiet: the lines fade as they arrive */
+      if(al<0.02) continue;
+      ctx.strokeStyle="rgba("+(air[0]*255|0)+","+(air[1]*255|0)+","+(air[2]*255|0)+","+al.toFixed(3)+")";
+      ctx.lineWidth=l.w*(0.8+0.5*fillSm);
+      ctx.beginPath(); ctx.moveTo(h[0],h[1]); for(k=1;k<l.p.length;k++) ctx.lineTo(l.p[k][0],l.p[k][1]); ctx.stroke();
     }
   }
-  function pileHeight(x){ var hgt=0; for(var i=0;i<pile.length;i++){ if(Math.abs(pile[i].x-x)<pile[i].sz*1.6) hgt+=pile[i].sz*0.9; } return Math.min(hgt, H*0.3); }
-  function smooth(a,b,x){ var t=Math.max(0,Math.min(1,(x-a)/(b-a))); return t*t*(3-2*t); }
+  function halve(){ if(budgetN>0.4){ budgetN*=0.6; resize(); return true; } return false; }
   resize();
-  function probe(){
-    try{ var d=ctx.getImageData(0,0,cv.width,cv.height).data, s=0,mx=0,n=0,i, g=css(frameState.ground), moving=0;
-      for(i=0;i<d.length;i+=16){ var l=(d[i]+d[i+1]+d[i+2])/3; s+=l; n++; if(l>mx) mx=l; }
-      var sp=0; for(i=0;i<P.length;i++) sp+=Math.hypot(P[i].vx,P[i].vy);
-      console.log("PROBE 2d mean="+(s/n).toFixed(1)+" max="+mx+" ground="+g+" particles="+P.length+" meanSpeed="+(P.length?sp/P.length:0).toFixed(1)+" debris="+DEB.length);
-    }catch(e){ console.log("PROBE 2d error "+e); }
-  }
-  return {kind:opt.name, resize:resize, frame:frame, halve:halve, addDebris:addDebris, probe:probe, clear:function(){ for(var i=0;i<P.length;i++){ P[i].vx=0; P[i].vy=0; } DEB=[]; pile=[]; }, destroy:function(){ P=[]; DEB=[]; pile=[]; }, info:function(){ return P.length+" particles"+(DEB.length?" · "+DEB.length+" debris":""); }};
-}
-
-/* ============================ ENGINE: GPU FLUID ============================
-   Real velocity field: advect, vorticity confinement, divergence,
-   Jacobi pressure, gradient subtract, dye advect. The breath injects
-   divergence. The hold injects nothing and the field settles on its own.
-   The word is a no-slip obstacle. */
-function FieldGL(cv){
-  var gl = cv.getContext("webgl2", {alpha:false, antialias:false, depth:false, stencil:false, powerPreference:"high-performance", preserveDrawingBuffer:false});
-  if(!gl) return null;
-  var extF = gl.getExtension("EXT_color_buffer_float"), extH = gl.getExtension("EXT_color_buffer_half_float");
-  if(!extF && !extH) return null;
-  var VS = "#version 300 es\nprecision highp float;out vec2 vUv;void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2));vUv=p;gl_Position=vec4(p*2.0-1.0,0.0,1.0);}";
-  var HEAD = "#version 300 es\nprecision highp float;precision highp sampler2D;in vec2 vUv;out vec4 o;uniform vec2 uTexel;";
-  var F = {
-    advect: HEAD+"uniform sampler2D uVel,uSrc;uniform float uDt,uDiss;void main(){vec2 v=texture(uVel,vUv).xy;vec2 p=vUv-uDt*v*uTexel;o=texture(uSrc,p)*uDiss;}",
-    force: HEAD+"uniform sampler2D uVel,uMask;uniform vec2 uCenter,uAspect,uTap,uPin,uDrag,uDragV,uLean;uniform float uDt,uFlow,uSwirl,uWind,uTime,uMax,uTapK,uPinK,uCurl,uDragK;"+
-      "float ss(float a,float b,float x){return smoothstep(a,b,x);}"+
-      "float hsh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}"+
-      "float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hsh(i),hsh(i+vec2(1,0)),f.x),mix(hsh(i+vec2(0,1)),hsh(i+vec2(1,1)),f.x),f.y);}"+
-      /* curl of a drifting noise field: divergence-free wisps that give the air texture and life */
-      "vec2 curl(vec2 p){float e=0.02;float a=vn(p+vec2(e,0)),b=vn(p-vec2(e,0)),c=vn(p+vec2(0,e)),d=vn(p-vec2(0,e));return vec2(c-d,b-a)/(2.0*e);}"+
-      "void main(){vec2 v=texture(uVel,vUv).xy;vec2 d=(vUv-uCenter)*uAspect;float r=length(d)+1e-4;vec2 n=d/r;float rn=r/0.5;"+
-      "float rb=max(abs(d.x)/(0.5*uAspect.x),abs(d.y)/0.5);"+
-      "float ring=ss(0.06,0.3,rn)*(1.0-ss(1.0,1.5,rb));vec2 f=n*uFlow*ring*105.0;vec2 t=vec2(-n.y,n.x);"+
-      "f+=t*uSwirl*ring*30.0*sin(rn*9.0+uTime*1.7);f+=vec2(uWind*28.0,0.0);"+
-      "f+=curl(d*3.2+vec2(uTime*0.11,-uTime*0.07))*uCurl;"+
-      /* the finger: a poke pushes air out from the fingertip; a held finger pins it */
-      "vec2 dt2=(vUv-uTap)*uAspect;float rt=length(dt2)+1e-4;f+=(dt2/rt)*uTapK*exp(-rt*rt/0.022)*2400.0;"+
-      /* the drag: air near the moving finger takes up the finger's velocity; the lean: the whole field slides the way the phone tips */
-      "vec2 dg=(vUv-uDrag)*uAspect;float gw=uDragK*exp(-dot(dg,dg)/0.012)*10.0;f+=(uDragV-v)*gw;f+=uLean*60.0;v+=f*uDt;"+
-      "vec2 dp=(vUv-uPin)*uAspect;v*=1.0-uPinK*0.9*exp(-dot(dp,dp)/0.004);"+
-      "float m=texture(uMask,vUv).a;v*=(1.0-m);float L=length(v);if(L>uMax)v*=uMax/L;if(any(isnan(v)))v=vec2(0.0);o=vec4(v,0.0,1.0);}",
-    curl: HEAD+"uniform sampler2D uVel;void main(){float L=texture(uVel,vUv-vec2(uTexel.x,0)).y,R=texture(uVel,vUv+vec2(uTexel.x,0)).y,B=texture(uVel,vUv-vec2(0,uTexel.y)).x,T=texture(uVel,vUv+vec2(0,uTexel.y)).x;o=vec4(0.5*((R-L)-(T-B)),0,0,1);}",
-    vort: HEAD+"uniform sampler2D uVel,uCurl;uniform float uDt,uK;void main(){float L=texture(uCurl,vUv-vec2(uTexel.x,0)).x,R=texture(uCurl,vUv+vec2(uTexel.x,0)).x,B=texture(uCurl,vUv-vec2(0,uTexel.y)).x,T=texture(uCurl,vUv+vec2(0,uTexel.y)).x,C=texture(uCurl,vUv).x;"+
-      "vec2 f=0.5*vec2(abs(T)-abs(B),abs(R)-abs(L));f/=length(f)+1e-4;f*=uK*C;f.y*=-1.0;vec2 v=texture(uVel,vUv).xy+f*uDt;o=vec4(v,0,1);}",
-    div: HEAD+"uniform sampler2D uVel;void main(){float L=texture(uVel,vUv-vec2(uTexel.x,0)).x,R=texture(uVel,vUv+vec2(uTexel.x,0)).x,B=texture(uVel,vUv-vec2(0,uTexel.y)).y,T=texture(uVel,vUv+vec2(0,uTexel.y)).y;o=vec4(0.5*(R-L+T-B),0,0,1);}",
-    press: HEAD+"uniform sampler2D uP,uDiv;void main(){float L=texture(uP,vUv-vec2(uTexel.x,0)).x,R=texture(uP,vUv+vec2(uTexel.x,0)).x,B=texture(uP,vUv-vec2(0,uTexel.y)).x,T=texture(uP,vUv+vec2(0,uTexel.y)).x,d=texture(uDiv,vUv).x;o=vec4((L+R+B+T-d)*0.25,0,0,1);}",
-    grad: HEAD+"uniform sampler2D uP,uVel;void main(){float L=texture(uP,vUv-vec2(uTexel.x,0)).x,R=texture(uP,vUv+vec2(uTexel.x,0)).x,B=texture(uP,vUv-vec2(0,uTexel.y)).x,T=texture(uP,vUv+vec2(0,uTexel.y)).x;vec2 v=texture(uVel,vUv).xy-0.5*vec2(R-L,T-B);o=vec4(v,0,1);}",
-    /* the dye goes in as filaments, a noise field raised to a power, never as a flat wash; so the field is streaks of wind over dark ground and the motion can be seen */
-    dye: HEAD+"uniform sampler2D uDye,uMask;uniform vec2 uCenter,uAspect,uTap,uDrag;uniform float uDt,uIn,uOut,uIdle,uTime,uTapK,uDragK,uInk;uniform vec3 uColor;"+
-      "float hsh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}"+
-      "float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hsh(i),hsh(i+vec2(1,0)),f.x),mix(hsh(i+vec2(0,1)),hsh(i+vec2(1,1)),f.x),f.y);}"+
-      "void main(){vec4 d=texture(uDye,vUv);vec2 q=(vUv-uCenter)*uAspect;float rn=length(q)/0.5;float rb=max(abs(q.x)/(0.5*uAspect.x),abs(q.y)/0.5);"+
-      "float fil=pow(0.55*vn(q*7.0+vec2(uTime*0.23,-uTime*0.17))+0.45*vn(q*19.0+vec2(-uTime*0.31,uTime*0.4)),2.6)*3.2;"+
-      "float edge=smoothstep(0.66,1.0,rb)*(0.55+0.45*sin(atan(q.y,q.x)*7.0+uTime*0.9))*fil;float core=(1.0-smoothstep(0.0,0.34,rn))*fil;"+
-      "vec2 qt=(vUv-uTap)*uAspect;float rq=length(qt);d.rgb+=uColor*uTapK*(1.0+0.6*uInk)*(exp(-rq*rq/0.004)*22.0+exp(-pow(rq-0.16*(1.0-uTapK),2.0)/0.0012)*14.0)*uDt;"+      /* the puff at the fingertip and the ring it throws; denser ink with Tap on */
-      "vec2 qg=(vUv-uDrag)*uAspect;d.rgb+=uColor*uDragK*exp(-dot(qg,qg)/0.0025)*9.0*uDt;"+      /* the drag leaves a streak */
-      "d.rgb+=uColor*(uIn*core*4.2+uOut*edge*2.2)*uDt;d.rgb=min(d.rgb,vec3(1.0));"+
-      /* idle: a little wind from the left edge, and the TRAIL: dye shed from the lee of the letters into the wind, so the mark streams */
-      "float m=texture(uMask,vUv).a;float shed=max(0.0,texture(uMask,vUv-vec2(0.012,0.0)).a-m);"+
-      "d.rgb+=uColor*uIdle*((1.0-smoothstep(0.0,0.05,vUv.x))*(0.5+0.5*sin(vUv.y*34.0+uTime*1.3))*0.9+shed*fil*(0.55+0.45*sin(vUv.y*90.0+uTime*2.6))*3.0)*uDt;"+   /* through the same filaments, so the letters shed streaks and not copies of themselves */
-      "d.rgb*=(1.0-m*0.9);o=vec4(min(d.rgb,vec3(1.1)),1.0);}",
-    /* show: the deep layer first, coarse and dim, then the dye; with Ink on, a small bloom around whatever is bright */
-    show: HEAD+"uniform sampler2D uDye,uDeep;uniform vec3 uGround,uRim;uniform vec2 uAspect;uniform float uGain,uRimK,uBloom;"+
-      "void main(){vec2 q=(vUv-vec2(0.5,0.53))*uAspect;float rb=max(abs(q.x)/(0.5*uAspect.x),abs(q.y)/0.5);float rim=smoothstep(0.4,1.08,rb);"+
-      "vec3 dy=texture(uDye,vUv).rgb;vec3 dp=texture(uDeep,vUv).rgb;"+
-      "vec3 c=uGround+uRim*rim*uRimK+pow(max(dp,0.0),vec3(1.3))*uGain*0.25+pow(max(dy,0.0),vec3(1.15))*uGain;"+
-      "if(uBloom>0.001){vec2 e=uTexel*3.0;vec3 b=texture(uDye,vUv+vec2(e.x,0)).rgb+texture(uDye,vUv-vec2(e.x,0)).rgb+texture(uDye,vUv+vec2(0,e.y)).rgb+texture(uDye,vUv-vec2(0,e.y)).rgb"+
-      "+texture(uDye,vUv+e).rgb+texture(uDye,vUv-e).rgb+texture(uDye,vUv+vec2(e.x,-e.y)).rgb+texture(uDye,vUv-vec2(e.x,-e.y)).rgb;b*=0.125;"+
-      "c+=pow(max(b-vec3(0.3),vec3(0.0))*1.4,vec3(1.5))*uGain*uBloom*1.6;}o=vec4(c,1.0);}"
-  };
-  function sh(type,src){ var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){ throw new Error(gl.getShaderInfoLog(s)); } return s; }
-  var vs; try{ vs = sh(gl.VERTEX_SHADER, VS); }catch(e){ return null; }
-  var PR={};
-  try{
-    for(var k in F){ var p=gl.createProgram(); gl.attachShader(p,vs); gl.attachShader(p,sh(gl.FRAGMENT_SHADER,F[k])); gl.linkProgram(p); if(!gl.getProgramParameter(p,gl.LINK_STATUS)) return null;
-      var u={}, n=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS); for(var i=0;i<n;i++){ var nm=gl.getActiveUniform(p,i).name; u[nm]=gl.getUniformLocation(p,nm); } PR[k]={p:p,u:u}; }
-  }catch(e){ return null; }
-  var simW=0,simH=0,dyeW=0,dyeH=0,W=0,H=0, vel,vel2,pr,pr2,dv,cl,dye,dye2,deep,deep2, maskTex, maskVer=-1, quality=1;
-  function tex(w,h){ var t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA16F,w,h,0,gl.RGBA,gl.HALF_FLOAT,null); var fb=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,fb); gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);
-    if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE) throw new Error("fbo"); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); return {t:t,fb:fb,w:w,h:h}; }
-  function resize(){
-    W=window.innerWidth; H=window.innerHeight; var D=Math.min(1.5,window.devicePixelRatio||1);   /* the show pass is per pixel; 1.5 is enough for dye and halves the fill on a 3x phone */
-    cv.width=Math.round(W*D); cv.height=Math.round(H*D);
-    simW=Math.round(160*quality); simH=Math.max(8,Math.round(simW*H/W)); dyeW=simW*2; dyeH=simH*2;
-    try{ vel=tex(simW,simH); vel2=tex(simW,simH); pr=tex(simW,simH); pr2=tex(simW,simH); dv=tex(simW,simH); cl=tex(simW,simH); dye=tex(dyeW,dyeH); dye2=tex(dyeW,dyeH); deep=tex(simW,simH); deep2=tex(simW,simH); }catch(e){ return false; }
-    if(!maskTex){ maskTex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,maskTex); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE); }
-    maskVer=-1; return true;
-  }
-  if(!resize()) return null;
-  function use(k){ var P=PR[k]; gl.useProgram(P.p); return P.u; }
-  function bind(u,name,tx,unit){ gl.activeTexture(gl.TEXTURE0+unit); gl.bindTexture(gl.TEXTURE_2D,tx.t||tx); gl.uniform1i(u[name],unit); }
-  function draw(target){ if(target){ gl.bindFramebuffer(gl.FRAMEBUFFER,target.fb); gl.viewport(0,0,target.w,target.h); } else { gl.bindFramebuffer(gl.FRAMEBUFFER,null); gl.viewport(0,0,cv.width,cv.height); } gl.drawArrays(gl.TRIANGLES,0,3); }
-  function swapV(){ var t=vel; vel=vel2; vel2=t; } function swapP(){ var t=pr; pr=pr2; pr2=t; } function swapD(){ var t=dye; dye=dye2; dye2=t; } function swapE(){ var t=deep; deep=deep2; deep2=t; }
-  function frame(dt, st, t){
-    if(MASK.ver!==maskVer){ gl.bindTexture(gl.TEXTURE_2D,maskTex); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,maskCv); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false); maskVer=MASK.ver; }
-    var tx=1/simW, ty=1/simH, u, i;
-    var aspect=[W/H,1], center=[0.5, 1-0.47];
-    /* 1. advect velocity (dissipation = momentum decay: the hold settles) */
-    u=use("advect"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss, Math.pow(st.idle?0.985:st.still?0.972:0.992, dt*60));   /* per second, not per frame, so the air decays the same at 30 fps as at 60; the hold settles fast: still air */ bind(u,"uVel",vel,0); bind(u,"uSrc",vel,1); draw(vel2); swapV();
-    /* 2. vorticity confinement keeps the eddies alive */
-    u=use("curl"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uVel",vel,0); draw(cl);
-    u=use("vort"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uK, 22+30*st.turb); bind(u,"uVel",vel,0); bind(u,"uCurl",cl,1); draw(vel2); swapV();
-    /* 3. the breath: inward divergence on IN, outward on OUT, nothing on HOLD */
-    u=use("force"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
-    gl.uniform1f(u.uFlow, st.flow*(0.5+1.4*st.amp)); gl.uniform1f(u.uSwirl, 0.18+st.turb); gl.uniform1f(u.uWind, st.idle?1:0); gl.uniform1f(u.uTime,t); gl.uniform1f(u.uMax, 130+120*st.tapK+160*st.dragK);
-    gl.uniform1f(u.uCurl, (st.still?1.5:5.0)*(0.6+Math.abs(st.flow))+22*st.turb);
-    gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK); gl.uniform2f(u.uPin, st.pinX/W, 1-st.pinY/H); gl.uniform1f(u.uPinK, st.pinK);
-    gl.uniform2f(u.uDrag, st.dragX/W, 1-st.dragY/H); gl.uniform2f(u.uDragV, st.dragVX/W*simW, -st.dragVY/H*simH); gl.uniform1f(u.uDragK, st.dragK);   /* the finger's speed, in sim texels a second */
-    gl.uniform2f(u.uLean, st.leanX, -st.leanY);
-    bind(u,"uVel",vel,0); bind(u,"uMask",maskTex,1); draw(vel2); swapV();
-    /* 4. project to divergence-free */
-    u=use("div"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uVel",vel,0); draw(dv);
-    u=use("press"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uDiv",dv,1);
-    for(i=0;i<12;i++){ bind(u,"uP",pr,0); draw(pr2); swapP(); }
-    u=use("grad"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uP",pr,0); bind(u,"uVel",vel,1); draw(vel2); swapV();
-    /* 5. dye: carried by the field, slowly fading, so the session accumulates */
-    u=use("advect"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss,Math.pow(0.5,dt));   /* per second, not per frame: fades fast enough never to pool into a sheet, on slow frames too */ bind(u,"uVel",vel,0); bind(u,"uSrc",dye,1); draw(dye2); swapD();
-    var c=tint(st.temp);
-    u=use("dye"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
-    gl.uniform1f(u.uIn, Math.max(0,st.flow)*(0.5+st.amp)); gl.uniform1f(u.uOut, Math.max(0,-st.flow)*(0.5+st.amp)); gl.uniform1f(u.uIdle, st.idle?1:0); gl.uniform1f(u.uTime,t);
-    gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK); gl.uniform2f(u.uDrag, st.dragX/W, 1-st.dragY/H); gl.uniform1f(u.uDragK, st.dragK); gl.uniform1f(u.uInk, st.ink);
-    gl.uniform3f(u.uColor,c[0],c[1],c[2]); bind(u,"uDye",dye,0); bind(u,"uMask",maskTex,1); draw(dye2); swapD();
-    /* 5b. DEPTH: a second, coarser layer of dye at sim resolution, carried at a third of the speed and fading slower, drawn behind: the far air */
-    u=use("advect"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt*0.35); gl.uniform1f(u.uDiss,Math.pow(0.7,dt)); bind(u,"uVel",vel,0); bind(u,"uSrc",deep,1); draw(deep2); swapE();
-    u=use("dye"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
-    gl.uniform1f(u.uIn, Math.max(0,st.flow)*(0.5+st.amp)*0.3); gl.uniform1f(u.uOut, Math.max(0,-st.flow)*(0.5+st.amp)*0.3); gl.uniform1f(u.uIdle, st.idle?0.3:0); gl.uniform1f(u.uTime,t*0.6+7.0);
-    gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK*0.3); gl.uniform2f(u.uDrag, st.dragX/W, 1-st.dragY/H); gl.uniform1f(u.uDragK, st.dragK*0.3); gl.uniform1f(u.uInk, 0);
-    gl.uniform3f(u.uColor,c[0],c[1],c[2]); bind(u,"uDye",deep,0); bind(u,"uMask",maskTex,1); draw(deep2); swapE();
-    /* 6. show: ground luminance carries the phase; dye carries the motion; INK blooms with Tap on */
-    u=use("show"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform3f(u.uGround,st.ground[0],st.ground[1],st.ground[2]); gl.uniform3f(u.uRim,c[0],c[1],c[2]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uRimK, st.rim*st.dim); gl.uniform1f(u.uGain, 0.46*st.dim);
-    gl.uniform1f(u.uBloom, st.ink*Math.min(1,st.tapK*1.5+st.dragK));   /* the bloom lives only in the moment of the tap or the drag */ bind(u,"uDye",dye,0); bind(u,"uDeep",deep,1); draw(null);
-    if(probeReq){ probeReq=false; probeGL(); }
-  }
-  var probeReq=false;
-  function probeGL(){
-    try{
-      var px=new Uint8Array(64*64*4); gl.bindFramebuffer(gl.FRAMEBUFFER,null); gl.readPixels(0,0,64,64,gl.RGBA,gl.UNSIGNED_BYTE,px);
-      var s=0,mx=0,i; for(i=0;i<px.length;i+=4){ var l=(px[i]+px[i+1]+px[i+2])/3; s+=l; if(l>mx) mx=l; }
-      var dyeMax=0, velMax=0;
-      try{ var f=new Float32Array(dyeW*dyeH*4); gl.bindFramebuffer(gl.FRAMEBUFFER,dye.fb); gl.readPixels(0,0,dyeW,dyeH,gl.RGBA,gl.FLOAT,f); for(i=0;i<f.length;i+=4){ if(f[i]>dyeMax) dyeMax=f[i]; } }catch(e){ dyeMax=-1; }
-      try{ var g=new Float32Array(simW*simH*4); gl.bindFramebuffer(gl.FRAMEBUFFER,vel.fb); gl.readPixels(0,0,simW,simH,gl.RGBA,gl.FLOAT,g); for(i=0;i<g.length;i+=4){ var m=Math.abs(g[i])+Math.abs(g[i+1]); if(m>velMax) velMax=m; } }catch(e){ velMax=-1; }
-      var mk=0; if(MASK.data){ for(i=3;i<MASK.data.length;i+=4) if(MASK.data[i]>127) mk++; mk=mk/(MASK.w*MASK.h); }
-      console.log("PROBE gl corner-mean="+(s/(64*64)).toFixed(1)+" corner-max="+mx+" dyeMax="+dyeMax.toFixed(3)+" velMax="+velMax.toFixed(2)+" maskCover="+mk.toFixed(3));
-    }catch(e){ console.log("PROBE gl error "+e); }
-  }
-  /* debug: numbers from the textures, for the harness */
-  function texStats(t){ var f=new Float32Array(t.w*t.h*4), i, mx=-1e9, mn=1e9, sum=0, nan=0, n=0; gl.bindFramebuffer(gl.FRAMEBUFFER,t.fb); gl.readPixels(0,0,t.w,t.h,gl.RGBA,gl.FLOAT,f);
-    for(i=0;i<f.length;i+=4){ var v=f[i]; if(v!==v){ nan++; continue; } n++; sum+=v; if(v>mx) mx=v; if(v<mn) mn=v; }
-    var c=f[((t.h>>1)*t.w+(t.w>>1))*4], k=f[(2*t.w+2)*4]; return {w:t.w,h:t.h,mean:n?+(sum/n).toFixed(4):0,max:+mx.toFixed(4),min:+mn.toFixed(4),nan:nan,centre:+c.toFixed(4),corner:+k.toFixed(4)}; }
-  function stats(){ try{ return {vel:texStats(vel), dye:texStats(dye), deep:texStats(deep), pr:texStats(pr)}; }catch(e){ return {err:String(e)}; } }
-  function halve(){ if(quality>0.5){ quality=0.5; resize(); return true; } return false; }
-  cv.addEventListener("webglcontextlost", function(e){ e.preventDefault(); lost=true; });
-  var lost=false;
-  function clear(){ [vel,vel2,pr,pr2,dv,cl,dye,dye2,deep,deep2].forEach(function(t){ gl.bindFramebuffer(gl.FRAMEBUFFER,t.fb); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }); }
-  return {kind:"field", resize:resize, frame:frame, halve:halve, clear:clear, stats:stats, addDebris:function(){}, isLost:function(){ return lost; }, probe:function(){ probeReq=true; }, destroy:function(){ try{ gl.getExtension("WEBGL_lose_context").loseContext(); }catch(e){} }, info:function(){ return "GPU fluid · "+simW+"×"+simH+" sim · "+dyeW+"×"+dyeH+" dye"; }};
+  return {kind:"slipstream", resize:resize, frame:frame, halve:halve,
+    clear:function(){ for(var i=0;i<L.length;i++){ place(L[i], Math.random()*W, Math.random()*H); L[i].born=0; } },
+    info:function(){ return L.length+" lines · "+MO.length+" motes"; }};
 }
 
 /* ============================ MIRROR ============================
@@ -715,27 +562,6 @@ function motionRequest(){
     try{ return DeviceMotionEvent.requestPermission().then(function(r){ return r==="granted"; }, function(){ return false; }); }catch(e){ return Promise.resolve(false); }
   }
   return Promise.resolve(true);
-}
-/* TILT: tip the phone and the air slides that way. Gravity from devicemotion, smoothed over 0.3 s
-   with the slow posture removed over 4 s, so it is the change of tilt that leans the field and a
-   phone held at any angle settles back to level. It listens only where no new prompt is needed:
-   where motion needs no permission, or once Belly has already been granted it. */
-var LEAN={on:false, x:0, y:0, dc:[0,0], lp:[0,0], lastT:0, evt:0};
-function leanAllowed(){ if(!MIR.supported) return false; if(typeof DeviceMotionEvent.requestPermission!=="function") return true; return MIR.perm==="granted"; }
-function leanStart(){ LEAN.x=LEAN.y=0; LEAN.dc=[0,0]; LEAN.lp=[0,0]; LEAN.lastT=0; LEAN.evt=0; if(!leanAllowed()) return; LEAN.on=true; window.addEventListener("devicemotion", onLean); }
-function leanStop(){ LEAN.on=false; LEAN.x=LEAN.y=0; window.removeEventListener("devicemotion", onLean); }
-function onLean(e){
-  var a=e.accelerationIncludingGravity; if(!a||a.x==null) return;
-  var t=performance.now()/1000, dt=LEAN.lastT?Math.min(0.1,Math.max(0.004,t-LEAN.lastT)):0.016; LEAN.lastT=t; LEAN.evt++;
-  var g=Math.hypot(a.x,a.y,a.z)||9.81, raw=[a.x/g, a.y/g], i, hp=[0,0];
-  for(i=0;i<2;i++){
-    if(LEAN.evt===1) LEAN.dc[i]=raw[i];
-    LEAN.lp[i]+=(raw[i]-LEAN.lp[i])*Math.min(1,dt/0.3);
-    LEAN.dc[i]+=(LEAN.lp[i]-LEAN.dc[i])*Math.min(1,dt/4);
-    hp[i]=LEAN.lp[i]-LEAN.dc[i];
-  }
-  /* reaction force points away from the lowered edge: lower the right edge and a.x goes negative, so the lean is minus x; lower the top and a.y goes negative, and the screen's y runs down */
-  LEAN.x=Math.max(-1,Math.min(1,-hp[0]*2.2)); LEAN.y=Math.max(-1,Math.min(1, hp[1]*2.2));
 }
 function mirrorStart(){ mirrorReset(); MIR.on=true; window.addEventListener("devicemotion", onMotion); }
 function mirrorStop(){ MIR.on=false; window.removeEventListener("devicemotion", onMotion); }
@@ -805,80 +631,59 @@ function mirrorVoiceFrame(){
 var LEAD = 0.12;
 var S = {running:false, mode:"lift", sound:"tone", steps:[], idx:0, stepStart:0, schedIdx:-1,
          reps:10, sets:4, restDur:180, startedAt:0, recorded:{}, ended:false,
-         turb:0, mirror:false, tapOn:false,
-         poke:{x:0,y:0,k:0,t:-9}, pin:{x:0,y:0,on:false}, drag:{on:false,x:0,y:0,vx:0,vy:0,t:-9}};
+         turb:0, mirror:false, tapOn:false, poke:{x:0,y:0,k:0,t:-9}, pin:{x:0,y:0,on:false}};
 function ph(kind, dur, stage, setNo, rep){ return {k:kind, dur:dur, stage:stage, set:setNo, rep:rep}; }
-function pushCycle(arr, c, stage, setNo, rep){
-  if(c["in"]>0) arr.push(ph("in",c["in"],stage,setNo,rep)); if(c.hold>0) arr.push(ph("hold",c.hold,stage,setNo,rep));
-  if(c.out>0) arr.push(ph("out",c.out,stage,setNo,rep)); if(c.empty>0) arr.push(ph("empty",c.empty,stage,setNo,rep));
-}
+function pushSeq(arr, seq, stage, setNo, rep){ for(var i=0;i<seq.length;i++) if(seq[i][1]>0) arr.push(ph(seq[i][0],seq[i][1],stage,setNo,rep)); }
 function trimTo(arr, from, total){ var acc=0,i; for(i=from;i<arr.length;i++){ if(acc+arr[i].dur>=total-0.001){ arr[i].dur=Math.max(total-acc,0); arr.length=i+1; if(arr[arr.length-1].dur<0.4&&arr.length>from+1) arr.length=arr.length-1; return; } acc+=arr[i].dur; } }
-function coherentSteps(seconds, stage, setNo){ var out=[], n=Math.ceil(seconds/11)*2+2, i; for(i=0;i<n;i++) out.push(ph(i%2?"out":"in",5.5,stage,setNo,0)); trimTo(out,0,seconds); return out; }
+function coherentSteps(seconds, stage, setNo){ var out=[], n=Math.ceil(seconds/11)*2+2, i; for(i=0;i<n;i++) out.push(ph(i%2?"out":"in",5.5,stage,setNo,Math.floor(i/2)+1)); trimTo(out,0,seconds); return out; }
 function buildSteps(){
   var st=[], c=DB.cfg, i, s, r;
   if(S.mode==="lift"){
-    var T=c.lift.tune[c.lift.preset], counts={"in":+T["in"],hold:+T.hold,out:+T.out,empty:+T.empty};
+    var seq=c.lift.tune[c.lift.preset].seq;
     for(s=1;s<=S.sets;s++){
       st.push(ph("getset",3,"getset",s,0));
-      for(r=1;r<=S.reps;r++) pushCycle(st,counts,"set",s,r);
+      for(r=1;r<=S.reps;r++) pushSeq(st,seq,"set",s,r);
       if(s<S.sets){ var rest=coherentSteps(S.restDur,"rest",s); for(i=0;i<rest.length;i++) st.push(rest[i]); }
     }
   }else{
-    var P=c.breathe, cc = P.pat==="coh"?{"in":5.5,hold:0,out:5.5,empty:0}:{"in":4,hold:7,out:8,empty:0};
-    for(r=1;r<=P.cycles;r++) pushCycle(st,cc,"set",1,r);
+    var P=c.breathe, cc = P.pat==="coh"?[["in",5.5],["out",5.5]]:[["in",4],["hold",7],["out",8]];
+    for(r=1;r<=P.cycles;r++) pushSeq(st,cc,"set",1,r);
   }
   st.push(ph("done",1e9,"done",0,0));
   return st;
 }
-/* TAP: you drum the breath. Inhale and exhale: tap once per second, on the count.
-   Hold: press and hold. Breath held, finger held. Each tap pushes the wind, a real
-   gust into the fluid at your fingertip, so the air moves because you moved it; a
-   held finger pins the air under it. The pacer gives the beat: a soft tick and a
-   pulse of the ground each second of an active phase. Taps never move the clock;
-   the gap between your tap and the beat becomes turbulence. No score.
-   The ideal version taps back. iOS Safari has no vibration API, so it cannot. */
+/* TAP. Lift: a tap means this movement starts now; the phase re-anchors and the air is pushed from the
+   finger. Breathe with Tap on: you drum the breath, one tap a second on the count, a held finger through
+   the hold; the tap pushes the air, the miss becomes turbulence, and the clock never moves. */
 function poke(x,y,k){ S.poke={x:x,y:y,k:k,t:nowSec()}; }
 function tapDown(x,y){
-  if(!S.running) return false; dragStart(x,y);                             /* any finger on the field can drag a gust */
+  if(!S.running) return false;
   var st=S.steps[S.idx]; if(!st || st.stage!=="set") return false;
-  if(S.mode==="lift"){ reanchor(false); poke(x,y,1); return true; }        /* Lift keeps the sync tap: this phase starts now */
+  if(S.mode==="lift"){ reanchor(false); poke(x,y,1); return true; }
   if(!S.tapOn) return false;
   poke(x,y,1); S.pin={x:x,y:y,on:true};
   if(st.k!=="hold"){ var into=nowSec()-S.stepStart, f=into-Math.floor(into), miss=Math.min(f,1-f); S.turb=Math.min(1, S.turb + miss*0.5); }
   return true;
 }
-/* DRAG: a finger moving across the field drags the air with it. The pointer's velocity, smoothed,
-   is injected into the fluid along the path for a moment after each move, so a flick throws a gust */
-function tapMove(x,y){
-  if(S.pin.on){ S.pin.x=x; S.pin.y=y; }
-  if(!S.drag.on) return;
-  var t=nowSec(), dt=Math.max(0.004, t-S.drag.t), vx=(x-S.drag.x)/dt, vy=(y-S.drag.y)/dt;
-  if(dt>0.25){ vx=0; vy=0; }
-  S.drag.vx += (vx-S.drag.vx)*0.5; S.drag.vy += (vy-S.drag.vy)*0.5; S.drag.x=x; S.drag.y=y; S.drag.t=t;
-}
-function tapUp(){ S.pin.on=false; S.drag.on=false; }
-function dragStart(x,y){ S.drag={on:true, x:x, y:y, vx:0, vy:0, t:nowSec()}; }
+function tapMove(x,y){ if(S.pin.on){ S.pin.x=x; S.pin.y=y; } }
+function tapUp(){ S.pin.on=false; }
 function startSession(mode){
   var c=DB.cfg; S.mode=mode; S.sound=c.sound;
-  /* the two methods: belly (the accelerometer mirror) and tap (you drum the breath) */
   S.mirror = mode==="breathe" && c.breathe.belly!=="off" && MIR.perm==="granted";
   S.tapOn = mode==="breathe" && c.breathe.tap==="on";
-  S.poke={x:0,y:0,k:0,t:-9}; S.pin={x:0,y:0,on:false}; S.drag={on:false,x:0,y:0,vx:0,vy:0,t:-9};
-  leanStart();
+  S.poke={x:0,y:0,k:0,t:-9}; S.pin={x:0,y:0,on:false};
   if(mode==="lift"){ S.reps=c.lift.reps[c.lift.preset]; S.sets=c.lift.sets; S.restDur=c.lift.tune[c.lift.preset].rest; }
   else { S.reps=c.breathe.cycles; S.sets=1; }
   audioStart(mode, S.mirror ? "tone" : S.sound);     /* in the mirror the tone leads and the noise is you */
   if(S.mirror){ mirrorStart(); if(A) mirrorVoice=mkMirror(); }
-  if(ENG.inst && ENG.inst.clear) ENG.inst.clear();          /* a clean field for every session */
+  if(ENG.inst) ENG.inst.clear();
   S.steps=buildSteps(); S.idx=0; S.schedIdx=-1; S.ended=false; S.recorded={}; S.turb=0;
   S.stepStart=nowSec()+0.1; S.startedAt=nowSec(); S.running=true;
-  lastKind=null;
-  show("run"); wake(true);
-  lastWord=lastNum=lastMeta=null;
-  MASK.dirty=true;
+  lastKind=null; show("run"); wake(true);
+  lastWord=lastSub=lastNum=lastMeta=null; tlKey=""; MASK.dirty=true;
 }
 function endSession(natural){
-  if(!S.running) return; S.running=false; S.pin.on=false; S.drag.on=false; leanStop();
+  if(!S.running) return; S.running=false; S.pin.on=false;
   DB.stats.sec += Math.max(0, nowSec()-S.startedAt); save();
   audioStop(); mirrorStop(); wake(false); S.ended=true;
   if(!natural){ show("home"); } else { paintDone(); }
@@ -888,10 +693,7 @@ function recordSet(setNo, done){
   DB.stats.log.unshift({t:Date.now(), m:S.mode, s:setNo, of:S.sets, d:Math.round(done*10)/10, g:S.reps});
   if(DB.stats.log.length>400) DB.stats.log.length=400; save();
 }
-function setProgress(){
-  var st=S.steps[S.idx]; if(!st||st.stage!=="set") return 0;
-  return Math.max(0, st.rep-1);
-}
+function setProgress(){ var st=S.steps[S.idx]; if(!st||st.stage!=="set") return 0; return Math.max(0, st.rep-1); }
 function saveSet(){ var st=S.steps[S.idx]; if(!st||st.stage!=="set") return; recordSet(st.set,setProgress()); var j=S.idx; while(j<S.steps.length&&S.steps[j].stage==="set"&&S.steps[j].set===st.set) j++; S.steps.splice(S.idx,j-S.idx); reanchor(true); }
 function skipRest(){ var st=S.steps[S.idx]; if(!st||st.stage!=="rest") return; var j=S.idx; while(j<S.steps.length&&S.steps[j].stage==="rest"&&S.steps[j].set===st.set) j++; S.steps.splice(S.idx,j-S.idx); reanchor(true); }
 function reanchor(hard){
@@ -902,60 +704,48 @@ function reanchor(hard){
 function startTimeOf(j){ var t=S.stepStart,k; for(k=S.idx;k<j;k++) t+=S.steps[k].dur; return t; }
 function scheduleAhead(now){
   if(!A||A.ctx.state!=="running") return; var guard=0;
-  while(S.schedIdx<S.steps.length-1&&guard++<6){ var j=S.schedIdx+1, t=startTimeOf(j); if(t>now+LEAD) break; var stp=S.steps[j]; if(stp.k!=="done") schemePhase(stp.k==="getset"?"getset":stp.k, toCtx(Math.max(t,now+0.004)), stp.dur); S.schedIdx=j; }
+  while(S.schedIdx<S.steps.length-1&&guard++<6){ var j=S.schedIdx+1, t=startTimeOf(j); if(t>now+LEAD) break; var stp=S.steps[j]; if(stp.k!=="done") schemePhase(stp.k, toCtx(Math.max(t,now+0.004)), stp.dur); S.schedIdx=j; }
 }
 
-/* ============================ ENGINE MANAGER ============================ */
-var elGL=document.getElementById("gl"), elC2=document.getElementById("c2d");
-var ENG = {name:"field", inst:null, reason:""};
-var lowBattery=false; try{ if(navigator.getBattery) navigator.getBattery().then(function(b){ function u(){ lowBattery = b.level<0.15 && !b.charging; } u(); b.addEventListener("levelchange",u); b.addEventListener("chargingchange",u); }); }catch(e){}
-function pickEngine(want){
-  var reason="";
-  if(want!=="field"&&want!=="memory"&&want!=="still") want="field";
-  /* No reduce-motion override: here the motion IS the pacing signal, not decoration.
-     Field always, and the ladder below catches it only when the GPU cannot. */
-  if(lowBattery && want==="field"){ reason="low battery"; want="memory"; }
-  if(ENG.inst){ try{ ENG.inst.destroy(); }catch(e){} ENG.inst=null; }
-  var inst=null;
-  if(want==="field"){ try{ inst=FieldGL(elGL); }catch(e){ inst=null; } if(!inst){ reason="no WebGL2 float render"; want="memory"; } }
-  if(want==="memory"){ var seed=hashStr(new Date().toDateString()+JSON.stringify(DB.cfg)); inst=Field2D(elC2,{name:"memory",density:1.4,debris:true,seed:seed,rnd:mulberry(seed)}); }
-  if(want==="still"){ inst=Field2D(elC2,{name:"still",density:0,debris:false}); }
-  ENG.name=want; ENG.inst=inst; ENG.reason=reason;
-  elGL.hidden = want!=="field"; elC2.hidden = want==="field";
-}
-/* frame budget: measure, then step down. */
+/* ============================ ENGINE MANAGER ============================
+   One engine. The budget only thins the lines; there is no ladder to fall down and nothing that
+   can fail to render. */
+var elC2=document.getElementById("c2d");
+var ENG = {name:"slipstream", inst:null, reason:""};
+function pickEngine(){ ENG.inst = Slipstream(elC2); }
 var cpuEMA=0, wallEMA=16.7, overSince=0;
 function budget(cpuMs, wallMs, now){
   cpuEMA += (cpuMs-cpuEMA)*0.05; wallEMA += (wallMs-wallEMA)*0.05;
-  /* the JS time, or the whole frame when it is the GPU that is late: the old guard measured JS alone and never
-     saw a GPU stall. Under 25 fps for 3 s steps down; iOS Low Power Mode caps rAF at 30 fps and stays above the line */
-  if(cpuEMA > 13 || wallEMA > 40){ if(!overSince) overSince=now; if(now-overSince>3){ overSince=0; if(ENG.inst && ENG.inst.halve && ENG.inst.halve()){ } else if(ENG.name==="field"){ pickEngine("memory"); ENG.reason="frame budget"; } } }
+  /* under 25 fps for 3 s, or more than 9 ms of our own work, thins the lines; Low Power Mode's 30 fps cap stays above the line */
+  if(cpuEMA > 9 || wallEMA > 40){ if(!overSince) overSince=now; if(now-overSince>3){ overSince=0; if(ENG.inst.halve()) ENG.reason="thinned for the frame budget"; } }
   else overSince=0;
 }
 
 /* ============================ RENDER ============================ */
-var elWord=document.getElementById("word"), elWordI=elWord.firstElementChild, elNum=document.getElementById("num"),
-    elMeta=document.getElementById("rmeta"), elRun=document.getElementById("s-run"),
+var elWord=document.getElementById("word"), elWordI=elWord.firstElementChild, elSub=document.getElementById("bsub"), elNum=document.getElementById("num"),
+    elMeta=document.getElementById("rmeta"), elRun=document.getElementById("s-run"), elTl=document.getElementById("tl"),
     elEnd=document.getElementById("endbtn"), bSkip=document.getElementById("b-skip"), bSave=document.getElementById("b-save"), bBack=document.getElementById("b-back"),
-    elMark=document.getElementById("mark"), elPerf=document.getElementById("perf"),
-    tlSeg={"in":document.getElementById("tl-in"), hold:document.getElementById("tl-hold"), out:document.getElementById("tl-out"), empty:document.getElementById("tl-empty")};
-var lastWord=null, lastNum=null, lastMeta=null, lastKind=null, lastRail=null, lastFoot=null;
-var WORDS={"in":"IN",hold:"HOLD",out:"OUT",empty:"EMPTY",getset:"READY",done:"DONE",rest:"REST"};
-function wordFor(st){ if(S.mode==="lift" && st.stage==="set"){ if(st.k==="hold") return "BRACE"; if(st.k==="empty") return "SQUEEZE"; } return WORDS[st.k]; }
+    elMark=document.getElementById("mark"), elPerf=document.getElementById("perf");
+var lastWord=null, lastSub=null, lastNum=null, lastMeta=null, lastKind=null, lastFoot=null;
+/* THE WORDS. Breathe says the breath. Lift says the movement, three words only, and the breath goes
+   under it: LOWER while the air comes in, LIFT while it goes out, HOLD for any pause, with the line
+   beneath saying whether the air is held in or still leaving. READY is the breath in before the set. */
+var WORDS={"in":"IN",hold:"HOLD",out:"OUT",empty:"HOLD",getset:"READY",done:"DONE",rest:"REST"};
+var MOVES={"in":"LOWER",out:"LIFT",hold:"HOLD",empty:"HOLD"};
+var SUBS={"in":"breathe in",out:"breathe out",hold:"hold your breath",empty:"keep breathing out"};
+function wordFor(st){ if(st.stage==="rest") return "REST"; if(S.mode==="lift" && st.stage==="set") return MOVES[st.k]; return WORDS[st.k]; }
+function subFor(st){ if(st.k==="getset") return "breathe in"; if(st.stage==="rest") return st.k==="in"?"in":"out"; if(S.mode==="lift") return SUBS[st.k]||""; return ""; }
 
 /* fitted ONCE for the widest word that can ever appear; never per word */
-/* measured on a visible offscreen span: the run screen is display:none at boot and a hidden
-   element measures 0, which is how READY once ran off both edges of the phone */
 var meas=document.createElement("span"); meas.style.cssText="position:fixed;left:-9999px;top:0;visibility:hidden;white-space:nowrap;font-weight:800;letter-spacing:.04em;line-height:1;pointer-events:none"; document.body.appendChild(meas);
 function fitWordOnce(){
-  var words=["SQUEEZE","READY","BRACE","HOLD","REST","DONE"], size=Math.min(window.innerWidth*0.24, window.innerHeight*0.15), avail=window.innerWidth*0.82;   /* room for the heaviest breath */
+  var words=["LOWER","READY","HOLD","LIFT","REST","DONE","OUT"], size=Math.min(window.innerWidth*0.26, window.innerHeight*0.15), avail=window.innerWidth*0.82;
   meas.style.fontSize=size+"px"; var maxW=0; for(var i=0;i<words.length;i++){ meas.textContent=words[i]; maxW=Math.max(maxW, meas.offsetWidth); }
   if(maxW>avail) size=size*avail/maxW;
   document.documentElement.style.setProperty("--wordSize", Math.floor(size)+"px");
 }
 function txt(el,v,cache){ if(cache!==v) el.textContent=v; return v; }
-/* BREATHING WEIGHT: the letters thicken and close as the lungs fill, thin and open as they empty.
-   A stroke on the type, continuous on every platform, rather than a variable font it may not have. */
+/* BREATHING WEIGHT: the letters thicken and close as the lungs fill, thin and open as they empty. */
 var lastWt={};
 function breathe(el, fill, id){
   var w=Math.round(fill*24)/24; if(lastWt[id]===w) return; lastWt[id]=w;
@@ -963,99 +753,80 @@ function breathe(el, fill, id){
 }
 function fmtClock(s){ s=Math.max(0,Math.ceil(s)); var m=Math.floor(s/60), r=s%60; return m+":"+(r<10?"0":"")+r; }
 function setFoot(which){ if(which===lastFoot) return; bSkip.classList.toggle("show",which==="skip"); bSave.classList.toggle("show",which==="save"); bBack.classList.toggle("show",which==="back"); lastFoot=which; }
-var tlKey="", tlFill={"in":-1,hold:-1,out:-1,empty:-1}, ORDER={"in":0,hold:1,out:2,empty:3};
-/* the in, hold and out of the cycle the current step belongs to */
-function cycleOf(){
+/* the rail: one segment per phase of the cycle the current step belongs to, in proportion */
+var tlKey="", tlSegs=[], tlFill=[];
+function cycleRange(){
   var st=S.steps[S.idx]; if(!st) return null;
-  if(st.k==="getset"){ var n=S.idx+1; while(n<S.steps.length && ORDER[S.steps[n].k]===undefined) n++; if(n>=S.steps.length) return null; st=S.steps[n]; }   /* READY shows the shape of the set to come */
-  else if(ORDER[st.k]===undefined) return null;
-  var same=function(q){ return q && q.stage===st.stage && q.set===st.set && q.rep===st.rep && ORDER[q.k]!==undefined; };
-  var j=S.steps.indexOf(st); while(j>0 && same(S.steps[j-1]) && ORDER[S.steps[j-1].k]<ORDER[S.steps[j].k]) j--;
-  var d={"in":0,hold:0,out:0,empty:0}, k=j; while(k<S.steps.length && same(S.steps[k]) && (k===j || ORDER[S.steps[k].k]>ORDER[S.steps[k-1].k])){ if(d[S.steps[k].k]!==undefined) d[S.steps[k].k]=S.steps[k].dur; k++; }
-  return d;
+  var j=S.idx; if(st.k==="getset"){ j=S.idx+1; if(j>=S.steps.length||S.steps[j].stage!=="set") return null; st=S.steps[j]; }
+  if(st.stage==="done") return null;
+  var same=function(q){ return q && q.stage===st.stage && q.set===st.set && q.rep===st.rep && q.k!=="getset" && q.k!=="done"; };
+  var a=j; while(a>0 && same(S.steps[a-1])) a--; var b=j; while(b<S.steps.length-1 && same(S.steps[b+1])) b++;
+  return {a:a, b:b};
 }
-function setRail(k, frac){
-  var st=S.steps[S.idx], key=st ? st.stage+":"+st.set+":"+st.rep : "";
-  if(key!==tlKey){ tlKey=key; var d=cycleOf(); for(var n in tlSeg){ var w=d?d[n]:0; tlSeg[n].style.flexGrow=w||1; tlSeg[n].classList.toggle("gone", !!d && w===0); } }
-  var f={"in":0,hold:0,out:0,empty:0}; if(k){ for(var m in f){ f[m] = ORDER[m]<ORDER[k] ? 1 : ORDER[m]===ORDER[k] ? Math.round(frac*200)/200 : 0; } }
-  for(var q in f){ if(f[q]!==tlFill[q]){ tlFill[q]=f[q]; tlSeg[q].firstElementChild.style.transform="scaleX("+f[q]+")"; } }
+function setRail(frac){
+  var st=S.steps[S.idx], rg=cycleRange(), key = rg ? st.stage+":"+st.set+":"+st.rep+":"+rg.a : "";
+  if(key!==tlKey){ tlKey=key; elTl.innerHTML=""; tlSegs=[]; tlFill=[]; if(rg){ for(var i=rg.a;i<=rg.b;i++){ var d=document.createElement("div"); d.style.flexGrow=S.steps[i].dur; d.appendChild(document.createElement("i")); elTl.appendChild(d); tlSegs.push(d.firstElementChild); tlFill.push(-1); } } }
+  if(!rg) return;
+  for(var n=0;n<tlSegs.length;n++){ var idx=rg.a+n, f = st.k==="getset" ? 0 : idx<S.idx ? 1 : idx===S.idx ? Math.round(frac*200)/200 : 0; if(f!==tlFill[n]){ tlFill[n]=f; tlSegs[n].style.transform="scaleX("+f+")"; } }
 }
-function paintDone(){ lastWord=txt(elWordI,"DONE",lastWord); lastNum=txt(elNum,"",lastNum); lastMeta=txt(elMeta,"",lastMeta); setFoot("back"); setRail(null,0); elEnd.classList.add("hid"); MASK.dirty=true; }
+function paintDone(){ lastWord=txt(elWordI,"DONE",lastWord); lastSub=txt(elSub,"",lastSub); lastNum=txt(elNum,"",lastNum); lastMeta=txt(elMeta,"",lastMeta); setFoot("back"); elTl.innerHTML=""; tlKey="done"; elEnd.classList.add("hid"); MASK.dirty=true; }
 
-var GEST_MIN=2.2, gest={k:"",t0:-1,T:1,gain:1,dir:0,prev:null};
-var frameState = {phase:"idle", fill:0, prog:0, flow:0, amp:0, temp:0, turb:0, ground:[0,0,0], idle:true, still:false, stage:"", rep:0, reps:1, set:0, sets:1, dim:1,
-                  tapX:0, tapY:0, tapK:0, pinX:0, pinY:0, pinK:0, rim:0, pulse:0,
-                  dragX:0, dragY:0, dragVX:0, dragVY:0, dragK:0, leanX:0, leanY:0, ink:0};
-/* the finger in the field: a decaying poke and a held pin, in canvas pixels for the 2D engine and uv for the GPU */
+var frameState = {phase:"idle", fill:0, prog:0, flow:0, amp:0, temp:0, turb:0, ground:[0,0,0], idle:true, still:false, stage:"", dim:1,
+                  tapX:0, tapY:0, tapK:0, pinX:0, pinY:0, pinK:0, rim:0, pulse:0};
 function touchState(now, fs){
   var pa=now-S.poke.t; fs.tapK = (pa>=0 && pa<0.9) ? S.poke.k*Math.exp(-pa/0.2) : 0; fs.tapX=S.poke.x; fs.tapY=S.poke.y;
   fs.pinK = S.pin.on ? 1 : 0; fs.pinX=S.pin.x; fs.pinY=S.pin.y;
-  var da=now-S.drag.t, sp=Math.hypot(S.drag.vx,S.drag.vy);
-  fs.dragK = (S.drag.on && da>=0 && da<0.15 && sp>40) ? Math.exp(-da/0.06) : 0; fs.dragX=S.drag.x; fs.dragY=S.drag.y; fs.dragVX=S.drag.vx; fs.dragVY=S.drag.vy;
-  fs.leanX=LEAN.x; fs.leanY=LEAN.y;
-  fs.ink = S.tapOn ? 1 : 0;      /* INK: with Tap on the dye is denser and blooms, so a tap reads as a drop of ink */
 }
 function render(now){
   var st=S.steps[S.idx], fs=frameState;
   fs.idle=false; fs.dim = S.mode==="breathe"?0.72:1;
   if(!st || !S.running){ return; }
-  var rem=Math.max(0,S.stepStart+st.dur-now), frac=st.dur>0?Math.max(0,Math.min(1,(now-S.stepStart)/st.dur)):0;
-  if(st.k!==lastKind){ lastKind=st.k; MASK.dirty=true;
-    if(st.k==="in" && st.stage==="set" && ENG.inst && ENG.inst.addDebris) ENG.inst.addDebris(fs.temp); }
-  /* the breath as numbers the field can use */
-  fs.stage=st.stage; fs.phase=st.k; fs.prog=frac; fs.rep=st.rep; fs.reps=S.reps; fs.set=st.set; fs.sets=S.sets;
+  var rem=Math.max(0,S.stepStart+st.dur-now), frac=st.dur>0?Math.max(0,Math.min(1,(now-S.stepStart)/st.dur)):0, into=now-S.stepStart;
+  if(st.k!==lastKind){ lastKind=st.k; MASK.dirty=true; }
+  fs.stage=st.stage; fs.phase=st.k; fs.prog=frac;
   if(st.k==="in") fs.fill=easeIO(frac); else if(st.k==="hold") fs.fill=1; else if(st.k==="out") fs.fill=1-easeIO(frac); else if(st.k==="getset") fs.fill=0.15*(1-frac); else fs.fill=0;
-  /* the wind's gesture for a phase lasts at least GEST_MIN seconds and carries on into the next
-     phase if the count is shorter, so a one-second drive still blows out fully; a short phase
-     also pushes harder, so the air moves as far as it would have in a long one */
-  if(st.k!==gest.k || S.stepStart!==gest.t0){ if(gest.k==="in"||gest.k==="out"){ gest.prev={dir:gest.dir,t0:gest.t0,T:gest.T,gain:gest.gain}; } gest.k=st.k; gest.t0=S.stepStart; gest.T=Math.max(st.dur,GEST_MIN); gest.gain=Math.min(2.4,Math.max(1,GEST_MIN/st.dur)); gest.dir = st.k==="in"?1 : st.k==="out"?-1 : 0; }
-  var bell=0, gp=(now-gest.t0)/gest.T; if(gest.dir && gp>0 && gp<1) bell=Math.pow(Math.sin(gp*Math.PI),0.7)*gest.gain;   /* gp<0 in the lead-in: sin goes negative and pow would be NaN, which poisons the whole velocity texture */
-  var flow=gest.dir*bell, residual=0;
-  if(gest.prev){ var pp=(now-gest.prev.t0)/gest.prev.T; if(pp>0 && pp<1){ residual=gest.prev.dir*Math.pow(Math.sin(pp*Math.PI),0.7)*gest.prev.gain; } else gest.prev=null; }
-  fs.flow = Math.max(-2.4, Math.min(2.4, flow + residual)); if(fs.flow!==fs.flow) fs.flow=0;
+  /* the gust: a bell over the phase, its own length; a short phase blows harder so the air travels as far */
+  var bell = (st.k==="in"||st.k==="out") ? Math.pow(Math.sin(frac*Math.PI),0.7)*Math.min(1.8, Math.max(1, 2.2/st.dur)) : 0;
+  fs.flow = st.k==="in"?bell : st.k==="out"?-bell : 0;
   if(st.stage==="rest") fs.flow*=0.45;
-  bell=Math.abs(fs.flow)>1?1:Math.abs(fs.flow);
-  var a=audioAmp(); if(a<0) a=bell*0.6; ampSm += (a-ampSm)*0.25; fs.amp=Math.max(ampSm, bell*0.75);   /* the sound can add to the gust but never starve it: a quiet or silent phase still blows at three quarters */
-  /* the mirror: when the sensor sees you, the wind is you and the tone is the pacer */
-  var pt=performance.now()/1000, seeing = S.mirror && MIR.conf>0.35 && !MIR.moving;
+  var a=audioAmp(); if(a<0) a=Math.min(1,bell)*0.6; ampSm += (a-ampSm)*0.25; fs.amp=Math.max(ampSm, Math.min(1,bell)*0.75);
+  var seeing = S.mirror && MIR.conf>0.35 && !MIR.moving;
   if(seeing){ fs.fill=MIR.fill; fs.flow=MIR.flow; fs.amp=Math.min(1,Math.abs(MIR.flow)); }
   mirrorVoiceFrame();
   fs.temp = st.stage==="set" && S.reps>1 ? (st.rep-1)/(S.reps-1) : st.stage==="rest"?0.5:0.15;
   S.turb *= (1 - 0.12*Math.min(1, (now - (S._lt||now)))); S._lt=now;
   fs.turb=Math.min(1,S.turb);
   touchState(now, fs);
-  /* the beat, in light, for Tap: each second of an active phase the whole ground blinks up a step and settles */
-  var beat=0, into=now-S.stepStart; if(S.tapOn && st.stage==="set" && (st.k==="in"||st.k==="out")){ var bt=into-Math.floor(into); beat=Math.exp(-bt/0.10); }
-  /* the hold is its own state: still air, a luminous rim, and a pulse once a second from the second second on, so the hold can be counted from the field */
-  fs.still = (st.k==="hold" || st.k==="empty") && !gest.prev;     /* brace holds full; squeeze holds empty; still air once the last gust has played out */
+  var beat=0; if(S.tapOn && st.stage==="set" && (st.k==="in"||st.k==="out")){ var bt=into-Math.floor(into); beat=Math.exp(-bt/0.10); }
+  fs.still = st.k==="hold" || st.k==="empty";
   fs.pulse=0; if(fs.still && into>=1){ var hb=into-Math.floor(into); fs.pulse=Math.exp(-hb/0.12); }
   fs.rim = 0.09*fs.fill + 0.16*fs.pulse + (fs.still?0.04:0);
-  fs.ground=ground(Math.min(1.2, fs.fill + 0.14*beat + 0.18*fs.tapK + 0.05*fs.pulse), fs.temp, fs.dim);   /* the tap lights the whole ground for an instant */
+  fs.ground=ground(Math.min(1.2, fs.fill + 0.14*beat + 0.18*fs.tapK + 0.05*fs.pulse), fs.temp, fs.dim);
   if(st.k==="done"){ if(lastWord!=="DONE") paintDone(); return; }
   elEnd.classList.remove("hid");
   var isRest=st.stage==="rest", isSet=st.stage==="set";
-  var word = isRest ? "REST" : wordFor(st);
-  lastWord=txt(elWordI, word, lastWord); breathe(elWord, fs.fill, "w");
+  lastWord=txt(elWordI, wordFor(st), lastWord); breathe(elWord, fs.fill, "w");
+  lastSub=txt(elSub, subFor(st), lastSub);
   if(isRest){ var left=rem,i; for(i=S.idx+1;i<S.steps.length&&S.steps[i].stage==="rest"&&S.steps[i].set===st.set;i++) left+=S.steps[i].dur; lastNum=txt(elNum,fmtClock(left),lastNum); }
   else { var shown=Math.min(Math.ceil(rem-0.001),Math.ceil(st.dur)); lastNum=txt(elNum, String(shown||1), lastNum); }
-  setRail(ORDER[st.k]!==undefined?st.k:null, frac);
+  setRail(frac);
   var meta;
   if(isRest) meta="REST · SET "+st.set+"/"+S.sets;
   else if(S.mode==="breathe"){ meta = isSet ? ("CYCLE "+st.rep+"/"+S.reps + (S.tapOn ? (st.k==="hold" ? " · PRESS" : " · TAP") : "")) : ""; }
-  else meta="SET "+st.set+"/"+S.sets+(isSet?" · "+st.rep+"/"+S.reps:"");
+  else meta="SET "+st.set+"/"+S.sets+(isSet?" · REP "+st.rep+"/"+S.reps:"");
   lastMeta=txt(elMeta, meta, lastMeta);
   setFoot(isRest?"skip": (isSet && S.mode==="lift") ? "save" : null);
 }
 function idleRender(t){
   var fs=frameState; fs.idle=true; fs.phase="idle"; fs.stage=""; fs.flow=0; fs.amp=0.2; fs.turb=Math.max(0, fs.turb-0.01);
-  fs.fill = 0.28 + 0.12*Math.sin(t*0.35); fs.temp=0.1; breathe(elMark, 0.5+0.5*Math.sin(t*0.35), "m"); fs.dim=1; fs.ground=ground(fs.fill, fs.temp, 1); fs.tapK=0; fs.pinK=0; fs.dragK=0; fs.leanX=0; fs.leanY=0; fs.ink=0; fs.rim=0.05; fs.pulse=0; fs.still=false;
+  fs.fill = 0.28 + 0.12*Math.sin(t*0.35); fs.temp=0.1; breathe(elMark, 0.5+0.5*Math.sin(t*0.35), "m"); fs.dim=1; fs.ground=ground(fs.fill, fs.temp, 1); fs.tapK=0; fs.pinK=0; fs.rim=0.05; fs.pulse=0; fs.still=false;
 }
 
 /* ============================ LOOP ============================ */
-var raf=0, lastT=0, perfOn=!!Q.perf, fpsEMA=60, frameNo=0, probeStage=0, PROBE_AT=[1.5,4,7];
+var raf=0, lastT=0, perfOn=!!Q.perf, fpsEMA=60, frameNo=0;
 function tick(){
   raf=requestAnimationFrame(tick);
-  var now=nowSec(), t=performance.now()/1000, wall=lastT?Math.min(0.1, t-lastT):1/60, dt=Math.min(1/20, wall); lastT=t;   /* a late frame advances the air by the time that passed, up to 50 ms: the wind no longer plays in slow motion when the GPU falls behind */
+  var now=nowSec(), t=performance.now()/1000, wall=lastT?Math.min(0.1, t-lastT):1/60, dt=Math.min(1/20, wall); lastT=t;   /* a late frame advances the air by the time that passed, up to 50 ms */
   if(S.running){
     var guard=0;
     while(S.idx<S.steps.length-1 && now>=S.stepStart+S.steps[S.idx].dur && guard++<400){
@@ -1068,31 +839,32 @@ function tick(){
   if(elRun.classList.contains("on")) render(now); else idleRender(t);
   if(MASK.dirty){ buildMask(elRun.classList.contains("on") ? elWordI : (document.getElementById("s-home").classList.contains("on") ? elMark : null)); }
   var c0=performance.now();
-  if(ENG.inst){ if(ENG.inst.isLost && ENG.inst.isLost()){ pickEngine("memory"); ENG.reason="GPU context lost"; } else ENG.inst.frame(dt, frameState, t); }
-  var cpu=performance.now()-c0; budget(cpu, wall*1000, t);
+  ENG.inst.frame(dt, frameState, t);
+  budget(performance.now()-c0, wall*1000, t);
   frameNo++;
-  if(Q.probe && ENG.inst && ENG.inst.probe && probeStage<PROBE_AT.length && t>=PROBE_AT[probeStage]){ probeStage++; console.log("PROBE t="+t.toFixed(1)+" frame "+frameNo+" phase="+frameState.phase+" fill="+frameState.fill.toFixed(2)+" flow="+frameState.flow.toFixed(2)+" amp="+frameState.amp.toFixed(2)+" vp="+window.innerWidth+"x"+window.innerHeight+" eng="+ENG.name+" reason="+ENG.reason+" dt="+dt.toFixed(4)); ENG.inst.probe(); }
-  if(perfOn){ fpsEMA += (1/Math.max(dt,1e-3)-fpsEMA)*0.05; elPerf.style.display="block"; elPerf.textContent = ENG.name+"  "+(ENG.inst?ENG.inst.info():"")+"\n"+cpuEMA.toFixed(1)+" ms engine · "+fpsEMA.toFixed(0)+" fps"+(MIR.on?"\nmirror ax"+MIR.axis+" sign"+MIR.sign+" env "+(MIR.env[Math.max(0,MIR.axis)]*1000).toFixed(1)+"m · "+MIR.rate.toFixed(1)+"/min conf "+MIR.conf.toFixed(2)+(MIR.moving?" MOVING":""):""); }
+  if(perfOn){ fpsEMA += (1/Math.max(wall,1e-3)-fpsEMA)*0.05; elPerf.style.display="block"; elPerf.textContent = ENG.inst.info()+"\n"+cpuEMA.toFixed(1)+" ms engine · "+fpsEMA.toFixed(0)+" fps"+(ENG.reason?"\n"+ENG.reason:"")+(MIR.on?"\nmirror ax"+MIR.axis+" sign"+MIR.sign+" env "+(MIR.env[Math.max(0,MIR.axis)]*1000).toFixed(1)+"m · "+MIR.rate.toFixed(1)+"/min conf "+MIR.conf.toFixed(2)+(MIR.moving?" MOVING":""):""); }
 }
 
 /* ============================ UI ============================ */
 function fmtN(v){ return (Math.round(v*10)/10).toString(); }
 var setupMode="lift";
+var SOUND_SUB={tone:"Two notes. A high one opens as you breathe in, a low one closes as you breathe out.", bells:"Two soft bells, a high one for in and a low one for out, over the two notes.", breath:"A breath of wind, in and out."};
+var LABEL={"in":"lower",out:"lift",hold:"hold",empty:"hold"};
 function refresh(){
-  var L=DB.cfg.lift, P=DB.cfg.breathe, T=L.tune[L.preset], i;
+  var L=DB.cfg.lift, P=DB.cfg.breathe, i;
   document.getElementById("v-reps").textContent=L.reps[L.preset]; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-cycles").textContent=P.cycles;
-  /* each door carries its tempo as a proportional bar: the phase names above, the seconds inside */
-  function bar(pr){ var Tq=L.tune[pr], ph = pr==="drive" ? [["in",Tq["in"]],["brace",Tq.hold],["out",Tq.out]] : [["in",Tq["in"]],["out",Tq.out],["squeeze",Tq.empty]], h="", j;
-    for(j=0;j<ph.length;j++) h+='<b style="flex:'+ph[j][1]+' 1 0"><i>'+ph[j][0]+'</i><u>'+ph[j][1]+'</u></b>'; return h; }
-  document.getElementById("bar-drive").innerHTML=bar("drive"); document.getElementById("bar-squeeze").innerHTML=bar("squeeze");
+  function bar(seq, names){ var h="", j; for(j=0;j<seq.length;j++) h+='<b style="flex:'+seq[j][1]+' 1 0"><i>'+names[seq[j][0]]+'</i><u>'+fmtN(seq[j][1])+'</u></b>'; return h; }
+  document.getElementById("bar-drive").innerHTML=bar(L.tune.drive.seq, LABEL); document.getElementById("bar-squeeze").innerHTML=bar(L.tune.squeeze.seq, LABEL);
   document.getElementById("rest-drive").textContent="rest "+fmtClock(L.tune.drive.rest); document.getElementById("rest-squeeze").textContent="rest "+fmtClock(L.tune.squeeze.rest);
   var doors=document.querySelectorAll(".door[data-preset]"); for(i=0;i<doors.length;i++) doors[i].classList.toggle("sel", doors[i].getAttribute("data-preset")===L.preset);
   var belly=P.belly!=="off", tap=P.tap==="on", sound=DB.cfg.sound;
-  /* Breathe's doors carry their bars the same way; the card under them says how long the session runs */
-  function bbar(ph){ var h="", j; for(j=0;j<ph.length;j++) h+='<b style="flex:'+ph[j][1]+' 1 0"><i>'+ph[j][0]+'</i><u>'+fmtN(ph[j][1])+'</u></b>'; return h; }
-  document.getElementById("bar-478").innerHTML=bbar([["in",4],["hold",7],["out",8]]); document.getElementById("bar-coh").innerHTML=bbar([["in",5.5],["out",5.5]]);
+  document.getElementById("bar-478").innerHTML=bar([["in",4],["hold",7],["out",8]], {"in":"in",hold:"hold",out:"out"}); document.getElementById("bar-coh").innerHTML=bar([["in",5.5],["out",5.5]], {"in":"in",out:"out"});
   document.getElementById("v-time").textContent=fmtClock(P.cycles*(P.pat==="coh"?11:19));
-  document.getElementById("sound-sub").textContent = sound==="breath" ? "A breath of wind, in and out." : "One warm note. It opens and brightens as you breathe in, closes and softens as you breathe out. Nothing climbs.";
+  document.getElementById("sound-sub").textContent = SOUND_SUB[sound];
+  /* the look: one chip per palette, each carrying its own ground and air as a swatch */
+  var lk=document.getElementById("seg-look"); if(!lk.children.length){ var h=""; for(var pn in PALETTES){ var pp=PALETTES[pn], g=hsl(pp.full[0],pp.full[1],pp.full[2]), ac=hsl(pp.air[0],pp.air[1],pp.air[2]); h+='<button data-pal="'+pn+'"><i style="background:linear-gradient(90deg,'+css(g)+' 55%,'+css(ac)+' 55%)"></i>'+pp.name+'</button>'; } lk.innerHTML=h; }
+  var lb=lk.querySelectorAll("button"); for(i=0;i<lb.length;i++) lb[i].classList.toggle("sel", lb[i].getAttribute("data-pal")===DB.cfg.pal);
+  document.getElementById("look-sub").textContent = PAL.note;
   var seg=document.querySelectorAll("#seg-with button"); for(i=0;i<seg.length;i++){ var wk=seg[i].getAttribute("data-w"); seg[i].classList.toggle("sel", wk==="belly"?belly:tap); }
   var parts=[]; if(belly) parts.push("Belly: phone on your belly, it reads your breath."); if(tap) parts.push("Tap: tap the count, hold to hold.");
   document.getElementById("with-sub").textContent = parts.length ? parts.join(" ") : "Nothing extra.";
@@ -1109,22 +881,23 @@ function bump(key,delta){
   else { var tgt=key==="cycles"?DB.cfg.breathe:DB.cfg.lift; v=Math.max(lim[0],Math.min(lim[1],(+tgt[key])+delta)); tgt[key]=v; }
   save(); refresh();
 }
+function setPalette(name){ if(!PALETTES[name]) return; DB.cfg.pal=name; PAL=PALETTES[name]; applyPalette(); save(); refresh(); MASK.dirty=true; }
 function show(id){
   var ids=["home","setup","run"]; for(var i=0;i<ids.length;i++) document.getElementById("s-"+ids[i]).classList.toggle("on", ids[i]===id);
   if(id==="setup") refresh();
   MASK.dirty=true;
 }
 document.addEventListener("click", function(ev){
-  var t=ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-preset],[data-pat],[data-sound],[data-w]") : null; if(!t||t.disabled) return; var v;
+  var t=ev.target.closest ? ev.target.closest("[data-go],[data-s],[data-preset],[data-pat],[data-sound],[data-w],[data-pal]") : null; if(!t||t.disabled) return; var v;
   if((v=t.getAttribute("data-go"))){ if(S.running) return; if(v==="lift"||v==="breathe"){ setupMode=v; show("setup"); } else show(v); return; }
   if((v=t.getAttribute("data-s"))){ var p=v.split(":"); bump(p[0],parseFloat(p[1])); return; }
   if((v=t.getAttribute("data-preset"))){ DB.cfg.lift.preset=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-pat"))){ DB.cfg.breathe.pat=v; save(); refresh(); return; }
   if((v=t.getAttribute("data-w"))){ var B=DB.cfg.breathe; B[v] = (v==="belly" ? B[v]!=="off" : B[v]==="on") ? "off" : "on"; save(); refresh(); return; }
   if((v=t.getAttribute("data-sound"))){ DB.cfg.sound=v; save(); refresh(); return; }
+  if((v=t.getAttribute("data-pal"))){ setPalette(v); return; }
 });
 document.getElementById("b-start").addEventListener("click", function(){
-  /* the audio graph must be born inside the tap; the motion prompt can come after */
   initAudio(); if(A){ try{ A.ctx.resume(); }catch(e){} try{ var p=audioEl.play(); if(p&&p.catch) p.catch(function(){}); }catch(e){} }
   var wantMirror = setupMode==="breathe" && DB.cfg.breathe.belly!=="off";
   if(!wantMirror){ startSession(setupMode); return; }
@@ -1134,32 +907,34 @@ bSkip.addEventListener("click", function(e){ e.stopPropagation(); skipRest(); })
 bSave.addEventListener("click", function(e){ e.stopPropagation(); saveSet(); });
 bBack.addEventListener("click", function(e){ e.stopPropagation(); show("home"); });
 elEnd.addEventListener("click", function(e){ e.stopPropagation(); endSession(false); });
-/* the finger on the wind (see tapDown) */
 var elFlash=document.getElementById("flash");
 elRun.addEventListener("pointerdown", function(ev){
   if(ev.target.closest && ev.target.closest("button")) return; if(!S.running) return;
   if(A&&A.ctx.state!=="running"){ try{A.ctx.resume();}catch(e){} }
   if(!tapDown(ev.clientX, ev.clientY)) return;
-  if(S.mode==="lift"){ elFlash.classList.remove("go"); void elFlash.offsetWidth; elFlash.classList.add("go"); }   /* in Breathe the puff in the field is the confirmation */
+  if(S.mode==="lift"){ elFlash.classList.remove("go"); void elFlash.offsetWidth; elFlash.classList.add("go"); }
 });
 elRun.addEventListener("pointermove", function(ev){ tapMove(ev.clientX, ev.clientY); });
 window.addEventListener("pointerup", tapUp);
 window.addEventListener("pointercancel", tapUp);
 document.addEventListener("gesturestart", function(e){ e.preventDefault(); });
 document.addEventListener("dblclick", function(e){ e.preventDefault(); });
-window.addEventListener("resize", function(){ fitWordOnce(); if(ENG.inst) ENG.inst.resize(); MASK.dirty=true; });
+window.addEventListener("resize", function(){ fitWordOnce(); ENG.inst.resize(); MASK.dirty=true; });
 try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ fitWordOnce(); MASK.dirty=true; }); }catch(e){}
 
 /* debug handle for the probe harness; harmless in production */
 window.WIND = {
-  stats:function(){ return ENG.inst&&ENG.inst.stats?ENG.inst.stats():null; }, state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, ink:frameState.ink, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst?ENG.inst.info():""}; },
-  probe:function(){ if(ENG.inst&&ENG.inst.probe) ENG.inst.probe(); },
-  rects:function(){ var out={}, els=document.querySelectorAll("#s-run .slot, #word span, #num, .rail .r"); for(var i=0;i<els.length;i++){ var r=els[i].getBoundingClientRect(); out[(els[i].id||els[i].className)+"#"+i]=[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]; } out.wordSize=getComputedStyle(elWord).fontSize; return out; },
-  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, engine:pickEngine, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp, steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; }, tone:function(){ if(!scheme||scheme.kind!=="tone") return null; return {dir:scheme.dir, f:TONE_F, g:+scheme.g.gain.value.toFixed(4), fc:Math.round(scheme.lp.frequency.value)}; }, lean:function(){ return {on:LEAN.on, x:+LEAN.x.toFixed(3), y:+LEAN.y.toFixed(3)}; }, tilt:function(x,y,z){ onLean({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, drag:function(){ return {k:+frameState.dragK.toFixed(3), vx:Math.round(frameState.dragVX), vy:Math.round(frameState.dragVY)}; }, touch:function(){ return {tapK:+frameState.tapK.toFixed(3), tapX:frameState.tapX, tapY:frameState.tapY, pinK:frameState.pinK, pinX:frameState.pinX, pinY:frameState.pinY, tapOn:S.tapOn}; }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ if(k==="sound") DB.cfg.sound=v; else DB.cfg.breathe[k]=v; }, palette:function(t){ return ground(0.5,t,1); }, grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
+  state:function(){ return {eng:ENG.name, reason:ENG.reason, phase:frameState.phase, fill:frameState.fill, flow:frameState.flow, amp:frameState.amp, turb:frameState.turb, idx:S.idx, running:S.running, cpu:cpuEMA, frame:frameNo, info:ENG.inst.info(), pal:DB.cfg.pal}; },
+  start:function(m){ setupMode=m||"lift"; startSession(setupMode); }, end:function(){ endSession(false); }, sync:function(){ reanchor(false); }, down:tapDown, move:tapMove, up:tapUp,
+  steps:function(n){ return S.steps.slice(S.idx, S.idx+(n||4)).map(function(q){ return q.k+":"+q.dur.toFixed(2); }); }, into:function(){ return nowSec()-S.stepStart; }, turb:function(){ return S.turb; },
+  tone:function(){ if(!scheme||!scheme.hi) return null; return {dir:scheme.dir, hi:+scheme.hi.g.gain.value.toFixed(4), lo:+scheme.lo.g.gain.value.toFixed(4), hifc:Math.round(scheme.hi.lp.frequency.value), lofc:Math.round(scheme.lo.lp.frequency.value)}; },
+  words:function(){ return {word:elWordI.textContent, sub:elSub.textContent, num:elNum.textContent, meta:elMeta.textContent, rail:elTl.children.length}; },
+  palette:setPalette, palettes:function(){ return Object.keys(PALETTES); }, scheme:function(){ return scheme?scheme.kind:null; }, set:function(k,v){ if(k==="sound") DB.cfg.sound=v; else DB.cfg.breathe[k]=v; },
+  grant:function(){ MIR.perm="granted"; }, motion:function(x,y,z){ onMotion({accelerationIncludingGravity:{x:x,y:y,z:z}}); }, mir:function(){ return {on:MIR.on,axis:MIR.axis,sign:MIR.sign,env:MIR.env,rate:MIR.rate,period:MIR.period,conf:MIR.conf,starts:MIR.starts.length,moving:MIR.moving,fill:MIR.fill,flow:MIR.flow,mirror:S.mirror}; }
 };
 /* ---- boot ---- */
 fitWordOnce();
-pickEngine(Q.eng || "field");
+pickEngine();
 show("home");
 if(Q.auto){ setupMode = Q.auto==="breathe"?"breathe":"lift"; setTimeout(function(){ startSession(setupMode); }, 300); }
 raf=requestAnimationFrame(tick);

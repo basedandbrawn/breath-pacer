@@ -114,46 +114,62 @@ section{padding-block:34px 10px;display:grid;gap:18px;scroll-margin-top:120px}
 .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
 footer{padding-block:40px 0;color:var(--dim);font-size:13px;font-family:var(--mono)}
 @media (prefers-reduced-motion:reduce){.tile canvas{opacity:.85}}
+/* the full-screen palette view */
+#big{position:fixed;inset:0;z-index:50;display:grid;grid-template-rows:1fr;background:#000}
+#big[hidden]{display:none}
+#big canvas{position:absolute;inset:0;width:100%;height:100%}
+#big .bw{position:relative;display:grid;align-content:center;justify-items:center;gap:8px;text-align:center;pointer-events:none}
+#big .bword{font-family:var(--disp);font-weight:700;font-size:min(22vw,150px);letter-spacing:.04em;line-height:1;text-transform:uppercase}
+#big .bsub{font-family:var(--mono);font-size:14px;letter-spacing:.24em;text-transform:uppercase;opacity:.7;height:1.4em}
+#big .bnum{font-family:var(--disp);font-weight:700;font-size:min(16vw,110px);line-height:1;font-variant-numeric:tabular-nums;opacity:.9}
+#big .bx{position:absolute;right:18px;top:18px;font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:inherit;background:rgba(127,127,127,.25);border:1px solid rgba(127,127,127,.5);border-radius:999px;padding:8px 16px;cursor:pointer}
 </style>
 </head>
 <body>
 <header>
-  <div class="tag"><span class="eyebrow">Wind Bender · design lab · Sep 2026</span></div>
+  <div class="tag"><span class="eyebrow">Wind Bender · design lab · second pass · Sep 2026</span></div>
   <h1>Wind Bender Lab</h1>
-  <p class="lede">Eight winds, seven tones and five rep shapes for a breath pacer that lives in a gym. Every wind on this page follows the one breath clock below, so you can compare them mid-breath. Every tone plays from your speaker on a tap. The rep shapes run a real three-rep set with the cues you would hear at the bar.</p>
+  <p class="lede">The app rebuilt from nothing: one engine, the slipstream, long lines of air with momentum on a plain canvas, at a third of a millisecond a frame. Five palettes of it, one on paper. Twelve winds on the one breath clock. Six tones where the breath in and the breath out are two different notes, the way the best coherence tracks do it. And the rep shapes said in three words.</p>
 </header>
 
 <div class="clock" id="clock">
   <div class="bar">
-    <nav class="tabs"><a href="#wind">Wind</a><a href="#tone">Tone</a><a href="#lift">Lift</a><a href="#notes">Notes</a></nav>
+    <nav class="tabs"><a href="#look">Look</a><a href="#wind">Wind</a><a href="#tone">Tone</a><a href="#lift">Lift</a><a href="#notes">Notes</a></nav>
     <span class="now" id="clock-now"><b>IN</b> 4.0</span>
   </div>
   <div class="bar">
     <div class="seg" id="pat-seg">
-      <button data-pat="relax">Relax 4·7·8</button><button data-pat="coh" class="sel">Coherent 5.5</button><button data-pat="drive">Drive rep 3·1·2</button><button data-pat="squeeze">Squeeze rep 1·2·3</button>
+      <button data-pat="relax">Relax 4·7·8</button><button data-pat="coh" class="sel">Coherent 5.5</button><button data-pat="drive">Drive 3·1·2</button><button data-pat="squeeze">Squeeze 1·2·3</button>
     </div>
     <div class="rail" id="clock-rail"><div class="in"><i></i></div><div class="hold"><i></i></div><div class="out"><i></i></div><div class="empty"><i></i></div></div>
   </div>
 </div>
 
+<!-- ============================ LOOK ============================ -->
+<section id="look">
+  <div><span class="eyebrow">01 · Look</span><h2>The app, five ways</h2></div>
+  <p class="lede">This is the engine that now ships in wind.html, running live under each palette. Slate is the default: slate ground, muted blue air that warms to sand on the way out. Parchment is paper, with the air as ink. Every palette recolours the type too, so Parchment is dark ink on a light page rather than white text on cream. Tap one to open it big.</p>
+  <div class="grid" id="look-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))"></div>
+</section>
+
 <!-- ============================ WIND ============================ -->
 <section id="wind">
-  <div><span class="eyebrow">01 · Wind</span><h2>Eight winds</h2></div>
-  <p class="lede">The test for each one is peripheral: cover the caption and stand six feet away. You should still tell in from hold from out. Each wind is a different mechanism, not a different skin, and each says what a hold looks like, because the hold is where most wind animations fail. All run on a 2D canvas at a fraction of the app's GPU cost.</p>
+  <div><span class="eyebrow">02 · Wind</span><h2>Twelve winds</h2></div>
+  <p class="lede">The test for each one is peripheral: cover the caption and stand six feet away. You should still tell in from hold from out. Each is a different mechanism, not a different skin, and each says what a hold looks like, because the hold is where wind animations fail. The four new ones are at the end.</p>
   <div class="grid" id="wind-grid"></div>
 </section>
 
 <!-- ============================ TONE ============================ -->
 <section id="tone">
-  <div><span class="eyebrow">02 · Tone</span><h2>Seven tones, one note each</h2></div>
-  <p class="lede">None of these change pitch and none strike a second note. The breath is carried by how the one note opens and closes: brighter and fuller as you breathe in, darker and softer as you breathe out. That is the shape of the best 4·7·8 and 5.5 coherence tracks, and it is the opposite of an alarm: no transient, no interval, nothing above two kilohertz, and nothing that could not be predicted a second ahead. Tap Play to hear two cycles of the pattern chosen above.</p>
+  <div><span class="eyebrow">03 · Tone</span><h2>Two notes, never confused</h2></div>
+  <p class="lede">The reference tracks agree on one thing. Coherence's 2 Bells cues the in with a high bell and the out with a low bell; the Harmonium track rises for the in and falls for the out; Sym uses two bowl tones. So the breath in is one note and the breath out is another, a fifth below, and you always know which you are on. Nothing slides between them and nothing climbs a scale: each note opens and closes in place. Tap Play for the pattern chosen above.</p>
   <div class="grid" id="tone-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))"></div>
 </section>
 
 <!-- ============================ LIFT ============================ -->
 <section id="lift">
-  <div><span class="eyebrow">03 · Lift</span><h2>Five rep shapes</h2></div>
-  <p class="lede">The gym failure was a breath pacer showing breath words. Under a load you need the movement word, with the breath carried underneath it: as colour, as the tone, as a second track. So every mode here names what the body does, and the breath bar runs across movement segments when the same breath continues. In Squeeze the exhale is one bar under PULL and SQUEEZE, because it is one exhale.</p>
+  <div><span class="eyebrow">04 · Lift</span><h2>Three words</h2></div>
+  <p class="lede">Brace, drive, set, squeeze, top: five words to learn under a load was the problem, and SET was the worst of them. Now there are three, and they are the ones every gym already uses. LOWER is the way down. LIFT is the way up. HOLD is any pause. The breath is the line under the word, and it is the only thing that changes from lift to lift: whether a HOLD keeps the air in or keeps letting it out. The set opens on READY, which is where you breathe in.</p>
   <div class="modes" id="modes"></div>
   <div class="runwrap">
     <div class="phone" id="phone">
@@ -161,15 +177,15 @@ footer{padding-block:40px 0;color:var(--dim);font-size:13px;font-family:var(--mo
       <div class="meta" id="ph-meta">SET 1/1 · REP 0/3</div>
       <div class="mid">
         <div class="cue" id="ph-cue">READY</div>
-        <div class="breath" id="ph-breath"></div>
+        <div class="breath" id="ph-breath">breathe in</div>
         <div class="num" id="ph-num">3</div>
       </div>
       <div class="shape" id="ph-shape"></div>
     </div>
     <div class="controls">
       <div class="row"><button class="go" id="run-go">Run 3 reps</button><span class="lbl" id="run-state">idle</span></div>
-      <div class="row"><span class="lbl">Sound</span><div class="seg" id="run-sound"><button data-s="swell" class="sel">Swell</button><button data-s="pulse">Swell + pulse</button><button data-s="none">Silent</button></div></div>
-      <div class="row"><span class="lbl">Voice</span><div class="seg" id="run-voice"><button data-v="off" class="sel">Off</button><button data-v="on">Say the cue</button></div></div>
+      <div class="row"><span class="lbl">Sound</span><div class="seg" id="run-sound"><button data-s="two" class="sel">Two notes</button><button data-s="bells">Two bells</button><button data-s="none">Silent</button></div></div>
+      <div class="row"><span class="lbl">Voice</span><div class="seg" id="run-voice"><button data-v="off" class="sel">Off</button><button data-v="on">Say the word</button></div></div>
       <div class="notes" id="mode-notes"></div>
     </div>
   </div>
@@ -177,13 +193,14 @@ footer{padding-block:40px 0;color:var(--dim);font-size:13px;font-family:var(--mo
 
 <!-- ============================ NOTES ============================ -->
 <section id="notes">
-  <div><span class="eyebrow">04 · Notes</span><h2>The rear delt fly, answered</h2></div>
+  <div><span class="eyebrow">05 · Notes</span><h2>The questions</h2></div>
   <div class="two">
-    <div class="q"><div class="qq">Do I stop breathing while squeezing, or keep breathing out?</div><p>Keep breathing out. The squeeze is the tail of the same exhale that drove the pull. Air leaving through the squeeze is what keeps the ribs down and the contraction honest. If you run out of air before the squeeze ends, sit empty for the last moment; do not inhale until you start lowering.</p></div>
-    <div class="q"><div class="qq">What is my breathing doing during the eccentric?</div><p>Breathing in. The lowering is where the air comes back, all of it, unhurried, for the whole length of the lowering. The old Squeeze mode never said so: it opened every cycle on IN with no movement word, so IN had to be guessed as the lowering.</p></div>
-    <div class="q"><div class="qq">Longer in, longer out, or the same?</div><p>Neither is the goal in the set. The breath follows the movement tempo: the exhale is as long as pull plus squeeze, the inhale as long as the lowering. For a machine rear delt fly that is about 3 out and 3 in. A long exhale (4·7·8, 4·6) is for coming down between sets and after, not for the rep.</p></div>
-    <div class="q"><div class="qq">Why did OUT then SQUEEZE feel like two things?</div><p>Because the app scheduled them as two phases with two words, and the tone stopped on the squeeze. Two words for one breath is a sequence to follow; one bar under two movements is a shape to feel. The tone must carry through the squeeze as the same note, still closing.</p></div>
+    <div class="q"><div class="qq">What was SET supposed to mean?</div><p>The one breath in you take after you are in position and before the first pull: handles in hand, chest up, breathe in, then go. It is a real thing lifters do, and it was a bad word for it, because SET already means a set of reps and it named a breath rather than a movement. It is gone. READY is that breath now: the count-in says "breathe in" under it, and the first movement word follows.</p></div>
+    <div class="q"><div class="qq">Why were brace, drive, squeeze and top confusing?</div><p>Each was a coaching cue for one kind of lift, so there were five words for two things the body does. Under a load you cannot hold a vocabulary. The way down and the way up are the same for every lift, so those are the words: LOWER and LIFT. A pause is a pause: HOLD. What differs between lifts is only what the air does in the hold, and that is the small line under the word, not a new word.</p></div>
+    <div class="q"><div class="qq">Why was the wind slow?</div><p>Layers. A GPU fluid with a depth pass, a bloom, dye that faded in a second, a frame clamp that played slow motion when the phone fell behind, and a force scaled by how loud the tone happened to be. The rebuild is one canvas: lines with momentum, a breath that pulls them in and sends them out, and nothing else between the breath and the screen. It runs at 60 fps at a third of a millisecond.</p></div>
+    <div class="q"><div class="qq">Why two notes and not one?</div><p>One note that opens and closes can be read either way if you tune in halfway. Two notes cannot: the high one is always the in, the low one always the out. The reference tracks all do this, with bells, bowls or a harmonium. Nothing about it is a melody: each note stays on its pitch and only its brightness and level move.</p></div>
   </div>
+  <p class="lede" style="font-size:14px">Reference tracks: <a href="https://2bells.net/">Coherence 2 Bells</a> (high bell in, low bell out), <a href="https://coherentbreathing.com/coherent-breathing-audio-downloads/">Coherent Breathing audio</a> (Long Soft Bell, Harmonium Breathing, Six Bridges), <a href="https://apps.apple.com/us/app/sym-breathing-hrv-coherence/id6575391114">Sym Breathing</a> (bowl tones), <a href="https://insighttimer.com/neiltranter/video-guided-meditations/coherent-breathing-timer-bells-5-5-breaths-per-minute">Coherent Breathing Timer Bells 5.5</a>.</p>
 </section>
 <footer>All samples are self-contained: canvas 2D and Web Audio, no assets, no network. Wind Bender is at basedandbrawn.github.io/breath-pacer/wind.html.</footer>
 <script>
@@ -229,8 +246,142 @@ function noise2(){ var p=[]; for(var i=0;i<512;i++) p[i]=Math.random(); return f
   function h(a,b){ return p[(a+p[b&255])&511]; } var a=h(xi,yi), b=h(xi+1,yi), c=h(xi,yi+1), d=h(xi+1,yi+1); return (a+(b-a)*u)*(1-v)+(c+(d-c)*u)*v; }; }
 function rnd(){ return Math.random(); }
 
-/* ============================ THE WINDS ============================
-   Each is a factory: (canvas) -> frame(dt, t). They read B. */
+var PALETTES={
+  slate:    {name:"Slate",     bg:[214,18,9],  full:[212,22,21], air:[212,32,66], warm:[36,28,66],  rim:[212,36,74], text:"#e6ebf1", light:false, note:"Slate and a muted blue. The air warms to sand on the way out."},
+  parchment:{name:"Parchment", bg:[40,34,84],  full:[44,44,93],  air:[216,24,34], warm:[16,42,44],  rim:[38,52,66], text:"#2a3140", light:true,  note:"Paper. The air is ink, rust on the way out. The page brightens as you fill."},
+  moss:     {name:"Moss",      bg:[160,14,8],  full:[152,16,19], air:[118,20,62], warm:[46,40,62],  rim:[100,26,68], text:"#e7ede6", light:false, note:"Deep green-grey, sage air, straw on the way out."},
+  ember:    {name:"Ember",     bg:[18,12,8],   full:[16,18,18],  air:[22,40,58],  warm:[32,70,64],  rim:[26,60,64], text:"#f1eae2", light:false, note:"Charcoal. The air is clay that glows through the exhale."},
+  indigo:   {name:"Indigo",    bg:[240,28,9],  full:[250,34,20], air:[258,30,70], warm:[300,24,72], rim:[256,42,78], text:"#ece9f4", light:false, note:"Indigo, lavender air, a blush of plum on the way out."}
+};
+function hsl(h,s,l){ h=((h%360)+360)%360/360; s/=100; l/=100; var q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q; function f(t){ t=(t+1)%1; if(t<1/6) return p+(q-p)*6*t; if(t<1/2) return q; if(t<2/3) return p+(q-p)*(2/3-t)*6; return p; } return [f(h+1/3), f(h), f(h-1/3)]; }
+function lerp3(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+function css(c){ return "rgb("+Math.round(c[0]*255)+","+Math.round(c[1]*255)+","+Math.round(c[2]*255)+")"; }
+/* the ground: empty to full, the hue drifting a little across the set; dim shrinks the swing for Breathe */
+function groundRGB(fill, temp, dim){ var f=Math.max(0,Math.min(1.2,fill))*dim, c=lerp3(PAL.bg, PAL.full, f); return hsl(c[0]+8*temp, c[1], c[2]); }
+/* the air: its colour on the way in, warming on the way out */
+function airColour(warm){ var c=lerp3(PAL.air, PAL.warm, warm); return hsl(c[0],c[1],c[2]); }
+function rimColour(){ return hsl(PAL.rim[0],PAL.rim[1],PAL.rim[2]); }
+/* ============================ NOISE ============================ */
+function makeNoise(seed){
+  var s = seed>>>0 || 1;
+  function h(x,y,z){ var n = (x*374761393 + y*668265263 + z*2147483647 + s*1274126177)|0; n = (n ^ (n>>>13)) * 1274126177; n = n ^ (n>>>16); return (n & 0xffff)/65535; }
+  function sm(t){ return t*t*(3-2*t); }
+  return function(x,y,z){
+    var xi=Math.floor(x), yi=Math.floor(y), zi=Math.floor(z), xf=sm(x-xi), yf=sm(y-yi), zf=sm(z-zi);
+    var a=h(xi,yi,zi), b=h(xi+1,yi,zi), c=h(xi,yi+1,zi), d=h(xi+1,yi+1,zi), e=h(xi,yi,zi+1), f=h(xi+1,yi,zi+1), g=h(xi,yi+1,zi+1), k=h(xi+1,yi+1,zi+1);
+    var l1=a+(b-a)*xf, l2=c+(d-c)*xf, l3=e+(f-e)*xf, l4=g+(k-g)*xf;
+    return (l1+(l2-l1)*yf)*(1-zf) + (l3+(l4-l3)*yf)*zf;
+  };
+}
+function mulberry(seed){ var a=seed>>>0; return function(){ a=(a+0x6D2B79F5)|0; var t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+function hashStr(s){ var h=2166136261; for(var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+
+function Slipstream(cv){
+  var ctx = cv.getContext("2d", {alpha:false});
+  var W=0,H=0,D=1,L=[],MO=[],noise=makeNoise(11),budgetN=1,warmSm=0,fillSm=0;
+  function resize(){
+    W=window.innerWidth; H=window.innerHeight; D=Math.min(1.5, window.devicePixelRatio||1);
+    cv.width=Math.round(W*D); cv.height=Math.round(H*D);
+    var n=Math.round(Math.min(120, Math.max(56, W*H/4800))*budgetN);
+    L=[]; for(var i=0;i<n;i++) L.push(newLine()); MO=[]; for(i=0;i<40;i++) MO.push({x:Math.random()*W, y:Math.random()*H, s:.6+Math.random()*1.2, k:Math.random()*6.3});
+  }
+  function newLine(){ var n=9+Math.floor(Math.random()*12), x=Math.random()*W, y=Math.random()*H, pts=[], i; for(i=0;i<n;i++) pts.push([x,y]);
+    return {p:pts, vx:0, vy:0, w:.7+Math.random()*1.4, s:.75+Math.random()*.5, seg:4+Math.random()*3.5, k:Math.random(), born:0}; }
+  function place(l, x, y){ for(var i=0;i<l.p.length;i++){ l.p[i][0]=x; l.p[i][1]=y; } l.vx=0; l.vy=0; }
+  function respawn(l, st, cx, cy, R, t){
+    var a=Math.random()*6.283;
+    if(st.flow>0.15){ var rr=R*(1.05+Math.random()*.35); place(l, cx+Math.cos(a)*rr, cy+Math.sin(a)*rr*1.15); }   /* the in: born at the edge, drawn to the centre */
+    else if(st.flow<-0.15){ var r2=R*.05*Math.random(); place(l, cx+Math.cos(a)*r2, cy+Math.sin(a)*r2); }         /* the out: born at the centre, sent away */
+    else if(st.idle) place(l, -30, Math.random()*H); else place(l, Math.random()*W, Math.random()*H);
+    l.born=t;
+  }
+  function smooth(a,b,x){ var q=Math.max(0,Math.min(1,(x-a)/(b-a))); return q*q*(3-2*q); }
+  function frame(dt, st, t){
+    ctx.setTransform(D,0,0,D,0,0);
+    ctx.fillStyle=css(st.ground); ctx.fillRect(0,0,W,H);
+    var cx=W/2, cy=H*0.47, R=Math.max(W,H)*0.5, i, k, l;
+    warmSm += ((st.flow<-0.05?Math.min(1,-st.flow):0) - warmSm)*Math.min(1, dt*2.2);     /* the air warms through the out, cools through the in */
+    fillSm += (st.fill-fillSm)*Math.min(1, dt*4);
+    var air=airColour(warmSm), rim=rimColour(), light=PAL.light;
+    /* the rim: the edge of the screen lights with the lungs and pulses in a hold */
+    if(st.rim>0.005){ var rg=ctx.createRadialGradient(cx,cy,Math.min(W,H)*0.32,cx,cy,Math.max(W,H)*0.64);
+      rg.addColorStop(0,"rgba("+(rim[0]*255|0)+","+(rim[1]*255|0)+","+(rim[2]*255|0)+",0)"); rg.addColorStop(1,"rgba("+(rim[0]*255|0)+","+(rim[1]*255|0)+","+(rim[2]*255|0)+","+Math.min(1,st.rim*st.dim*(light?0.9:1.3)).toFixed(3)+")");
+      ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); }
+    /* motes: the far air, carried slowly by the same breath, dim */
+    var mg=(20+30*st.amp)*st.flow;
+    ctx.fillStyle="rgba("+(air[0]*255|0)+","+(air[1]*255|0)+","+(air[2]*255|0)+","+(light?0.22:0.28)+")";
+    for(i=0;i<MO.length;i++){ var m=MO[i], mdx=m.x-cx, mdy=m.y-cy, mr=Math.hypot(mdx,mdy)+1;
+      m.x += (-mdx/mr*mg + (noise(m.x*.003,m.y*.003,t*.05)-.5)*18 + (st.idle?9:0))*dt*m.s; m.y += (-mdy/mr*mg + (noise(m.y*.003+4,m.x*.003,t*.05)-.5)*18)*dt*m.s;
+      if(m.x<-6) m.x=W+6; if(m.x>W+6) m.x=-6; if(m.y<-6) m.y=H+6; if(m.y>H+6) m.y=-6;
+      if(st.flow>0.2 && mr<8){ m.x=Math.random()*W; m.y=Math.random()*H; }
+      ctx.beginPath(); ctx.arc(m.x,m.y,0.6+m.s*0.5,0,6.283); ctx.fill(); }
+    /* the lines */
+    var gain=(150+230*st.amp)*st.flow;                 /* the audible gust is the visible gust, with a floor */
+    var turb=st.turb, kn=0.0042, e=6, tz=t*0.22, cs=(14+60*turb)*34, pokeR=Math.min(W,H)*0.22;
+    var baseA = light ? 0.26+0.30*fillSm : 0.22+0.55*fillSm;
+    ctx.lineCap="round"; ctx.lineJoin="round";
+    for(i=0;i<L.length;i++){
+      l=L[i]; var h=l.p[0], dx=h[0]-cx, dy=h[1]-cy, r=Math.hypot(dx,dy)+1e-3, nx=dx/r, ny=dy/r, rn=r/R;
+      var ring=smooth(0.03,0.22,rn)*(1-smooth(1.05,1.6,rn));
+      var ax=-nx*gain*ring*l.s, ay=-ny*gain*ring*l.s;                  /* the in draws to the centre, the out sends away */
+      var turn=0.34*ring*smooth(0.12,0.45,rn);                          /* the field turns, so the air spirals rather than beams; the turn dies near the eye so nothing orbits there */
+      ax += -ny*gain*turn*l.s; ay += nx*gain*turn*l.s;
+      var n1=noise((h[0]+e)*kn,h[1]*kn,tz), n2=noise((h[0]-e)*kn,h[1]*kn,tz), n3=noise(h[0]*kn,(h[1]+e)*kn,tz), n4=noise(h[0]*kn,(h[1]-e)*kn,tz);
+      ax += (n3-n4)/(2*e)*cs; ay -= (n1-n2)/(2*e)*cs;                   /* curl noise: texture at rest, turbulence when the count is missed */
+      if(st.idle) ax += 70;
+      if(st.tapK>0.01){ var tx=h[0]-st.tapX, ty=h[1]-st.tapY, tr=Math.hypot(tx,ty)+1e-3, tf=st.tapK*Math.exp(-tr*tr/(pokeR*pokeR))*30000; ax += tx/tr*tf; ay += ty/tr*tf; }
+      l.vx += ax*dt; l.vy += ay*dt;
+      var drag = 1 - Math.min(1, (st.still?4.5:1.25)*dt); l.vx*=drag; l.vy*=drag;   /* the hold: no force, the air coasts to a stop */
+      if(st.pinK>0){ var px_=h[0]-st.pinX, py_=h[1]-st.pinY, pf=1-st.pinK*0.3*Math.exp(-(px_*px_+py_*py_)/(pokeR*pokeR)); l.vx*=pf; l.vy*=pf; }
+      /* the word is an obstacle: the head slides round it */
+      if(maskAt(h[0],h[1]) > 0.5){ var gx=maskAt(h[0]+4,h[1])-maskAt(h[0]-4,h[1]), gy=maskAt(h[0],h[1]+4)-maskAt(h[0],h[1]-4), gl=Math.hypot(gx,gy)+1e-4;
+        gx/=gl; gy/=gl; h[0]-=gx*5; h[1]-=gy*5; var vd=l.vx*gx+l.vy*gy; if(vd>0){ l.vx-=vd*gx*1.5; l.vy-=vd*gy*1.5; } }
+      h[0] += l.vx*dt; h[1] += l.vy*dt;
+      /* the chain follows the head at a fixed spacing: a ribbon of constant length riding the air */
+      for(k=1;k<l.p.length;k++){ var q=l.p[k], pq=l.p[k-1], ddx=pq[0]-q[0], ddy=pq[1]-q[1], dd=Math.hypot(ddx,ddy); if(dd>l.seg){ q[0]=pq[0]-ddx/dd*l.seg; q[1]=pq[1]-ddy/dd*l.seg; } }
+      var out=h[0]<-40||h[0]>W+40||h[1]<-40||h[1]>H+40;
+      if(out || (st.flow>-0.1 && rn<0.09) || (st.flow<-0.2 && rn>1.5)){ respawn(l, st, cx, cy, R, t); continue; }   /* arrived at the centre: gone, and born again at the edge; nothing piles up under the word */
+      var sp=Math.hypot(l.vx,l.vy), al=Math.min(0.95, baseA*(0.55+Math.min(1,sp/200)))*Math.min(1,(t-l.born)*1.5+0.15)*smooth(0.08,0.22,rn);   /* the eye of the field is quiet: the lines fade as they arrive */
+      if(al<0.02) continue;
+      ctx.strokeStyle="rgba("+(air[0]*255|0)+","+(air[1]*255|0)+","+(air[2]*255|0)+","+al.toFixed(3)+")";
+      ctx.lineWidth=l.w*(0.8+0.5*fillSm);
+      ctx.beginPath(); ctx.moveTo(h[0],h[1]); for(k=1;k<l.p.length;k++) ctx.lineTo(l.p[k][0],l.p[k][1]); ctx.stroke();
+    }
+  }
+  function halve(){ if(budgetN>0.4){ budgetN*=0.6; resize(); return true; } return false; }
+  resize();
+  return {kind:"slipstream", resize:resize, frame:frame, halve:halve,
+    clear:function(){ for(var i=0;i<L.length;i++){ place(L[i], Math.random()*W, Math.random()*H); L[i].born=0; } },
+    info:function(){ return L.length+" lines · "+MO.length+" motes"; }};
+}
+
+/* ============================ THE LOOK: the app's engine under five palettes ============================ */
+var PAL=PALETTES.slate;                       /* the engine reads PAL; each tile swaps it in for its frame */
+var MASK={data:null}; function maskAt(){ return 0; }   /* no word to part around in the tiles */
+var lookGrid=document.getElementById("look-grid"), LOOK=[];
+function fsFrom(pal){ var fs={idle:false, dim:1, temp:.3, turb:0, tapK:0, pinK:0, tapX:0, tapY:0, pinX:0, pinY:0};
+  fs.fill=B.fill; fs.flow=B.flow*(0.5+0.5); fs.amp=Math.min(1,Math.abs(B.flow))*0.85; fs.still=B.still; fs.pulse=B.pulse||0; fs.rim=0.09*B.fill+0.16*fs.pulse+(B.still?0.04:0);
+  var g=PAL; PAL=pal; fs.ground=groundRGB(Math.min(1.2,fs.fill+0.05*fs.pulse), fs.temp, 1); PAL=g; return fs; }
+Object.keys(PALETTES).forEach(function(pn){
+  var pal=PALETTES[pn], tile=document.createElement("div"); tile.className="tile"; var gcol=css(hsl(pal.bg[0],pal.bg[1],pal.bg[2])), tcol=pal.text;
+  tile.innerHTML='<canvas width="216" height="384" aria-label="'+pal.name+' palette"></canvas><div class="cap" style="background:'+gcol+';color:'+tcol+'"><div class="pick" style="color:'+css(hsl(pal.warm[0],pal.warm[1],pal.warm[2]))+'">'+(pn==="slate"?"default":pn==="parchment"?"paper":"&nbsp;")+'</div><h3>'+pal.name+'</h3><p style="color:'+tcol+';opacity:.75">'+pal.note+'</p></div>';
+  lookGrid.appendChild(tile); var cv=tile.firstElementChild;
+  /* the engine sizes itself from the window; here it is told the tile */
+  var saveW=window.innerWidth, saveH=window.innerHeight;
+  var inst=(function(){ var g=PAL; PAL=pal; var w=window.innerWidth, h=window.innerHeight; Object.defineProperty(window,"innerWidth",{value:216,configurable:true}); Object.defineProperty(window,"innerHeight",{value:384,configurable:true}); var e=Slipstream(cv); Object.defineProperty(window,"innerWidth",{value:w,configurable:true}); Object.defineProperty(window,"innerHeight",{value:h,configurable:true}); PAL=g; return e; })();
+  LOOK.push({pal:pal, inst:inst, tile:tile});
+  cv.addEventListener("click", function(){ openBig(pal); });
+});
+/* open one palette full-screen: the run screen as it would look on the phone */
+var big=document.createElement("div"); big.id="big"; big.hidden=true; big.innerHTML='<canvas></canvas><div class="bw"><div class="bword"></div><div class="bsub"></div><div class="bnum"></div></div><button class="bx" type="button">Close</button>'; document.body.appendChild(big);
+var bigInst=null, bigPal=null;
+function openBig(pal){ bigPal=pal; big.hidden=false; document.body.style.overflow="hidden"; var cv=big.querySelector("canvas"); var g=PAL; PAL=pal; bigInst=Slipstream(cv); PAL=g;
+  big.style.background=css(hsl(pal.bg[0],pal.bg[1],pal.bg[2])); big.querySelector(".bw").style.color=pal.text; }
+big.querySelector(".bx").addEventListener("click", function(){ big.hidden=true; document.body.style.overflow=""; bigInst=null; });
+function bigFrame(dt,t){ if(big.hidden||!bigInst) return; var fs=fsFrom(bigPal), g=PAL; PAL=bigPal; bigInst.frame(dt,fs,t); PAL=g;
+  var w=big.querySelector(".bword"), s=big.querySelector(".bsub"), n=big.querySelector(".bnum"), lift=(B.pat==="drive"||B.pat==="squeeze");
+  w.textContent = lift ? {in:"LOWER",out:"LIFT",hold:"HOLD",empty:"HOLD"}[B.k] : B.k.toUpperCase();
+  s.textContent = lift ? {in:"breathe in",out:"breathe out",hold:"hold your breath",empty:"keep breathing out"}[B.k] : ""; n.textContent=Math.max(1,Math.ceil(B.dur-B.into)); }
 var WINDS=[
  {id:"slipstream", name:"Slipstream", pick:"the app's field, as lines",
   what:"Long filaments ride a drifting curl field. The in draws them to the centre and brightens them; the out lets them run to the edges. The hold: the lines stop being pushed and coast to a halt, still faintly lit.",
@@ -359,6 +510,58 @@ var WINDS=[
        c.fillStyle=g; c.fillRect(x,top,w,hgt); }
      if(B.pulse>0){ c.fillStyle=rgba(col,B.pulse*.06); c.fillRect(0,0,W,H); }
    }; }}
+,
+ {id:"ripple", name:"Ripple", pick:"new · rain on still water",
+  what:"Rings. Through the in they are born at the edge and close toward the centre; through the out they open from the centre and fade at the edge. The hold: the rings stop where they are and hang, a still pond. The direction of the breath is the direction of the rings, and nothing else moves.",
+  cost:"2D · 22 rings · ~0.2 ms", make:function(cv){
+   var c=cv.getContext("2d"), W=cv.width, H=cv.height, RG=[], i; for(i=0;i<22;i++) RG.push({r:Math.random(), a:.3+Math.random()*.7, w:.6+Math.random()*1.2});
+   return function(dt,t){
+     c.fillStyle=ground(B.fill*.55); c.fillRect(0,0,W,H);
+     var cx=W/2, cy=H*.46, Rm=Math.hypot(W,H)*.55, col=tint(), v=B.flow*0.28, i;
+     for(i=0;i<RG.length;i++){ var g=RG[i]; g.r -= v*dt*(0.6+0.8*g.a); if(g.r<0){ g.r=1; g.a=.3+Math.random()*.7; } if(g.r>1){ g.r=0; g.a=.3+Math.random()*.7; }
+       var al=(.12+.5*B.fill)*g.a*Math.sin(g.r*Math.PI)+B.pulse*.2; c.strokeStyle=rgba(col,al); c.lineWidth=g.w;
+       c.beginPath(); c.ellipse(cx,cy,g.r*Rm,g.r*Rm*1.12,0,0,6.283); c.stroke(); }
+   }; }},
+ {id:"kite", name:"Kite", pick:"new · three strings",
+  what:"Three ribbons tethered at the foot of the screen. The in lifts them and pulls them taut toward the top; the out lets them fall and ripple back down. The hold: they hang in the air where the breath left them, swaying only at the tips. A kite is the oldest wind instrument there is.",
+  cost:"2D · 3 ribbons × 40 points · ~0.2 ms", make:function(cv){
+   var c=cv.getContext("2d"), W=cv.width, H=cv.height, n=noise2(), lift=0, K=[[.28,.9],[.5,1],[.72,.85]];
+   return function(dt,t){
+     c.fillStyle=ground(B.fill*.5); c.fillRect(0,0,W,H);
+     lift+=(B.fill-lift)*Math.min(1,dt*(B.still?.6:1.6));
+     var col=tint(), i, j;
+     for(i=0;i<K.length;i++){ var x0=W*K[i][0], top=H*(.86-.72*lift*K[i][1]), sway=(B.still?4:10+18*Math.abs(B.flow));
+       c.strokeStyle=rgba(col,.25+.6*lift); c.lineWidth=1.2+i*.3; c.beginPath();
+       for(j=0;j<=40;j++){ var u=j/40, y=H*.92-(H*.92-top)*u, x=x0+Math.sin(u*5-t*(B.still?.7:2.2)+i)*sway*u*u+(n(u*3+i,t*.3)-.5)*sway*u; j?c.lineTo(x,y):c.moveTo(x,y); } c.stroke();
+       c.fillStyle=rgba(col,.5+.5*lift); c.beginPath(); c.arc(x0+Math.sin(5-t*(B.still?.7:2.2)+i)*sway, top, 2.4,0,6.283); c.fill(); }
+   }; }},
+ {id:"lantern", name:"Lantern", pick:"new · the simplest that works",
+  what:"One glow at the centre that grows as the lungs fill and shrinks as they empty, with embers drifting off it. Nothing to interpret: bigger is fuller. The hold: the glow holds its size and breathes a pulse a second so the hold can be counted. Best in peripheral vision of anything on this page.",
+  cost:"2D · 1 gradient + 60 embers · ~0.3 ms", make:function(cv){
+   var c=cv.getContext("2d"), W=cv.width, H=cv.height, E=[], i, sm=0; for(i=0;i<60;i++) E.push({x:W/2,y:H*.46,vx:0,vy:0,l:Math.random(),s:.5+Math.random()});
+   return function(dt,t){
+     c.fillStyle=ground(B.fill*.5); c.fillRect(0,0,W,H);
+     sm+=(B.fill-sm)*Math.min(1,dt*3); var cx=W/2, cy=H*.46, col=tint(), R=Math.min(W,H)*(.12+.36*sm)*(1+.05*B.pulse), i;
+     var g=c.createRadialGradient(cx,cy,0,cx,cy,R); g.addColorStop(0,rgba(col,.55+.3*sm)); g.addColorStop(.6,rgba(col,.18)); g.addColorStop(1,rgba(col,0)); c.fillStyle=g; c.fillRect(0,0,W,H);
+     for(i=0;i<E.length;i++){ var e=E[i]; e.l+=dt*.25; if(e.l>1){ var a=Math.random()*6.283; e.x=cx+Math.cos(a)*R*.7; e.y=cy+Math.sin(a)*R*.7; e.vx=Math.cos(a)*(B.flow<0?30:6); e.vy=Math.sin(a)*(B.flow<0?30:6)-8; e.l=0; }
+       e.vx+=(B.flow>0?(cx-e.x)*.4:0)*dt; e.vy+=((B.flow>0?(cy-e.y)*.4:0)-6)*dt; var d=1-Math.min(1,(B.still?2.5:.8)*dt); e.vx*=d; e.vy*=d; e.x+=e.vx*dt; e.y+=e.vy*dt;
+       c.fillStyle=rgba(col,(1-e.l)*.7); c.beginPath(); c.arc(e.x,e.y,.8+e.s,0,6.283); c.fill(); }
+   }; }},
+ {id:"flock", name:"Flock", pick:"new · a murmuration",
+  what:"A hundred small birds. Through the in they gather to the centre; through the out they scatter and wheel; the hold is a flock that has settled, drifting as one. Every bird follows its neighbours, so the motion is coherent, which is the one thing peripheral vision is built to see.",
+  cost:"2D · 100 boids · ~1 ms", make:function(cv){
+   var c=cv.getContext("2d"), W=cv.width, H=cv.height, F=[], i; for(i=0;i<100;i++) F.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*20,vy:(Math.random()-.5)*20});
+   return function(dt,t){
+     c.fillStyle=ground(B.fill*.5); c.fillRect(0,0,W,H);
+     var cx=W/2, cy=H*.46, col=tint(), i, j, mx=0, my=0; for(i=0;i<F.length;i++){ mx+=F[i].vx; my+=F[i].vy; } mx/=F.length; my/=F.length;
+     for(i=0;i<F.length;i++){ var b=F[i], dx=b.x-cx, dy=b.y-cy, r=Math.hypot(dx,dy)+1;
+       var ax=(mx-b.vx)*1.5 + (B.flow>0?-dx/r*90*B.flow: B.flow<0? dx/r*60*-B.flow:0), ay=(my-b.vy)*1.5 + (B.flow>0?-dy/r*90*B.flow: B.flow<0? dy/r*60*-B.flow:0);
+       for(j=0;j<F.length;j+=7){ var o=F[j], ox=b.x-o.x, oy=b.y-o.y, d2=ox*ox+oy*oy; if(d2<140&&d2>0){ ax+=ox/d2*220; ay+=oy/d2*220; } }
+       ax+=Math.sin(t*.7+i)*8; ay+=Math.cos(t*.6+i*1.3)*8;
+       b.vx+=ax*dt; b.vy+=ay*dt; var sp=Math.hypot(b.vx,b.vy), mxs=B.still?18:70; if(sp>mxs){ b.vx*=mxs/sp; b.vy*=mxs/sp; }
+       b.x+=b.vx*dt; b.y+=b.vy*dt; if(b.x<0){b.x=0;b.vx=Math.abs(b.vx);} if(b.x>W){b.x=W;b.vx=-Math.abs(b.vx);} if(b.y<0){b.y=0;b.vy=Math.abs(b.vy);} if(b.y>H){b.y=H;b.vy=-Math.abs(b.vy);}
+       c.strokeStyle=rgba(col,.35+.55*B.fill); c.lineWidth=1.1; c.beginPath(); c.moveTo(b.x-b.vx*.06,b.y-b.vy*.06); c.lineTo(b.x+b.vx*.06,b.y+b.vy*.06); c.stroke(); }
+   }; }}
 ];
 var grid=document.getElementById("wind-grid"), FR=[];
 WINDS.forEach(function(w){
@@ -366,59 +569,49 @@ WINDS.forEach(function(w){
   tile.innerHTML='<canvas width="216" height="336" aria-label="'+w.name+' wind sample"></canvas><div class="cap"><div class="pick">'+w.pick+'</div><h3>'+w.name+'</h3><p>'+w.what+'</p><div class="cost">'+w.cost+'</div></div>';
   grid.appendChild(tile); FR.push(w.make(tile.firstElementChild));
 });
-
-/* ============================ THE TONES ============================ */
+/* ============================ THE TONES: two notes each ============================ */
 var AC=null; function ctx(){ if(AC) return AC; var C=window.AudioContext||window.webkitAudioContext; AC=new C(); return AC; }
 function ramp(param, from, to, at, dur, shape){ shape=shape||easeIO; try{ param.cancelScheduledValues(at); }catch(e){} param.setValueAtTime(from, at); for(var i=1;i<=20;i++){ var p=i/20; param.linearRampToValueAtTime(from+(to-from)*shape(p), at+dur*p); } }
 function easeOut(p){ return 1-Math.pow(1-p,3); }
 function pink(c){ var len=c.sampleRate*4, b=c.createBuffer(1,len,c.sampleRate), d=b.getChannelData(0), b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0,i,w;
   for(i=0;i<len;i++){ w=Math.random()*2-1; b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759; b2=0.96900*b2+w*0.1538520; b3=0.86650*b3+w*0.3104856; b4=0.55000*b4+w*0.5329522; b5=-0.7616*b5-w*0.0168980; d[i]=(b0+b1+b2+b3+b4+b5+b6+w*0.5362)*0.11; b6=w*0.115926; } return b; }
 function osc(c, f, g, dest){ var o=c.createOscillator(), og=c.createGain(); o.type="sine"; o.frequency.value=f; og.gain.value=g; o.connect(og); og.connect(dest); o.start(); return o; }
-/* a voice: partials into one gain and one lowpass; the phase ramps level and cutoff together from where the last phase left them */
 function voice(c, dest, f, parts, lp0, lpQ){
   var lp=c.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=lp0; lp.Q.value=lpQ||0.7; var g=c.createGain(); g.gain.value=0.0001; g.connect(lp); lp.connect(dest);
   var os=parts.map(function(p){ return osc(c, f*p[0], p[1], g); });
-  var v={g:g, lp:lp, lvl:0.0001, fc:lp0, nodes:os, to:function(at,dur,lvl,fc,shape){ ramp(g.gain, v.lvl, lvl, at, dur, shape); ramp(lp.frequency, v.fc, fc, at, dur, shape); v.lvl=lvl; v.fc=fc; }, stop:function(at){ ramp(g.gain, v.lvl, 0.0001, at, 0.6, easeOut); v.lvl=0.0001; os.forEach(function(o){ o.stop(at+0.7); }); }};
+  var v={g:g, lp:lp, lvl:0.0001, fc:lp0, to:function(at,dur,lvl,fc,shape){ ramp(g.gain, v.lvl, lvl, at, dur, shape); ramp(lp.frequency, v.fc, fc, at, dur, shape); v.lvl=lvl; v.fc=fc; }, stop:function(at){ ramp(g.gain, v.lvl, 0.0001, at, 0.6, easeOut); v.lvl=0.0001; os.forEach(function(o){ o.stop(at+0.7); }); }};
   return v;
 }
-function air(c, dest, f, q, g0){ var s=c.createBufferSource(); s.buffer=pink(c); s.loop=true; var bp=c.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=f; bp.Q.value=q; var g=c.createGain(); g.gain.value=g0; s.connect(bp); bp.connect(g); g.connect(dest); s.start(); return {src:s, bp:bp, g:g}; }
-/* every design: make(c, dest) -> {phase(kind, at, dur), stop(at)} */
+function bellNode(c, dest, f, at, amp){ var parts=[[1,1,3.2],[2.76,.32,1.4],[5.4,.10,.6]], lp=c.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2600; lp.connect(dest);
+  parts.forEach(function(p){ var o=c.createOscillator(), g=c.createGain(); o.type="sine"; o.frequency.value=f*p[0]; g.gain.setValueAtTime(.0001,at); g.gain.linearRampToValueAtTime(amp*p[1],at+.03); g.gain.exponentialRampToValueAtTime(.0001,at+p[2]); o.connect(g); g.connect(lp); o.start(at); o.stop(at+p[2]+.05); }); }
+/* the pair: a high voice for the in, a low voice for the out. o = {top, hiF, loF, hiParts, loParts, hiFc:[dark,bright], loFc:[dark,bright], bells} */
+function pair(c, d, o){
+  var hi=voice(c,d,o.hiF,o.hiParts,o.hiFc[0]), lo=voice(c,d,o.loF,o.loParts,o.loFc[0]), top=o.top;
+  return {phase:function(k,at,dur){ var g=Math.max(dur,.35), q=Math.min(.5,g*.2);
+    if(k==="in"){ hi.to(at,g,top,o.hiFc[1]); lo.to(at,Math.min(1,g),.0001,o.loFc[0]); if(o.bells) bellNode(c,d,o.hiF*2,at,.16); }
+    else if(k==="out"){ lo.to(at,q,top,o.loFc[1],easeOut); lo.to(at+q,g-q,top*.12,o.loFc[0]); hi.to(at,Math.min(.9,g),.0001,o.hiFc[0]); if(o.bells) bellNode(c,d,o.loF*1.5,at,.16); }
+    else if(k==="hold"){ if(hi.lvl>lo.lvl) hi.to(at,Math.min(1.2,g),top*.45,(o.hiFc[0]+o.hiFc[1])/2,easeOut); else lo.to(at,Math.min(1.2,g),top*.45,(o.loFc[0]+o.loFc[1])/2,easeOut); }
+    else if(k==="empty"){ lo.to(at,Math.min(.8,g),top*.10,o.loFc[0],easeOut); hi.to(at,.5,.0001,o.hiFc[0],easeOut); }
+    else { hi.to(at,.6,.0001,o.hiFc[0],easeOut); lo.to(at,.6,.0001,o.loFc[0],easeOut); } }, stop:function(at){ hi.stop(at); lo.stop(at); }};
+}
+var HI4=[[1,1],[1.0015,.45],[2,.18],[3,.07]], LO4=[[1,1],[1.0015,.5],[2,.28],[3,.12],[.5,.22]], BOWL=[[1,1],[1.003,.7],[2.71,.3],[2.725,.18],[5.15,.07]];
 var TONES=[
- {id:"swell", name:"Swell", pick:"now in the app", what:"One warm note on G3: a sine, two soft harmonics, a second fundamental a hair sharp so the note slowly moves inside, and a breath of pink air under it. The in opens the lowpass from dark to bright and swells the level; the out closes both. The hold sustains, a little softer.",
-  why:"No transient, no interval, no pitch motion. Predictable a second ahead, which is what a startled nervous system needs.",
-  make:function(c,d){ var v=voice(c,d,196,[[1,1],[1.0015,.5],[2,.28],[3,.12]],240), a=air(c,v.g,700,.6,.06), top=.24;
-   return {phase:function(k,at,dur){ if(k==="in") v.to(at,dur,top,1500); else if(k==="out") v.to(at,dur,top*.10,240); else if(k==="hold") v.to(at,Math.min(1.2,dur),top*.45,1100,easeOut); else if(k==="empty") v.to(at,Math.min(.8,dur),top*.06,200,easeOut); else v.to(at,.6,.0001,240,easeOut); }, stop:function(at){ v.stop(at); a.src.stop(at+.7); }}; }},
- {id:"hum", name:"Hum", pick:"lowest, most bodily", what:"The same idea an octave down on A2, five partials, so it sits where a hum in your own chest sits. Opens 150 to 900 Hz. Best on a phone speaker laid on a bench and through the floor of a quiet room; on tiny speakers the fundamental is felt more than heard.",
-  why:"Low and slow reads as safe. Nothing in it can be mistaken for a notification.",
-  make:function(c,d){ var v=voice(c,d,110,[[1,1],[1.002,.6],[2,.35],[3,.15],[4,.06]],150), top=.32;
-   return {phase:function(k,at,dur){ if(k==="in") v.to(at,dur,top,900); else if(k==="out") v.to(at,dur,top*.12,150); else if(k==="hold") v.to(at,Math.min(1.2,dur),top*.5,700,easeOut); else v.to(at,.6,.0001,150,easeOut); }, stop:v.stop}; }},
- {id:"vowel", name:"Vowel", pick:"most like a breath", what:"A harmonic stack through two formant filters. The in morphs the mouth from oo to ah, the out closes it back: the same one note, with the vowel opening as the lungs do. It is the closest a tone gets to the shape of an inhale without any noise in it.",
-  why:"Voice-like without words. A vowel is the most familiar sound there is and carries no alarm.",
-  make:function(c,d){ var g=c.createGain(); g.gain.value=.0001; var f1=c.createBiquadFilter(), f2=c.createBiquadFilter(); f1.type="bandpass"; f2.type="bandpass"; f1.Q.value=5; f2.Q.value=6; f1.frequency.value=300; f2.frequency.value=900;
-   var lp=c.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1800; var src=c.createGain(); src.gain.value=1; src.connect(f1); src.connect(f2); f1.connect(g); f2.connect(g); g.connect(lp); lp.connect(d);
-   var os=[], k; for(k=1;k<=10;k++) os.push(osc(c,147*k*(k>1?1.0005:1),.9/k,src)); var lvl=.0001, F1=300, F2=900, top=.5;
-   function to(at,dur,l,a,b,sh){ ramp(g.gain,lvl,l,at,dur,sh); ramp(f1.frequency,F1,a,at,dur,sh); ramp(f2.frequency,F2,b,at,dur,sh); lvl=l; F1=a; F2=b; }
-   return {phase:function(k,at,dur){ if(k==="in") to(at,dur,top,650,1150); else if(k==="out") to(at,dur,top*.12,300,900); else if(k==="hold") to(at,Math.min(1.2,dur),top*.45,600,1100,easeOut); else to(at,.6,.0001,300,900,easeOut); }, stop:function(at){ ramp(g.gain,lvl,.0001,at,.6,easeOut); os.forEach(function(o){ o.stop(at+.7); }); }}; }},
- {id:"bowl", name:"Bowl", pick:"never struck", what:"The partials of a singing bowl, 1 · 2.71 · 5.15, each with a twin a few cents off so the note beats slowly, but nothing ever strikes it: the level simply swells through the in and drains through the out. A bowl that is breathed into rather than hit.",
-  why:"Familiar from every meditation track, minus the one part of a bowl that startles: the strike.",
-  make:function(c,d){ var v=voice(c,d,220,[[1,1],[1.003,.7],[2.71,.3],[2.725,.18],[5.15,.07]],2400,.5), top=.2;
-   return {phase:function(k,at,dur){ if(k==="in") v.to(at,dur,top,2400); else if(k==="out") v.to(at,dur,top*.08,2000); else if(k==="hold") v.to(at,Math.min(1.5,dur),top*.5,2200,easeOut); else v.to(at,.6,.0001,2400,easeOut); }, stop:v.stop}; }},
- {id:"tide", name:"Tide", pick:"no note at all", what:"Only air: pink noise through a bandpass that rises 200 to 1100 Hz through the in and falls through the out, over a 55 Hz drone you feel more than hear. The wash of a wave coming up the sand and going back. For anyone for whom any tone at all is too much.",
-  why:"Broadband and soft. Masks gym noise rather than competing with it; there is no pitch to catch on.",
-  make:function(c,d){ var a=air(c,d,200,.7,.0001), dr=osc(c,55,.12,d), lvl=.0001, fc=200, top=.55;
-   function to(at,dur,l,f,sh){ ramp(a.g.gain,lvl,l,at,dur,sh); ramp(a.bp.frequency,fc,f,at,dur,sh); lvl=l; fc=f; }
-   return {phase:function(k,at,dur){ if(k==="in") to(at,dur,top,1100); else if(k==="out") to(at,dur,top*.15,200); else if(k==="hold") to(at,Math.min(1.2,dur),top*.4,800,easeOut); else to(at,.6,.0001,200,easeOut); }, stop:function(at){ ramp(a.g.gain,lvl,.0001,at,.6,easeOut); a.src.stop(at+.7); dr.stop(at+.7); }}; }},
- {id:"bloom", name:"Bloom", pick:"the chord opens", what:"A root note that is always there. Through the in a fifth and an octave fade in above it, so the one note blooms into a chord as the lungs fill; through the out they fade and it is one note again. Nothing steps: the extra notes arrive as a swell, not a strike.",
-  why:"Richer than a single sine for long sessions, with no melody to follow and no movement of pitch.",
-  make:function(c,d){ var lp=c.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1300; lp.connect(d); var rg=c.createGain(); rg.gain.value=.0001; rg.connect(lp); var cg=c.createGain(); cg.gain.value=.0001; cg.connect(lp);
-   var os=[osc(c,196,1,rg),osc(c,196.4,.5,rg),osc(c,392,.18,rg),osc(c,294,.7,cg),osc(c,392.6,.5,cg),osc(c,588,.15,cg)], r=.0001, ch=.0001;
-   function to(at,dur,rl,cl,sh){ ramp(rg.gain,r,rl,at,dur,sh); ramp(cg.gain,ch,cl,at,dur,sh); r=rl; ch=cl; }
-   return {phase:function(k,at,dur){ if(k==="in") to(at,dur,.22,.16); else if(k==="out") to(at,dur,.1,.0001); else if(k==="hold") to(at,Math.min(1.2,dur),.16,.1,easeOut); else to(at,.6,.0001,.0001,easeOut); }, stop:function(at){ to(at,.6,.0001,.0001,easeOut); os.forEach(function(o){ o.stop(at+.7); }); }}; }},
- {id:"pulse", name:"Swell + pulse", pick:"for the gym", what:"The Swell, plus a soft low knock at the start of every phase: a sine falling 110 to 58 Hz over a tenth of a second through a 300 Hz lowpass, more felt than heard. In the gym you are not looking at the screen, and the knock is the moment to change what you are doing. It is a knuckle on wood, not a click.",
-  why:"The one transient on the page, kept below 300 Hz so it cannot pierce. The turn of the swell still carries the direction.",
-  make:function(c,d){ var v=voice(c,d,196,[[1,1],[1.0015,.5],[2,.28],[3,.12]],240), a=air(c,v.g,700,.6,.06), top=.24, kl=c.createBiquadFilter(); kl.type="lowpass"; kl.frequency.value=300; kl.connect(d);
-   function knock(at){ var o=c.createOscillator(), g=c.createGain(); o.type="sine"; o.frequency.setValueAtTime(110,at); o.frequency.exponentialRampToValueAtTime(58,at+.12); g.gain.setValueAtTime(.0001,at); g.gain.linearRampToValueAtTime(.55,at+.018); g.gain.exponentialRampToValueAtTime(.0001,at+.28); o.connect(g); g.connect(kl); o.start(at); o.stop(at+.3); }
-   return {phase:function(k,at,dur){ knock(at); if(k==="in") v.to(at,dur,top,1500); else if(k==="out") v.to(at,dur,top*.10,240); else if(k==="hold") v.to(at,Math.min(1.2,dur),top*.45,1100,easeOut); else if(k==="empty") v.to(at,Math.min(.8,dur),top*.06,200,easeOut); else v.to(at,.6,.0001,240,easeOut); }, stop:function(at){ v.stop(at); a.src.stop(at+.7); }}; }}
+ {id:"two", name:"Two notes", pick:"now in the app", what:"D4 for the in, G3 for the out, a fifth apart. The high note opens and swells as you breathe in; at the turn the low note is full and it closes as the air leaves. Sines with soft harmonics and a twin a hair sharp so each note moves slowly inside. A hold keeps the last note where it is, softer.",
+  why:"Two pitches, so the direction is never in doubt, and neither pitch ever moves, so it is never a siren.", make:function(c,d){ return pair(c,d,{top:.22,hiF:293.66,loF:196,hiParts:HI4,loParts:LO4,hiFc:[320,1700],loFc:[220,1200]}); }},
+ {id:"bells", name:"Two bells", pick:"the 2 Bells convention", what:"The same two notes at a quarter of the level, and at each turn a soft bell: a high one for the in, a low one for the out, struck gently with a slow attack and a long ring. This is Coherence's 2 Bells, with the sustained notes underneath so the direction stays audible after the ring has faded.",
+  why:"The one design here with a transient, kept soft, low and slow. The strike marks the turn for a gym where you are not looking.", make:function(c,d){ return pair(c,d,{top:.07,hiF:293.66,loF:196,hiParts:HI4,loParts:LO4,hiFc:[320,1700],loFc:[220,1200],bells:true}); }},
+ {id:"hum", name:"Hum pair", pick:"lowest, chest-level", what:"The same idea an octave down: A3 for the in, D3 for the out. Sits where a hum in your own chest sits. Best on a phone speaker laid on a bench, and through the floor of a quiet room.",
+  why:"Low and slow reads as safe. Nothing in it could be a notification.", make:function(c,d){ return pair(c,d,{top:.3,hiF:220,loF:146.83,hiParts:[[1,1],[1.002,.5],[2,.3],[3,.1]],loParts:[[1,1],[1.002,.6],[2,.35],[3,.15],[4,.06]],hiFc:[200,1100],loFc:[150,800]}); }},
+ {id:"bowl", name:"Bowl pair", pick:"Sym's bowls, never struck", what:"The partials of a singing bowl, 1 · 2.71 · 5.15, on D4 for the in and G3 for the out, each with a twin a few cents off so it beats slowly. Nothing strikes them: the level swells through the in and drains through the out.",
+  why:"Familiar from every meditation track, minus the one part of a bowl that startles.", make:function(c,d){ return pair(c,d,{top:.2,hiF:293.66,loF:196,hiParts:BOWL,loParts:BOWL,hiFc:[2400,2400],loFc:[2200,2200]}); }},
+ {id:"harmonium", name:"Harmonium", pick:"the Harmonium Breathing track", what:"A reedy chord that rises for the in, D with its fifth above, and a lower, wider chord for the out on G. The Coherent Breathing harmonium track does exactly this: the chorus rises and falls with each breath, and the two chords are unmistakable.",
+  why:"Richer for long sessions, with no melody to follow: two chords, each in its place.", make:function(c,d){ return pair(c,d,{top:.16,hiF:293.66,loF:196,hiParts:[[1,1],[1.5,.55],[2,.35],[3,.16],[4,.09],[5,.05]],loParts:[[1,1],[1.25,.5],[1.5,.5],[2,.3],[3,.14],[4,.07]],hiFc:[500,2200],loFc:[400,1600]}); }},
+ {id:"tide", name:"Tide and a note", pick:"for anyone a tone is too much for", what:"The in is only air: pink noise rising 200 to 1100 Hz like a wave coming up the sand. The out is the low note, G3, full at the turn and closing. Two completely different sounds for the two breaths, and the softer one is the in.",
+  why:"Broadband masks gym noise rather than fighting it, and the note only ever means one thing: let it out.", make:function(c,d){
+   var s=c.createBufferSource(); s.buffer=pink(c); s.loop=true; var bp=c.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=200; bp.Q.value=.7; var ag=c.createGain(); ag.gain.value=.0001; s.connect(bp); bp.connect(ag); ag.connect(d); s.start();
+   var lo=voice(c,d,196,LO4,220), lvl=.0001, fc=200; function to(at,dur,l,f,sh){ ramp(ag.gain,lvl,l,at,dur,sh); ramp(bp.frequency,fc,f,at,dur,sh); lvl=l; fc=f; }
+   return {phase:function(k,at,dur){ var g=Math.max(dur,.35), q=Math.min(.5,g*.2); if(k==="in"){ to(at,g,.55,1100); lo.to(at,Math.min(1,g),.0001,220); } else if(k==="out"){ to(at,g,.12,200); lo.to(at,q,.22,1200,easeOut); lo.to(at+q,g-q,.03,220); } else if(k==="hold"){ to(at,Math.min(1.2,g),.35,800,easeOut); } else if(k==="empty"){ lo.to(at,Math.min(.8,g),.02,220,easeOut); } else { to(at,.6,.0001,200,easeOut); lo.to(at,.6,.0001,220,easeOut); } },
+     stop:function(at){ ramp(ag.gain,lvl,.0001,at,.6,easeOut); s.stop(at+.7); lo.stop(at); }}; }}
 ];
 var tgrid=document.getElementById("tone-grid"), playing=null;
 function master(c){ if(c._m) return c._m; var m=c.createGain(); m.gain.value=.9; var comp=c.createDynamicsCompressor(); comp.threshold.value=-10; comp.ratio.value=4; comp.attack.value=.02; comp.release.value=.4; m.connect(comp); comp.connect(c.destination); c._m=m; return m; }
@@ -446,82 +639,77 @@ TONES.forEach(function(t){
   tgrid.appendChild(tile); var btn=tile.querySelector("button"), cv=tile.querySelector("canvas");
   btn.addEventListener("click", function(){ playTone(t, btn, cv); });
 });
-
-/* ============================ THE REP SHAPES ============================ */
+/* ============================ THE REP SHAPES, in three words ============================ */
+var BR_SUB={"in":"breathe in",out:"breathe out",hold:"hold your breath",empty:"keep breathing out",getset:"breathe in",done:""};
 var MODES=[
  {id:"drive", name:"Drive", tempo:"3 · 1 · 2", rest:"rest 2:00", lifts:"Squat, bench, overhead press, leg press, lunge, RDL at moderate loads.",
-  why:"Pauses full. Air in on the way down, a brace at the bottom with the air in, drive out through the lift. The one-second brace kills the bounce.",
-  phases:[{mv:"LOWER",br:"in",d:3},{mv:"BRACE",br:"hold",d:1},{mv:"DRIVE",br:"out",d:2}]},
+  why:"Pauses at the bottom with the air in. LOWER while you breathe in, HOLD with your breath held, LIFT while you breathe out.",
+  phases:[{mv:"LOWER",br:"in",d:3},{mv:"HOLD",br:"hold",d:1},{mv:"LIFT",br:"out",d:2}]},
  {id:"squeeze", name:"Squeeze", tempo:"1 · 2 · 3", rest:"rest 1:30", lifts:"Rows, rear delt fly, pulldowns, curls, lateral raises, calf raises, hip thrusts, crunches.",
-  why:"Pauses empty. One exhale drives the pull and keeps going through the squeeze; the lowering is the whole inhale. The set opens with SET, one breath in, because these lifts start with the pull.",
-  setup:{mv:"SET",br:"in",d:2}, phases:[{mv:"PULL",br:"out",d:1},{mv:"SQUEEZE",br:"out",d:2},{mv:"LOWER",br:"in",d:3}]},
+  why:"Pauses at the top, still breathing out. READY is the breath in; then LIFT and HOLD share one exhale, and LOWER is the whole breath in.",
+  phases:[{mv:"LIFT",br:"out",d:1},{mv:"HOLD",br:"empty",d:2},{mv:"LOWER",br:"in",d:3}]},
  {id:"stretch", name:"Stretch", tempo:"3 · 2 · 2", rest:"rest 1:30", lifts:"Chest fly, pullover, incline curl, deficit RDL, seated calf, deep goblet squat.",
-  why:"Pauses long and soft. Air in through the lowering, held at the bottom in the stretch, out through the lift. The word is STRETCH and not BRACE: sink into it, don't tense.",
-  phases:[{mv:"LOWER",br:"in",d:3},{mv:"STRETCH",br:"hold",d:2},{mv:"LIFT",br:"out",d:2}]},
+  why:"Pauses long at the bottom, air held in, soft. The same three words as Drive; only the count and the line under HOLD differ.",
+  phases:[{mv:"LOWER",br:"in",d:3},{mv:"HOLD",br:"hold",d:2},{mv:"LIFT",br:"out",d:2}]},
  {id:"heavy", name:"Heavy", tempo:"2 · 2 · 1 · 1", rest:"rest 3:00", lifts:"Squat, bench, deadlift, press at five reps and under.",
-  why:"The Valsalva. Breathe in at the top, hold through the lowering and the drive, let it out at lockout. One held breath under two movements: the old app called this out of scope because it had no way to say it. The two-track bar says it.",
-  phases:[{mv:"BREATHE",br:"in",d:2},{mv:"LOWER",br:"hold",d:2},{mv:"DRIVE",br:"hold",d:1},{mv:"TOP",br:"out",d:1}]},
+  why:"The Valsalva. HOLD at the top while you breathe in, then LOWER and LIFT on one held breath, then HOLD at the top again while you let it out. One silver bar under two movements.",
+  phases:[{mv:"HOLD",br:"in",d:2},{mv:"LOWER",br:"hold",d:2},{mv:"LIFT",br:"hold",d:1},{mv:"HOLD",br:"out",d:1}]},
  {id:"steady", name:"Steady", tempo:"4 · 4 for time", rest:"rest 1:00", lifts:"Plank, wall sit, dead hang, carries, any hold.",
-  why:"No rep. The pacer keeps you breathing through a hold, which is exactly where everyone stops breathing. Counted in time, not reps.",
+  why:"No rep. HOLD stays on the screen and the breath runs under it, 4 in and 4 out, for time.",
   phases:[{mv:"HOLD",br:"in",d:4},{mv:"HOLD",br:"out",d:4}]}
 ];
 var modeEl=document.getElementById("modes"), curMode=MODES[1], RUN={on:false};
 function shapeHTML(m, small){
-  var ph=(m.setup?[m.setup]:[]).concat(m.phases), tot=ph.reduce(function(a,p){ return a+p.d; },0), h='<div class="tr mv">', i;
+  var ph=m.phases, tot=ph.reduce(function(a,p){ return a+p.d; },0), h='<div class="tr mv">', i;
   for(i=0;i<ph.length;i++) h+='<div class="s" style="flex:'+ph[i].d+' 1 0" data-i="'+i+'">'+(small?'<i></i>':'<span class="w">'+ph[i].mv+'</span><u>'+ph[i].d+'</u>')+'</div>';
   h+='</div><div class="tr br">';
-  /* the breath track merges neighbours that share a breath: PULL + SQUEEZE is one OUT */
   var runs=[]; for(i=0;i<ph.length;i++){ var last=runs[runs.length-1]; if(last && last.br===ph[i].br){ last.d+=ph[i].d; last.to=i; } else runs.push({br:ph[i].br,d:ph[i].d,from:i,to:i}); }
-  for(i=0;i<runs.length;i++) h+='<div class="s '+runs[i].br+'" style="flex:'+runs[i].d+' 1 0" data-from="'+runs[i].from+'" data-to="'+runs[i].to+'">'+(small?'<i></i>':runs[i].br+' '+runs[i].d)+'</div>';
-  h+='</div>'; if(!small) h+='<div class="lbl"><span>movement</span><span>'+tot+' s a rep · '+m.rest+'</span></div>';
+  for(i=0;i<runs.length;i++) h+='<div class="s '+runs[i].br+'" style="flex:'+runs[i].d+' 1 0" data-from="'+runs[i].from+'" data-to="'+runs[i].to+'">'+(small?'<i></i>':(runs[i].br==="empty"?"still out":runs[i].br)+' '+runs[i].d)+'</div>';
+  h+='</div>'; if(!small) h+='<div class="lbl"><span>movement · breath</span><span>'+tot+' s a rep · '+m.rest+'</span></div>';
   return h;
 }
 function paintModes(){ modeEl.innerHTML=MODES.map(function(m){ return '<div class="mode'+(m===curMode?' sel':'')+'" data-id="'+m.id+'" role="button" tabindex="0"><div class="top"><h3>'+m.name+'</h3><span class="tempo">'+m.tempo+'</span></div><div class="shape">'+shapeHTML(m)+'</div><div class="why">'+m.why+'</div><div class="lifts">'+m.lifts+'</div></div>'; }).join("");
   document.getElementById("ph-shape").innerHTML=shapeHTML(curMode,true); paintNotes(); }
 function paintNotes(){ var m=curMode, n=document.getElementById("mode-notes"), lines={
-  drive:["<b>Every word is a movement.</b> LOWER, BRACE, DRIVE. The breath is under it in colour and in the tone: blue and opening on the way down, silver and still in the brace, gold and closing through the drive.","<b>The count is seconds left in the movement</b>, not in the breath. When it hits 1 the next word is coming.","<b>A tap says I am starting the lowering now.</b> Same sync as today."],
-  squeeze:["<b>PULL and SQUEEZE share one exhale.</b> The gold bar runs under both, and the tone keeps closing through the squeeze. Nothing to sequence: breathe out until LOWER.","<b>LOWER is the whole inhale.</b> Three seconds, unhurried; the tone opens the whole way down.","<b>SET is the one breath in before the first pull</b>, because these lifts start with the concentric. After that the cycle is pull, squeeze, lower."],
-  stretch:["<b>STRETCH holds the air in, softly.</b> The tone sustains a little quieter, the field goes still. You are not bracing; you are letting the muscle lengthen under load.","<b>LIFT is the exhale.</b> Two seconds, closing.","<b>Use this where the bottom is the point</b>: flies, pullovers, deficit work."],
-  heavy:["<b>One held breath under two movements.</b> The silver bar runs under LOWER and DRIVE; the tone sustains through both. BREATHE and TOP are the only moments with air moving.","<b>TOP is one second of exhale at lockout</b>, then straight into the next BREATHE. Under six reps you may prefer to take two breaths at the top: make BREATHE 4.","<b>This mode is honest about max effort</b> rather than out of scope."],
-  steady:["<b>No movement word, so the word is the breath.</b> HOLD stays on screen and the breath runs 4 in, 4 out under it. A plank is three of these.","<b>Time, not reps.</b> Set a duration and the pacer breathes you through it.","<b>Carries and hangs count.</b> Anywhere you would otherwise hold your breath."]}[m.id];
+  drive:["<b>Three words, one line under each.</b> LOWER · breathe in. HOLD · hold your breath. LIFT · breathe out.","<b>The high note is the way down, the low note the way up.</b> With your eyes on the bar the note tells you which half of the rep you are in.","<b>A tap says LOWER starts now.</b> Same sync as today."],
+  squeeze:["<b>READY is the breath in.</b> The count-in is where you fill up, so the first word is LIFT and you have air to push out.","<b>LIFT and HOLD share one exhale.</b> The gold bar runs under both, the low note keeps closing through the HOLD, and the line under HOLD says keep breathing out.","<b>LOWER is the whole breath in.</b> Three seconds; the high note opens the whole way down."],
+  stretch:["<b>Same words as Drive.</b> Only the HOLD is longer and its line still says hold your breath; the note sustains softer, the field goes still.","<b>Sink, don't tense.</b> The word does not tell you to brace, because you are not bracing.","<b>Use it where the bottom is the point.</b>"],
+  heavy:["<b>HOLD is a word for standing still at the top too.</b> The first HOLD says breathe in; the last says breathe out.","<b>LOWER and LIFT share one held breath.</b> One silver bar, the note sustaining under both, no turn until you are stood up.","<b>Honest about max effort.</b> Under six reps this is what the breath actually does."],
+  steady:["<b>The word never changes.</b> HOLD, with the line and the two notes doing all the work: high note in, low note out.","<b>Time, not reps.</b>","<b>Carries and hangs count.</b> Anywhere you would otherwise stop breathing."]}[m.id];
   n.innerHTML='<div class="eyebrow">'+m.name+' · what you would see and hear</div><ul>'+lines.map(function(l){ return '<li>'+l+'</li>'; }).join("")+'</ul>'; }
 modeEl.addEventListener("click", function(e){ var d=e.target.closest("[data-id]"); if(!d) return; curMode=MODES.filter(function(m){ return m.id===d.getAttribute("data-id"); })[0]; if(RUN.on) stopRun(); paintModes(); });
 modeEl.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ var d=e.target.closest("[data-id]"); if(d){ e.preventDefault(); d.click(); } } });
 paintModes();
-var runSound="swell", runVoice=false;
+var runSound="two", runVoice=false;
 document.getElementById("run-sound").addEventListener("click", function(e){ var b=e.target.closest("[data-s]"); if(!b) return; runSound=b.getAttribute("data-s"); var bs=this.querySelectorAll("button"); for(var i=0;i<bs.length;i++) bs[i].classList.toggle("sel",bs[i]===b); });
 document.getElementById("run-voice").addEventListener("click", function(e){ var b=e.target.closest("[data-v]"); if(!b) return; runVoice=b.getAttribute("data-v")==="on"; var bs=this.querySelectorAll("button"); for(var i=0;i<bs.length;i++) bs[i].classList.toggle("sel",bs[i]===b); });
-/* the run: READY, then the setup breath if the mode has one, then three reps, all scheduled at once; the audio
-   phases are the merged breath runs, so PULL + SQUEEZE is one OUT to the ear as well as the eye */
 var goBtn=document.getElementById("run-go"), stEl=document.getElementById("run-state"), cueEl=document.getElementById("ph-cue"), brEl=document.getElementById("ph-breath"), numEl=document.getElementById("ph-num"), metaEl=document.getElementById("ph-meta"), phShape=document.getElementById("ph-shape");
-var PB={k:"in",frac:0,fill:0,flow:0,still:false,pulse:0,idle:true}, phoneCv=document.getElementById("phone-cv"); phoneCv.width=216; phoneCv.height=408;
-var phoneWind=(function(){ var g=B; B=PB; var f=WINDS[0].make(phoneCv); B=g; return f; })();
+var PB={k:"idle",frac:0,fill:0,flow:0,still:false,pulse:0,idle:true}, phoneCv=document.getElementById("phone-cv");
+var phoneInst=(function(){ var w=window.innerWidth, h=window.innerHeight; Object.defineProperty(window,"innerWidth",{value:216,configurable:true}); Object.defineProperty(window,"innerHeight",{value:408,configurable:true}); var e=Slipstream(phoneCv); Object.defineProperty(window,"innerWidth",{value:w,configurable:true}); Object.defineProperty(window,"innerHeight",{value:h,configurable:true}); return e; })();
 function startRun(){
   stopPlaying(); var m=curMode, steps=[{mv:"READY",br:"getset",d:3,rep:0,i:-1}], reps=3, r, i;
-  if(m.setup) steps.push({mv:m.setup.mv,br:m.setup.br,d:m.setup.d,rep:1,i:0});
-  for(r=1;r<=reps;r++) for(i=0;i<m.phases.length;i++) steps.push({mv:m.phases[i].mv,br:m.phases[i].br,d:m.phases[i].d,rep:r,i:i+(m.setup?1:0)});
+  for(r=1;r<=reps;r++) for(i=0;i<m.phases.length;i++) steps.push({mv:m.phases[i].mv,br:m.phases[i].br,d:m.phases[i].d,rep:r,i:i});
   steps.push({mv:"DONE",br:"done",d:2,rep:reps,i:-1});
   var t=0; steps.forEach(function(s){ s.t=t; t+=s.d; });
   RUN={on:true, steps:steps, t0:performance.now()/1000+.15, idx:-1, m:m, lastCue:""};
-  if(runSound!=="none"){ var c=ctx(); if(c.state!=="running") c.resume(); var an=c.createAnalyser(); an.connect(master(c)); var inst=TONES.filter(function(x){ return x.id===runSound; })[0].make(c,an), at=c.currentTime+.15, j=0;
+  if(runSound!=="none"){ var c=ctx(); if(c.state!=="running") c.resume(); var an=c.createAnalyser(); an.connect(master(c)); var inst=TONES.filter(function(x){ return x.id===(runSound==="bells"?"bells":"two"); })[0].make(c,an), at=c.currentTime+.15, j=0;
     while(j<steps.length){ var k=steps[j].br, d=0, j0=j; while(j<steps.length && steps[j].br===k){ d+=steps[j].d; j++; } if(k!=="getset"&&k!=="done") inst.phase(k, at+steps[j0].t, d); }
     inst.phase("done", at+t-2, 1); RUN.inst=inst; RUN.c=c; RUN.an=an; }
   goBtn.textContent="Stop"; goBtn.classList.add("on"); stEl.textContent="running · "+m.name;
 }
-function stopRun(){ if(RUN.inst){ try{ RUN.inst.stop(RUN.c.currentTime); }catch(e){} } if(window.speechSynthesis) speechSynthesis.cancel(); RUN={on:false}; goBtn.textContent="Run 3 reps"; goBtn.classList.remove("on"); stEl.textContent="idle"; cueEl.textContent="READY"; brEl.textContent=""; brEl.className="breath"; numEl.textContent="3"; metaEl.textContent="SET 1/1 · REP 0/3"; PB.idle=true; PB.fill=0; PB.flow=0; PB.still=false; var fills=phShape.querySelectorAll("i"); for(var i=0;i<fills.length;i++) fills[i].style.transform="scaleX(0)"; }
+function stopRun(){ if(RUN.inst){ try{ RUN.inst.stop(RUN.c.currentTime); }catch(e){} } if(window.speechSynthesis) speechSynthesis.cancel(); RUN={on:false}; goBtn.textContent="Run 3 reps"; goBtn.classList.remove("on"); stEl.textContent="idle"; cueEl.textContent="READY"; brEl.textContent="breathe in"; brEl.className="breath in"; numEl.textContent="3"; metaEl.textContent="SET 1/1 · REP 0/3"; PB.idle=true; PB.k="idle"; PB.fill=0; PB.flow=0; PB.still=false; var fills=phShape.querySelectorAll("i"); for(var i=0;i<fills.length;i++) fills[i].style.transform="scaleX(0)"; }
 function say(w){ if(!runVoice||!window.speechSynthesis) return; var u=new SpeechSynthesisUtterance(w.toLowerCase()); u.rate=.9; u.pitch=.8; u.volume=.9; speechSynthesis.cancel(); speechSynthesis.speak(u); }
 function runFrame(t){
   if(!RUN.on) return; var s=RUN.steps, now=t-RUN.t0, i=RUN.idx;
   while(i<s.length-1 && now>=s[i+1].t) i++; if(i<0) return;
-  if(i!==RUN.idx){ RUN.idx=i; var st=s[i], word=st.mv; if(st.mv===RUN.lastCue && st.br!=="getset") word=st.br; say(word); RUN.lastCue=st.mv; }
+  if(i!==RUN.idx){ RUN.idx=i; var st0=s[i]; say(st0.mv===RUN.lastCue ? BR_SUB[st0.br] : st0.mv); RUN.lastCue=st0.mv; }
   var st=s[i], into=now-st.t, frac=Math.min(1,into/st.d);
   if(st.br==="done" && into>=st.d){ stopRun(); return; }
   cueEl.textContent=st.mv; numEl.textContent=st.br==="done"?"":String(Math.max(1,Math.ceil(st.d-into)));
-  brEl.textContent = st.br==="in"?"breathe in":st.br==="out"?"breathe out":st.br==="hold"?"hold it":st.br==="empty"?"stay empty":""; brEl.className="breath "+st.br;
+  brEl.textContent=BR_SUB[st.br]; brEl.className="breath "+(st.br==="getset"?"in":st.br==="empty"?"out":st.br);
   metaEl.textContent="SET 1/1 · REP "+st.rep+"/3"+(st.br==="getset"?" · get set":"");
-  /* the breath the phone's wind follows: the merged breath run, so the gust of one exhale spans PULL and SQUEEZE */
   var j0=i, j1=i; while(j0>0 && s[j0-1].br===st.br && s[j0-1].rep===st.rep) j0--; while(j1<s.length-1 && s[j1+1].br===st.br && s[j1+1].rep===st.rep) j1++;
-  var bt0=s[j0].t, bd=s[j1].t+s[j1].d-bt0, bf=Math.min(1,(now-bt0)/bd), bell=Math.pow(Math.sin(bf*Math.PI),.7);
+  var bt0=s[j0].t, bd=s[j1].t+s[j1].d-bt0, bf=Math.min(1,(now-bt0)/bd), bell=Math.pow(Math.sin(bf*Math.PI),.7)*Math.min(1.8,Math.max(1,2.2/bd));
   PB.idle=false; PB.k=st.br; PB.frac=bf; PB.fill = st.br==="in"?easeIO(bf) : st.br==="hold"?1 : st.br==="out"?1-easeIO(bf) : st.br==="getset"?.15*(1-frac) : 0;
   PB.flow = st.br==="in"?bell : st.br==="out"?-bell : 0; PB.still = st.br==="hold"||st.br==="empty"; PB.pulse = PB.still && into>=1 ? Math.exp(-((into-Math.floor(into))/0.12)) : 0;
   var mv=phShape.querySelectorAll(".mv .s"), br=phShape.querySelectorAll(".br .s"), k;
@@ -529,6 +717,13 @@ function runFrame(t){
   for(k=0;k<br.length;k++){ var a=+br[k].getAttribute("data-from"), b=+br[k].getAttribute("data-to"), f2 = st.i<0?0 : st.i>b?1 : st.i<a?0 : bf; br[k].firstElementChild.style.transform="scaleX("+f2.toFixed(3)+")"; }
 }
 goBtn.addEventListener("click", function(){ if(RUN.on) stopRun(); else startRun(); });
+/* the phone's wind: the app engine on slate, fed the runner's breath (or a slow idle breath) */
+function phoneFrame(dt,t){
+  var pr=document.getElementById("phone").getBoundingClientRect(); if(!(pr.bottom>0 && pr.top<window.innerHeight)) return;
+  var st=PB.idle ? {fill:.28+.12*Math.sin(t*.35), flow:0, still:false, pulse:0} : PB;
+  var fs={idle:PB.idle, dim:1, temp:.3, turb:0, tapK:0, pinK:0, tapX:0, tapY:0, pinX:0, pinY:0, fill:st.fill, flow:st.flow, amp:Math.max(Math.min(1,Math.abs(st.flow))*0.85,.2), still:st.still, pulse:st.pulse};
+  fs.rim=0.09*fs.fill+0.16*fs.pulse+(fs.still?0.04:0); var g=PAL; PAL=PALETTES.slate; fs.ground=groundRGB(Math.min(1.2,fs.fill+0.05*fs.pulse),.3,1); phoneInst.frame(dt,fs,t); PAL=g;
+}
 
 /* ============================ LOOP ============================ */
 var lastT=0, tiles=grid.children, vis=[], frame=0;
@@ -538,7 +733,8 @@ function tick(){
   clockTick(t); clockPaint(); meterFrame(); runFrame(t);
   if(frame%30===1){ vis=[]; for(var i=0;i<tiles.length;i++){ var r=tiles[i].getBoundingClientRect(); vis.push(r.bottom>0 && r.top<window.innerHeight); } }
   for(var j=0;j<FR.length;j++) if(vis[j]!==false) FR[j](dt,t);
-  var pr=document.getElementById("phone").getBoundingClientRect(); if(pr.bottom>0 && pr.top<window.innerHeight){ var g=B; B=PB; if(PB.idle){ PB.fill=.28+.12*Math.sin(t*.35); PB.flow=0; PB.k="idle"; PB.still=false; } phoneWind(dt,t); B=g; }
+  for(var q=0;q<LOOK.length;q++){ var lr=LOOK[q].tile.getBoundingClientRect(); if(lr.bottom>0 && lr.top<window.innerHeight){ var fs=fsFrom(LOOK[q].pal), g=PAL; PAL=LOOK[q].pal; LOOK[q].inst.frame(dt,fs,t); PAL=g; } }
+  bigFrame(dt,t); phoneFrame(dt,t);
 }
 requestAnimationFrame(tick);
 })();

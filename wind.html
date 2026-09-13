@@ -50,21 +50,14 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 .eyebrow{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--mute);font-weight:600}
 
 /* ---------- home ---------- */
-.mark{display:grid;justify-items:center;gap:2px;padding-top:min(9vh,70px)}
-.mark .s{display:flex;align-items:center;gap:14px;font-size:13px;letter-spacing:.6em;color:var(--mute);font-weight:600;padding-left:.6em;width:min(78vw,420px);justify-content:center}
-.mark .s::before,.mark .s::after{content:"";flex:1 1 0;height:1px;background:linear-gradient(90deg,transparent,var(--line2,var(--mute)));opacity:.8}
-.mark .s::after{background:linear-gradient(90deg,var(--line2,var(--mute)),transparent)}
-/* BENDER: condensed and heavy, outlined so the wind shows through the letters, the fill breathing with the idle wind; the letters sway on it */
-.mark .w{font-family:"Avenir Next Condensed","AvenirNextCondensed-Heavy","Barlow Condensed","Roboto Condensed","Arial Narrow",-apple-system,system-ui,sans-serif;font-weight:900;
-  font-size:min(27vw,170px);line-height:.9;letter-spacing:.01em;display:flex;-webkit-text-stroke:1.5px var(--fg);color:var(--fg);text-shadow:0 0 30px var(--bg)}
-.mark .w b{display:block;font-weight:inherit;will-change:transform}
-.mark .u{font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--mute);font-weight:600;padding-left:.42em;margin-top:10px}
+.mark{display:grid;justify-items:center;padding-top:min(10vh,80px)}
+/* the wordmark: one line, letter-spaced, regular weight, nothing animated on it but the breath in its fill. It is the obstacle in the wind. */
+.mark .w{font-weight:600;font-size:min(8vw,42px);line-height:1;letter-spacing:.32em;padding-left:.32em;white-space:nowrap;text-shadow:0 0 24px var(--bg)}
 .modes{display:grid;gap:12px;margin-bottom:min(6vh,52px)}
-.mode{display:flex;justify-content:space-between;align-items:baseline;padding:22px 22px;border-radius:20px;
+.mode{display:flex;justify-content:center;align-items:baseline;padding:22px 22px;border-radius:20px;
   background:var(--ui);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .mode:active{background:var(--sel)}
-.mode .t{font-weight:800;font-size:min(9vw,40px);letter-spacing:.04em;line-height:1}
-.mode .d{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.mode .t{font-weight:700;font-size:min(8vw,36px);letter-spacing:.12em;line-height:1}
 .seg{display:flex;gap:6px}
 .seg button{flex:1 1 0;min-width:0;padding:13px 2px;border-radius:12px;background:var(--ui);border:1px solid var(--line);
   font-size:11px;letter-spacing:.12em;font-weight:700;color:var(--mute);text-transform:uppercase;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -146,11 +139,11 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
 
 <!-- HOME -->
 <section id="s-home" class="screen on">
-  <div class="mark"><div class="s">WIND</div><div class="w" id="mark"><b>B</b><b>E</b><b>N</b><b>D</b><b>E</b><b>R</b></div><div class="u">breathe like you lift</div></div>
+  <div class="mark"><div class="w" id="mark">WIND BENDER</div></div>
   <div class="spacer"></div>
   <div class="modes">
-    <button class="mode" data-go="lift"><span class="t">LIFT</span><span class="d">sets · reps · rest</span></button>
-    <button class="mode" data-go="breathe"><span class="t">BREATHE</span><span class="d">cycles</span></button>
+    <button class="mode" data-go="lift"><span class="t">LIFT</span></button>
+    <button class="mode" data-go="breathe"><span class="t">BREATHE</span></button>
   </div>
 </section>
 
@@ -170,7 +163,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
       <button class="door" data-pat="478"><span class="dt">RELAX</span><span class="bar" id="bar-478"></span><span class="dr">long exhale</span></button>
       <button class="door" data-pat="coh"><span class="dt">COHERENT</span><span class="bar" id="bar-coh"></span><span class="dr">5.5 a minute</span></button>
       <div class="card">
-        <div class="row"><span class="lbl">Cycles</span><div class="step"><button data-s="cycles:-1">−</button><span class="v" id="v-cycles">8</span><button data-s="cycles:1">+</button></div></div>
+        <div class="row"><span class="lbl">Breaths</span><div class="step"><button data-s="cycles:-1">−</button><span class="v" id="v-cycles">8</span><button data-s="cycles:1">+</button></div></div>
         <div class="row"><span class="lbl">Time</span><span class="v2" id="v-time"></span></div>
       </div>
     </div>
@@ -178,9 +171,8 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
     <div class="card"><div class="row stack"><span class="lbl">Sound</span>
       <div class="seg" id="seg-sound"><button data-sound="tone">Tone</button><button data-sound="breath">Breath</button></div></div></div>
     <!-- the two ways the phone can read you, Breathe only -->
-    <div class="card" id="card-with"><div class="row stack"><span class="lbl">With</span>
-      <div class="seg" id="seg-with"><button data-w="belly">Belly</button><button data-w="tap">Tap</button></div>
-      <div id="with-sub" class="sub"></div></div></div>
+    <div class="card" id="card-with"><div class="row stack">
+      <div class="seg" id="seg-with"><button data-w="belly">Belly</button><button data-w="tap">Tap</button></div></div></div>
   </div>
   <div class="foot"><button class="btn go" id="b-start">Start</button></div>
 </section>
@@ -464,12 +456,17 @@ function FieldGL(cv){
       "float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hsh(i),hsh(i+vec2(1,0)),f.x),mix(hsh(i+vec2(0,1)),hsh(i+vec2(1,1)),f.x),f.y);}";
   var F = {
     advect: HEAD+"uniform sampler2D uVel,uSrc;uniform float uDt,uDiss;void main(){vec2 v=texture(uVel,vUv).xy;vec2 p=vUv-uDt*v*uTexel;o=texture(uSrc,p)*uDiss;}",
-    force: HEAD+"uniform sampler2D uVel,uMask;uniform vec2 uCenter,uAspect,uTap;uniform float uDt,uFlow,uSwirl,uWind,uTime,uMax,uTapK,uCurl,uGust,uMag;"+NOISE+
+    force: HEAD+"uniform sampler2D uVel,uMask;uniform vec2 uCenter,uAspect,uTap;uniform vec4 uVort;uniform float uDt,uFlow,uSwirl,uWind,uTime,uMax,uTapK,uCurl,uGust,uMag,uVortK,uSpin;"+NOISE+
       "vec2 curl(vec2 p){float e=0.02;float a=vn(p+vec2(e,0)),b=vn(p-vec2(e,0)),c=vn(p+vec2(0,e)),d=vn(p-vec2(0,e));return vec2(c-d,b-a)/(2.0*e);}"+
       "void main(){vec2 v=texture(uVel,vUv).xy;vec2 d=(vUv-uCenter)*uAspect;float r=length(d)+1e-4;vec2 n=d/r;float rn=r/0.5;float rb=max(abs(d.x)/(0.5*uAspect.x),abs(d.y)/0.5);"+
       "float ring=smoothstep(0.05,0.3,rn)*(1.0-smoothstep(1.0,1.6,rb));vec2 t=vec2(-n.y,n.x);"+
       "vec2 f=-n*uFlow*ring*150.0*(1.0+1.2*uGust);"+
       "f+=t*uFlow*uSwirl*ring*150.0;"+
+      /* a pair of orbiting vortices with opposite spins: eddies inside the move, so the air swirls in more than one place */
+      "vec2 va=(vUv-uVort.xy)*uAspect;float ra=length(va)+1e-4;f+=vec2(-va.y,va.x)/ra*exp(-ra*ra/0.03)*uVortK;"+
+      "vec2 vb=(vUv-uVort.zw)*uAspect;float rb2=length(vb)+1e-4;f-=vec2(-vb.y,vb.x)/rb2*exp(-rb2*rb2/0.03)*uVortK;"+
+      /* the hold: no in or out, only a slow turn of the whole field, held air that still lives */
+      "f+=t*uSpin*ring*36.0;"+
       "f+=t*uWind*18.0*smoothstep(0.0,0.6,rn)+vec2(uWind*46.0,uWind*10.0*sin(vUv.x*6.0+uTime*0.5));"+
       "f+=curl(d*3.0+vec2(uTime*0.12,-uTime*0.08))*uCurl;"+
       "vec2 dt2=(vUv-uTap)*uAspect;float rt=length(dt2)+1e-4;f+=(dt2/rt)*uTapK*exp(-rt*rt/0.022)*2400.0;"+
@@ -481,12 +478,13 @@ function FieldGL(cv){
     div: HEAD+"uniform sampler2D uVel;void main(){float L=texture(uVel,vUv-vec2(uTexel.x,0)).x,R=texture(uVel,vUv+vec2(uTexel.x,0)).x,B=texture(uVel,vUv-vec2(0,uTexel.y)).y,T=texture(uVel,vUv+vec2(0,uTexel.y)).y;o=vec4(0.5*(R-L+T-B),0,0,1);}",
     press: HEAD+"uniform sampler2D uP,uDiv;void main(){float L=texture(uP,vUv-vec2(uTexel.x,0)).x,R=texture(uP,vUv+vec2(uTexel.x,0)).x,B=texture(uP,vUv-vec2(0,uTexel.y)).x,T=texture(uP,vUv+vec2(0,uTexel.y)).x,d=texture(uDiv,vUv).x;o=vec4((L+R+B+T-d)*0.25,0,0,1);}",
     grad: HEAD+"uniform sampler2D uP,uVel;void main(){float L=texture(uP,vUv-vec2(uTexel.x,0)).x,R=texture(uP,vUv+vec2(uTexel.x,0)).x,B=texture(uP,vUv-vec2(0,uTexel.y)).x,T=texture(uP,vUv+vec2(0,uTexel.y)).x;vec2 v=texture(uVel,vUv).xy-0.5*vec2(R-L,T-B);o=vec4(v,0,1);}",
-    dye: HEAD+"uniform sampler2D uDye,uMask;uniform vec2 uCenter,uAspect,uTap;uniform float uDt,uIn,uOut,uIdle,uTime,uTapK;"+NOISE+
+    dye: HEAD+"uniform sampler2D uDye,uMask;uniform vec2 uCenter,uAspect,uTap;uniform float uDt,uIn,uOut,uIdle,uTime,uTapK,uPulse;"+NOISE+
       "void main(){float d=texture(uDye,vUv).r;vec2 q=(vUv-uCenter)*uAspect;float rn=length(q)/0.5;float rb=max(abs(q.x)/(0.5*uAspect.x),abs(q.y)/0.5);"+
       "float fil=pow(0.55*vn(q*6.0+vec2(uTime*0.25,-uTime*0.18))+0.45*vn(q*16.0+vec2(-uTime*0.33,uTime*0.42)),2.2)*3.0;"+
       "float edge=smoothstep(0.6,1.0,rb)*(0.5+0.5*sin(atan(q.y,q.x)*6.0+uTime*0.8))*fil;float core=(1.0-smoothstep(0.0,0.3,rn))*fil;"+
       "vec2 qt=(vUv-uTap)*uAspect;float rq=length(qt);d+=uTapK*(exp(-rq*rq/0.004)*20.0+exp(-pow(rq-0.16*(1.0-uTapK),2.0)/0.0012)*12.0)*uDt;"+
       "d+=(uIn*edge*1.9+uOut*core*1.6)*uDt;"+
+      "d+=uPulse*exp(-pow(rn-0.42,2.0)/0.0025)*fil*1.6*uDt;"+
       "float m=texture(uMask,vUv).a;float shed=max(0.0,texture(uMask,vUv-vec2(0.012,0.0)).a-m)+max(0.0,texture(uMask,vUv+vec2(0.0,0.012)).a-m);"+
       "d+=(uIdle*fil*0.06+(uIdle*0.9+0.5*(uIn+uOut))*shed*fil*2.4)*uDt;"+
       "d*=(1.0-m*0.85);o=vec4(min(d,1.0),0.0,0.0,1.0);}",
@@ -499,7 +497,7 @@ function FieldGL(cv){
   var PR={};
   try{ for(var k in F){ var pgm=gl.createProgram(); gl.attachShader(pgm,vs); gl.attachShader(pgm,sh(gl.FRAGMENT_SHADER,F[k])); gl.linkProgram(pgm); if(!gl.getProgramParameter(pgm,gl.LINK_STATUS)) return null;
       var u={}, n=gl.getProgramParameter(pgm,gl.ACTIVE_UNIFORMS); for(var i=0;i<n;i++){ var nm=gl.getActiveUniform(pgm,i).name; u[nm]=gl.getUniformLocation(pgm,nm); } PR[k]={p:pgm,u:u}; } }catch(e){ return null; }
-  var simW=0,simH=0,dyeW=0,dyeH=0,W=0,H=0, vel,vel2,pr,pr2,dv,cl,dye,dye2, maskTex, maskVer=-1, quality=1, warmSm=0, lost=false;
+  var simW=0,simH=0,dyeW=0,dyeH=0,W=0,H=0, vel,vel2,pr,pr2,dv,cl,dye,dye2, maskTex, maskVer=-1, quality=1, warmSm=0, lost=false, vang=0;
   function tex(w,h){ var t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA16F,w,h,0,gl.RGBA,gl.HALF_FLOAT,null); var fb=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,fb); gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);
     if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE) throw new Error("fbo"); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); return {t:t,fb:fb,w:w,h:h}; }
@@ -521,14 +519,18 @@ function FieldGL(cv){
     var tx=1/simW, ty=1/simH, u, i, aspect=[W/H,1], center=[0.5, 1-0.47];
     warmSm += ((st.flow<-0.05?Math.min(1,-st.flow):0) - warmSm)*Math.min(1, dt*2.2);
     /* 1. advect velocity; the decay is per second: the hold settles fast, still air */
-    u=use("advect"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss, Math.pow(st.idle?0.985:st.still?0.975:0.993, dt*60)); bind(u,"uVel",vel,0); bind(u,"uSrc",vel,1); draw(vel2); swapV();
+    u=use("advect"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss, Math.pow(st.idle?0.985:st.still?0.988:0.993, dt*60));   /* the hold keeps its slow turn rather than freezing dead */ bind(u,"uVel",vel,0); bind(u,"uSrc",vel,1); draw(vel2); swapV();
     /* 2. vorticity confinement keeps the eddies alive */
     u=use("curl"); gl.uniform2f(u.uTexel,tx,ty); bind(u,"uVel",vel,0); draw(cl);
-    u=use("vort"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uK, 30+30*st.turb); bind(u,"uVel",vel,0); bind(u,"uCurl",cl,1); draw(vel2); swapV();
+    var isIn=st.flow>0.02, isOut=st.flow<-0.02;
+    vang += dt*(0.45+1.3*Math.abs(st.flow))*(isOut?-1:1);   /* the eddy pair orbits, faster in a breath, the other way on the out */
+    u=use("vort"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uK, (isOut?52:st.still?26:42)+30*st.turb); bind(u,"uVel",vel,0); bind(u,"uCurl",cl,1); draw(vel2); swapV();
     /* 3. the breath: the move. In draws to the centre, out sends away, both as a spiral whose spin reverses with the breath */
     u=use("force"); gl.uniform2f(u.uTexel,tx,ty); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
-    gl.uniform1f(u.uFlow, st.flow*(0.6+0.9*st.amp)); gl.uniform1f(u.uSwirl, 0.85+0.6*st.turb); gl.uniform1f(u.uWind, st.idle?1:0); gl.uniform1f(u.uTime,t); gl.uniform1f(u.uMax, 220+120*st.tapK);
-    gl.uniform1f(u.uCurl, (st.still?1.5:6.0)*(0.6+Math.abs(st.flow))+22*st.turb); gl.uniform1f(u.uGust, st.gust||0); gl.uniform1f(u.uMag, st.idle?1.0:0.45);
+    gl.uniform1f(u.uFlow, st.flow*(0.6+0.9*st.amp)); gl.uniform1f(u.uSwirl, (isIn?1.3:isOut?0.3:0)+0.6*st.turb);   /* in: a tight spiral; out: straight out, the eddies do the turning */
+    var vr=0.3, vcx=vang, vx1=center[0]+vr*Math.cos(vcx)/aspect[0], vy1=center[1]+vr*Math.sin(vcx), vx2=center[0]-vr*Math.cos(vcx)/aspect[0], vy2=center[1]-vr*Math.sin(vcx);
+    gl.uniform4f(u.uVort, vx1,vy1,vx2,vy2); gl.uniform1f(u.uVortK, st.idle?260:(st.still?180:(420+420*Math.abs(st.flow)))*(isOut?1.4:1)); gl.uniform1f(u.uSpin, st.still?1:0); gl.uniform1f(u.uWind, st.idle?1:0); gl.uniform1f(u.uTime,t); gl.uniform1f(u.uMax, 220+120*st.tapK);
+    gl.uniform1f(u.uCurl, (st.still?2.5:isIn?9.0:7.0)*(0.6+Math.abs(st.flow))+22*st.turb); gl.uniform1f(u.uGust, st.gust||0); gl.uniform1f(u.uMag, st.idle?1.0:0.45);
     gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK);
     bind(u,"uVel",vel,0); bind(u,"uMask",maskTex,1); draw(vel2); swapV();
     /* 4. project to divergence-free */
@@ -540,7 +542,7 @@ function FieldGL(cv){
     u=use("advect"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uDiss,Math.pow(0.70,dt)); bind(u,"uVel",vel,0); bind(u,"uSrc",dye,1); draw(dye2); swapD();
     u=use("dye"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform2f(u.uCenter,center[0],center[1]); gl.uniform2f(u.uAspect,aspect[0],aspect[1]); gl.uniform1f(u.uDt,dt);
     gl.uniform1f(u.uIn, Math.max(0,st.flow)*(0.5+st.amp)); gl.uniform1f(u.uOut, Math.max(0,-st.flow)*(0.5+st.amp)); gl.uniform1f(u.uIdle, st.idle?1:0); gl.uniform1f(u.uTime,t);
-    gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK); bind(u,"uDye",dye,0); bind(u,"uMask",maskTex,1); draw(dye2); swapD();
+    gl.uniform2f(u.uTap, st.tapX/W, 1-st.tapY/H); gl.uniform1f(u.uTapK, st.tapK); gl.uniform1f(u.uPulse, st.pulse||0); bind(u,"uDye",dye,0); bind(u,"uMask",maskTex,1); draw(dye2); swapD();
     /* 6. show: the ground carries the breath; the wisps are mist on the way in and gold on the way out */
     var mist=airColour(0), gold=airColour(1), rim=rimColour();
     u=use("show"); gl.uniform2f(u.uTexel,1/dyeW,1/dyeH); gl.uniform3f(u.uGround,st.ground[0],st.ground[1],st.ground[2]); gl.uniform3f(u.uRim,rim[0],rim[1],rim[2]); gl.uniform3f(u.uMist,mist[0],mist[1],mist[2]); gl.uniform3f(u.uGold,gold[0],gold[1],gold[2]);
@@ -858,7 +860,7 @@ function fitWordOnce(){
   document.documentElement.style.setProperty("--wordSize", Math.floor(size)+"px");
 }
 /* the mark is fitted once too: BENDER at 88% of the width whatever face the phone has */
-function fitMark(){ elMark.style.fontSize=""; var w=elMark.getBoundingClientRect().width, avail=window.innerWidth*0.88; if(w>avail && w>0){ elMark.style.fontSize=(parseFloat(getComputedStyle(elMark).fontSize)*avail/w).toFixed(1)+"px"; } }
+function fitMark(){ elMark.style.fontSize=""; var w=elMark.getBoundingClientRect().width, avail=window.innerWidth*0.9; if(w>avail && w>0){ elMark.style.fontSize=(parseFloat(getComputedStyle(elMark).fontSize)*avail/w).toFixed(1)+"px"; } }
 function txt(el,v,cache){ if(cache!==v) el.textContent=v; return v; }
 /* BREATHING WEIGHT: the letters thicken and close as the lungs fill, thin and open as they empty. */
 var lastWt={};
@@ -866,11 +868,10 @@ function breathe(el, fill, id){
   var w=Math.round(fill*24)/24; if(lastWt[id]===w) return; lastWt[id]=w;
   el.style.webkitTextStroke=(w*0.028).toFixed(4)+"em currentColor"; el.style.letterSpacing=(0.06-0.045*w).toFixed(4)+"em";
 }
-/* the wordmark on the wind: each letter lifts and tilts a little on its own gust, and the fill breathes with the idle breath */
-var markLetters=elMark.children, markFill=-1;
+/* the wordmark: its fill breathes with the idle breath, nothing else moves */
+var markFill=-1;
 function swayMark(t, fill){
-  for(var i=0;i<markLetters.length;i++){ var y=Math.sin(t*0.9+i*0.8)*3.5, r=Math.sin(t*0.7+i*1.1)*1.6; markLetters[i].style.transform="translateY("+y.toFixed(1)+"px) rotate("+r.toFixed(2)+"deg)"; }
-  var f=Math.round(fill*20)/20; if(f!==markFill){ markFill=f; var c=PAL.light?"rgba(42,49,64,":"rgba(230,235,241,"; elMark.style.color=(PAL.text.length===7?hexA(PAL.text,0.25+0.75*f):c+(0.25+0.75*f)+")"); }
+  var f=Math.round(fill*20)/20; if(f!==markFill){ markFill=f; elMark.style.color=hexA(PAL.text,0.62+0.38*f); }
 }
 function hexA(hex,a){ var n=parseInt(hex.slice(1),16); return "rgba("+(n>>16)+","+((n>>8)&255)+","+(n&255)+","+a.toFixed(3)+")"; }
 function fmtClock(s){ s=Math.max(0,Math.ceil(s)); var m=Math.floor(s/60), r=s%60; return m+":"+(r<10?"0":"")+r; }
@@ -935,7 +936,7 @@ function render(now){
   setRail(frac);
   var meta;
   if(isRest) meta="REST · SET "+st.set+"/"+S.sets;
-  else if(S.mode==="breathe"){ meta = isSet ? ("CYCLE "+st.rep+"/"+S.reps + (S.tapOn ? (st.k==="hold" ? " · PRESS" : " · TAP") : "")) : ""; }
+  else if(S.mode==="breathe"){ meta = isSet ? ("BREATH "+st.rep+"/"+S.reps + (S.tapOn ? (st.k==="hold" ? " · PRESS" : " · TAP") : "")) : ""; }
   else meta="SET "+st.set+"/"+S.sets+(isSet?" · REP "+st.rep+"/"+S.reps:"");
   lastMeta=txt(elMeta, meta, lastMeta);
   setFoot(isRest?"skip": (isSet && S.mode==="lift") ? "save" : null);
@@ -984,8 +985,6 @@ function refresh(){
   document.getElementById("bar-478").innerHTML=bar([["in",4],["hold",7],["out",8]], {"in":"in",hold:"hold",out:"out"}); document.getElementById("bar-coh").innerHTML=bar([["in",5.5],["out",5.5]], {"in":"in",out:"out"});
   document.getElementById("v-time").textContent=fmtClock(P.cycles*(P.pat==="coh"?11:19));
   var seg=document.querySelectorAll("#seg-with button"); for(i=0;i<seg.length;i++){ var wk=seg[i].getAttribute("data-w"); seg[i].classList.toggle("sel", wk==="belly"?belly:tap); }
-  var parts=[]; if(belly) parts.push("Belly: phone on your belly, it reads your breath."); if(tap) parts.push("Tap: tap the count, hold to hold.");
-  document.getElementById("with-sub").textContent = parts.length ? parts.join(" ") : "Nothing extra.";
   document.getElementById("card-with").classList.toggle("hid", setupMode!=="breathe");
   document.getElementById("setup-lift").classList.toggle("hid", setupMode!=="lift"); document.getElementById("setup-breathe").classList.toggle("hid", setupMode!=="breathe");
   document.getElementById("setup-title").textContent = setupMode==="lift"?"Lift":"Breathe";

@@ -574,7 +574,7 @@ Content only; presentation is out of scope.
 | Secondary line | What the air is doing: `breathe in`, `breathe out`, `hold your breath`, `keep breathing out`. Count-in: `breathe in`. Breathe mode: empty (the headline already says it). |
 | Count | Seconds remaining **in the current step**, `min(ceil(remaining), ceil(dur))`, minimum 1. During rest: the whole remaining rest as `m:ss`. |
 | Progress rail | One segment per step of the **current rep/cycle**, widths proportional to their durations; completed segments full, the current one filling. Rebuilt only when the rep changes. |
-| Meta line | Lift: `SET s/n · REP r/n`. Rest: `REST · SET s/n`. Breathe: `CYCLE r/n`, plus `· TAP` or `· PRESS` when Tap is on. |
+| Meta line | Lift: `SET s/n · REP r/n`. Rest: `REST · SET s/n`. Breathe: `BREATH r/n`, plus `· TAP` or `· PRESS` when Tap is on. |
 | Actions | During a set in Lift: **Save set**. During rest: **Skip rest**. After DONE: **Back**. Always: **End**. |
 
 Two hard layout invariants that are functional, not cosmetic:

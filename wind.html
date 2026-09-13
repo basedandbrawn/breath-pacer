@@ -176,8 +176,7 @@ button{font:inherit;color:inherit;background:transparent;border:0;margin:0;paddi
     </div>
     <!-- one sound for the whole app: two notes, two bells, or a breath of wind -->
     <div class="card"><div class="row stack"><span class="lbl">Sound</span>
-      <div class="seg" id="seg-sound"><button data-sound="tone">Tone</button><button data-sound="bells">Bells</button><button data-sound="breath">Breath</button></div>
-      <div id="sound-sub" class="sub"></div></div></div>
+      <div class="seg" id="seg-sound"><button data-sound="tone">Tone</button><button data-sound="breath">Breath</button></div></div></div>
     <!-- the two ways the phone can read you, Breathe only -->
     <div class="card" id="card-with"><div class="row stack"><span class="lbl">With</span>
       <div class="seg" id="seg-with"><button data-w="belly">Belly</button><button data-w="tap">Tap</button></div>
@@ -214,13 +213,12 @@ var DEF = {
     sound:"tone",
     /* LIFT presets, one per rep shape, as sequences: [breath, seconds, movement word]. The word is what the
        body does; the breath is the line under it. The cycle opens on whichever movement the lift starts
-       with. Steady has no rep: it runs for time. */
-    lift: {preset:"drive", reps:{drive:10, squeeze:12, stretch:10, heavy:5}, secs:{steady:60}, sets:4,
+       with. */
+    lift: {preset:"drive", reps:{drive:10, squeeze:12, stretch:10, heavy:5}, sets:4,
       tune:{drive:  {name:"DRIVE",   seq:[["in",3,"LOWER"],["hold",1,"HOLD"],["out",2,"LIFT"]], rest:120, note:"Pauses at the bottom with the air in. Squats, presses, hinges."},
             squeeze:{name:"SQUEEZE", seq:[["out",1,"LIFT"],["empty",2,"HOLD"],["in",3,"LOWER"]], rest:90, note:"Pauses at the top, still breathing out. Rows, flies, curls, raises."},
             stretch:{name:"STRETCH", seq:[["in",3,"LOWER"],["hold",2,"HOLD"],["out",2,"LIFT"]], rest:90, note:"Pauses long at the bottom, air held in, soft. Flies, pullovers, deficit work."},
-            heavy:  {name:"HEAVY",   seq:[["in",2,"HOLD"],["hold",2,"LOWER"],["hold",1,"LIFT"],["out",1,"HOLD"]], rest:180, note:"One held breath under the whole rep. Five reps and under."},
-            steady: {name:"STEADY",  seq:[["in",4,"HOLD"],["out",4,"HOLD"]], rest:60, timed:true, note:"No rep. Breathe through a hold, for time. Planks, hangs, carries."}}},
+            heavy:  {name:"HEAVY",   seq:[["in",2,"HOLD"],["hold",2,"LOWER"],["hold",1,"LIFT"],["out",1,"HOLD"]], rest:180, note:"One held breath under the whole rep. Five reps and under."}}},
     breathe: {cycles:8, pat:"478", belly:"on", tap:"off"}
   },
   stats: {sec:0, log:[]}
@@ -232,12 +230,11 @@ try{
   if(raw && raw.cfg){
     var L = raw.cfg.lift; if(L){ ["preset","sets"].forEach(function(k){ if(L[k]!==undefined) DB.cfg.lift[k]=L[k]; });
       if(L.reps && typeof L.reps==="object"){ for(var rk in DB.cfg.lift.reps) if(L.reps[rk]) DB.cfg.lift.reps[rk]=L.reps[rk]; }
-      if(L.secs && typeof L.secs==="object"){ for(var sk in DB.cfg.lift.secs) if(L.secs[sk]) DB.cfg.lift.secs[sk]=L.secs[sk]; }
       if(!DB.cfg.lift.tune[DB.cfg.lift.preset]) DB.cfg.lift.preset="drive"; }   /* the tempos are fixed; nothing stored overrides them */
     if(raw.cfg.breathe) for(var bk in DB.cfg.breathe) if(raw.cfg.breathe[bk]!==undefined) DB.cfg.breathe[bk]=raw.cfg.breathe[bk];
     if(DB.cfg.breathe.pat!=="478" && DB.cfg.breathe.pat!=="coh") DB.cfg.breathe.pat="478";
     if(DB.cfg.breathe.tap!=="off" && DB.cfg.breathe.tap!=="on") DB.cfg.breathe.tap="on";
-    DB.cfg.sound = raw.cfg.sound || "tone"; if(["tone","bells","breath"].indexOf(DB.cfg.sound)<0) DB.cfg.sound="tone";
+    DB.cfg.sound = raw.cfg.sound || "tone"; if(["tone","breath"].indexOf(DB.cfg.sound)<0) DB.cfg.sound="tone";
   }
   if(raw && raw.stats){ DB.stats.sec = raw.stats.sec||0; DB.stats.log = raw.stats.log||[]; }
 }catch(e){}
@@ -331,23 +328,14 @@ function mkTone(k){
   var lo=mkVoice(TONE_LO, [[1,1],[1.0015,.5],[2,.28],[3,.12],[0.5,.22]], 220, A.wetIn);
   return {kind:"tone", hi:hi, lo:lo, k:k, dir:""};
 }
-/* BELLS: the two bells themselves, struck softly at each turn, a high one for the in and a low one for
-   the out, each with a slow attack and a long ring, over the two notes at a quarter of their level so
-   the direction stays audible after the ring has faded. */
-function bell(f, at, amp, dest){
-  var ctx=A.ctx, parts=[[1,1,3.2],[2.76,.32,1.4],[5.4,.10,.6]], lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2600; lp.connect(dest);
-  for(var i=0;i<parts.length;i++){ var o=ctx.createOscillator(), g=ctx.createGain(); o.type="sine"; o.frequency.value=f*parts[i][0];
-    g.gain.setValueAtTime(0.0001, at); g.gain.linearRampToValueAtTime(amp*parts[i][1], at+0.03); g.gain.exponentialRampToValueAtTime(0.0001, at+parts[i][2]);
-    o.connect(g); g.connect(lp); o.start(at); o.stop(at+parts[i][2]+0.05); }
-}
-function makeScheme(name, dim){ if(!A) return null; var k=dim?0.7:1; A.roll.frequency.value=dim?2600:4200; if(name==="breath") return mkBreath(k); var s=mkTone(k); s.kind=name; return s; }
+function makeScheme(name, dim){ if(!A) return null; var k=dim?0.7:1; A.roll.frequency.value=dim?2600:4200; return name==="breath" ? mkBreath(k) : mkTone(k); }
 function schemePhase(kind, at, dur){
   if(!scheme || !A) return;
   var s=scheme, k=s.k, g=Math.max(dur,0.35);
-  if(s.kind==="tone"||s.kind==="bells"){
-    var top=(s.kind==="bells"?0.07:0.22)*k, hi=s.hi, lo=s.lo;
-    if(kind==="in"){ s.dir="up"; hi.to(at, g, top, 1700); lo.to(at, Math.min(1.0,g), 0.0001, 220); if(s.kind==="bells") bell(587.33, at, 0.16*k, A.wetIn); }        /* the high note opens through the in; a high bell at the turn */
-    else if(kind==="out"){ s.dir="down"; lo.to(at, Math.min(0.5,g*0.2), top, 1200, easeOut); lo.to(at+Math.min(0.5,g*0.2), g-Math.min(0.5,g*0.2), top*0.12, 220); hi.to(at, Math.min(0.9,g), 0.0001, 320); if(s.kind==="bells") bell(293.66, at, 0.16*k, A.wetIn); }   /* the low note is full at the turn and closes as the air leaves; a low bell */
+  if(s.kind==="tone"){
+    var top=0.22*k, hi=s.hi, lo=s.lo;
+    if(kind==="in"){ s.dir="up"; hi.to(at, g, top, 1700); lo.to(at, Math.min(1.0,g), 0.0001, 220); }        /* the high note opens through the in; a high bell at the turn */
+    else if(kind==="out"){ s.dir="down"; lo.to(at, Math.min(0.5,g*0.2), top, 1200, easeOut); lo.to(at+Math.min(0.5,g*0.2), g-Math.min(0.5,g*0.2), top*0.12, 220); hi.to(at, Math.min(0.9,g), 0.0001, 320); }   /* the low note is full at the turn and closes as the air leaves; a low bell */
     else if(kind==="hold"){ s.dir=""; if(hi.lvl>lo.lvl) hi.to(at, Math.min(1.0,g), top*0.62, hi.fc, easeOut); else lo.to(at, Math.min(1.0,g), top*0.62, lo.fc, easeOut); }   /* breath held: the last note stays where it is, steady and clearly there; it neither opens nor closes, which is what held sounds like */
     else if(kind==="empty"){ s.dir=""; lo.to(at, g, top*0.12, 220); hi.to(at, 0.5, 0.0001, 320, easeOut); }   /* still breathing out on its own (not after an out): the low note goes on closing */
     else { s.dir=""; hi.to(at, 0.6, 0.0001, 320, easeOut); lo.to(at, 0.6, 0.0001, 220, easeOut); }
@@ -745,7 +733,7 @@ function mirrorVoiceFrame(){
 /* ============================ SESSION ============================ */
 var LEAD = 0.12;
 var S = {running:false, mode:"lift", sound:"tone", steps:[], idx:0, stepStart:0, schedIdx:-1,
-         reps:10, sets:4, secs:60, timed:false, restDur:180, startedAt:0, recorded:{}, ended:false,
+         reps:10, sets:4, restDur:180, startedAt:0, recorded:{}, ended:false,
          turb:0, mirror:false, tapOn:false, poke:{x:0,y:0,k:0,t:-9}, pin:{x:0,y:0,on:false}};
 function ph(kind, dur, stage, setNo, rep, mv){ return {k:kind, dur:dur, stage:stage, set:setNo, rep:rep, mv:mv||""}; }
 function pushSeq(arr, seq, stage, setNo, rep){ for(var i=0;i<seq.length;i++) if(seq[i][1]>0) arr.push(ph(seq[i][0],seq[i][1],stage,setNo,rep,seq[i][2])); }
@@ -757,8 +745,7 @@ function buildSteps(){
     var T=c.lift.tune[c.lift.preset], seq=T.seq;
     for(s=1;s<=S.sets;s++){
       st.push(ph("getset",3,"getset",s,0));
-      if(T.timed){ var from=st.length, cyc=seq.reduce(function(a,q){ return a+q[1]; },0), nrep=Math.ceil(S.secs/cyc)+1; for(r=1;r<=nrep;r++) pushSeq(st,seq,"set",s,r); trimTo(st,from,S.secs); }   /* for time: cycles until the seconds are up */
-      else for(r=1;r<=S.reps;r++) pushSeq(st,seq,"set",s,r);
+      for(r=1;r<=S.reps;r++) pushSeq(st,seq,"set",s,r);
       if(s<S.sets){ var rest=coherentSteps(S.restDur,"rest",s); for(i=0;i<rest.length;i++) st.push(rest[i]); }
     }
   }else{
@@ -784,11 +771,11 @@ function tapDown(x,y){
 function tapMove(x,y){ if(S.pin.on){ S.pin.x=x; S.pin.y=y; } }
 function tapUp(){ S.pin.on=false; }
 function startSession(mode){
-  var c=DB.cfg; S.mode=mode; S.sound=c.sound; S.timed=false;
+  var c=DB.cfg; S.mode=mode; S.sound=c.sound;
   S.mirror = mode==="breathe" && c.breathe.belly!=="off" && MIR.perm==="granted";
   S.tapOn = mode==="breathe" && c.breathe.tap==="on";
   S.poke={x:0,y:0,k:0,t:-9}; S.pin={x:0,y:0,on:false};
-  if(mode==="lift"){ var TT=c.lift.tune[c.lift.preset]; S.timed=!!TT.timed; S.secs=c.lift.secs[c.lift.preset]||60; S.reps=S.timed?1:c.lift.reps[c.lift.preset]; S.sets=c.lift.sets; S.restDur=TT.rest; }
+  if(mode==="lift"){ S.reps=c.lift.reps[c.lift.preset]; S.sets=c.lift.sets; S.restDur=c.lift.tune[c.lift.preset].rest; }
   else { S.reps=c.breathe.cycles; S.sets=1; }
   audioStart(mode, S.mirror ? "tone" : S.sound);     /* in the mirror the tone leads and the noise is you */
   if(S.mirror){ mirrorStart(); if(A) mirrorVoice=mkMirror(); }
@@ -949,7 +936,6 @@ function render(now){
   var meta;
   if(isRest) meta="REST · SET "+st.set+"/"+S.sets;
   else if(S.mode==="breathe"){ meta = isSet ? ("CYCLE "+st.rep+"/"+S.reps + (S.tapOn ? (st.k==="hold" ? " · PRESS" : " · TAP") : "")) : ""; }
-  else if(S.timed && isSet){ var tl=rem,q; for(q=S.idx+1;q<S.steps.length&&S.steps[q].stage==="set"&&S.steps[q].set===st.set;q++) tl+=S.steps[q].dur; meta="SET "+st.set+"/"+S.sets+" · "+fmtClock(tl); }   /* for time: what is left of the hold */
   else meta="SET "+st.set+"/"+S.sets+(isSet?" · REP "+st.rep+"/"+S.reps:"");
   lastMeta=txt(elMeta, meta, lastMeta);
   setFoot(isRest?"skip": (isSet && S.mode==="lift") ? "save" : null);
@@ -986,21 +972,17 @@ function tick(){
 /* ============================ UI ============================ */
 function fmtN(v){ return (Math.round(v*10)/10).toString(); }
 var setupMode="lift";
-var SOUND_SUB={tone:"Two notes. A high one opens as you breathe in, a low one closes as you breathe out.", bells:"Two soft bells, a high one for in and a low one for out, over the two notes.", breath:"A breath of wind, in and out."};
 var LABEL={"in":"lower",out:"lift",hold:"hold",empty:"hold"};
 function refresh(){
   var L=DB.cfg.lift, P=DB.cfg.breathe, i;
-  var T=L.tune[L.preset];
-  document.getElementById("row-reps").firstElementChild.textContent = T.timed ? "Time" : "Reps";
-  document.getElementById("v-reps").textContent = T.timed ? fmtClock(L.secs[L.preset]) : L.reps[L.preset]; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-cycles").textContent=P.cycles;
+  document.getElementById("v-reps").textContent=L.reps[L.preset]; document.getElementById("v-sets").textContent=L.sets; document.getElementById("v-cycles").textContent=P.cycles;
   function bar(seq, names){ var h="", j; for(j=0;j<seq.length;j++) h+='<b style="flex:'+seq[j][1]+' 1 0"><i>'+(seq[j][2]?seq[j][2].toLowerCase():names[seq[j][0]])+'</i><u>'+fmtN(seq[j][1])+'</u></b>'; return h; }
   /* the doors: one per rep shape, each carrying its tempo as a bar, the movement words above the seconds */
-  var dh=""; for(var pn in L.tune){ var Tq=L.tune[pn]; dh+='<button class="door'+(pn===L.preset?' sel':'')+'" data-preset="'+pn+'"><span class="dt">'+Tq.name+'</span><span class="bar">'+bar(Tq.seq, LABEL)+'</span><span class="dr">rest '+fmtClock(Tq.rest)+(Tq.timed?' · for time':'')+'</span><span class="dl">'+Tq.note+'</span></button>'; }
+  var dh=""; for(var pn in L.tune){ var Tq=L.tune[pn]; dh+='<button class="door'+(pn===L.preset?' sel':'')+'" data-preset="'+pn+'"><span class="dt">'+Tq.name+'</span><span class="bar">'+bar(Tq.seq, LABEL)+'</span><span class="dr">rest '+fmtClock(Tq.rest)+'</span><span class="dl">'+Tq.note+'</span></button>'; }
   document.getElementById("doors").innerHTML=dh;
   var belly=P.belly!=="off", tap=P.tap==="on", sound=DB.cfg.sound;
   document.getElementById("bar-478").innerHTML=bar([["in",4],["hold",7],["out",8]], {"in":"in",hold:"hold",out:"out"}); document.getElementById("bar-coh").innerHTML=bar([["in",5.5],["out",5.5]], {"in":"in",out:"out"});
   document.getElementById("v-time").textContent=fmtClock(P.cycles*(P.pat==="coh"?11:19));
-  document.getElementById("sound-sub").textContent = SOUND_SUB[sound];
   var seg=document.querySelectorAll("#seg-with button"); for(i=0;i<seg.length;i++){ var wk=seg[i].getAttribute("data-w"); seg[i].classList.toggle("sel", wk==="belly"?belly:tap); }
   var parts=[]; if(belly) parts.push("Belly: phone on your belly, it reads your breath."); if(tap) parts.push("Tap: tap the count, hold to hold.");
   document.getElementById("with-sub").textContent = parts.length ? parts.join(" ") : "Nothing extra.";
@@ -1013,7 +995,7 @@ function refresh(){
 var LIM={reps:[1,60,1],sets:[1,20,1],cycles:[1,40,1]};
 function bump(key,delta){
   var lim=LIM[key], v;
-  if(key==="reps"){ var L=DB.cfg.lift; if(L.tune[L.preset].timed){ v=Math.max(15,Math.min(600,(+L.secs[L.preset])+delta*15)); L.secs[L.preset]=v; } else { v=Math.max(lim[0],Math.min(lim[1],(+L.reps[L.preset])+delta)); L.reps[L.preset]=v; } }
+  if(key==="reps"){ var L=DB.cfg.lift; v=Math.max(lim[0],Math.min(lim[1],(+L.reps[L.preset])+delta)); L.reps[L.preset]=v; }
   else { var tgt=key==="cycles"?DB.cfg.breathe:DB.cfg.lift; v=Math.max(lim[0],Math.min(lim[1],(+tgt[key])+delta)); tgt[key]=v; }
   save(); refresh();
 }

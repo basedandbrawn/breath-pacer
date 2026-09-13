@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Wind Bender Auras</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;500&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap">
+<style>
+/* Wind Bender Auras: three directions for the app, live, and three ways to choose a lift. A dark
+   studio wall; each phone carries its own world. */
+:root{--ink:#0a0d13;--surf:#10151f;--line:rgba(233,237,243,.12);--line2:rgba(233,237,243,.24);--fg:#e8ecf2;--mute:#8e98aa;--dim:#5c6678;--gold:#d6a24a;--blue:#7fb8ff;
+  --disp:'Barlow Condensed','Arial Narrow',sans-serif;--body:'Barlow','Helvetica Neue',Arial,sans-serif;--mono:'IBM Plex Mono',ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--ink);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5;padding-block:0 80px;padding-inline:clamp(16px,4vw,40px);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--disp);font-weight:700;line-height:1;margin:0;text-wrap:balance;text-transform:uppercase}
+h1{font-size:clamp(44px,8vw,84px);letter-spacing:.02em}h2{font-size:clamp(30px,5vw,48px);letter-spacing:.03em}h3{font-size:22px;letter-spacing:.04em}
+p{margin:0}.lede{max-width:64ch;color:var(--mute);font-size:17px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+header{padding-block:40px 24px;display:grid;gap:14px}
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;position:sticky;top:0;z-index:5;background:linear-gradient(var(--ink) 75%,transparent);padding-block:10px 16px}
+nav.tabs a{font-family:var(--disp);font-weight:600;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);text-decoration:none;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surf)}
+nav.tabs a:hover{color:var(--fg);border-color:var(--line2)}
+section{padding-block:34px 10px;display:grid;gap:20px;scroll-margin-top:80px}
+/* the auras: three phones side by side, each with a Home / Run switch */
+.auras{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;align-items:start}
+.aura{display:grid;gap:14px}
+.phone{width:min(100%,320px);aspect-ratio:9/17.5;max-width:100%;border-radius:34px;border:1px solid var(--line2);position:relative;overflow:hidden;justify-self:center;background:#000}
+.phone canvas{position:absolute;inset:0;width:100%;height:100%}
+.phone .ui[hidden]{display:none}
+.phone .ui{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr auto;padding:22px 18px 18px;pointer-events:none}
+.phone .meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;text-align:center;opacity:.7}
+.phone .mid{display:grid;align-content:center;justify-items:center;gap:6px;text-align:center}
+.phone .cue{font-weight:700;font-size:58px;letter-spacing:.03em;line-height:1;text-transform:uppercase}
+.phone .sub{font-size:12px;letter-spacing:.24em;text-transform:uppercase;opacity:.75}
+.phone .num{font-weight:700;font-size:64px;line-height:1;font-variant-numeric:tabular-nums}
+.phone .rail{display:flex;gap:5px;height:3px;width:60%;justify-self:center}
+.phone .rail i{flex:1 1 0;border-radius:2px;background:rgba(255,255,255,.18);position:relative;overflow:hidden}
+.phone .rail i b{position:absolute;inset:0;background:currentColor;transform-origin:left;transform:scaleX(0)}
+.phone .home{display:grid;grid-template-rows:auto 1fr auto;padding:44px 18px 24px}
+.phone .mark{display:grid;justify-items:center;gap:4px}
+.phone .mark .s{font-family:var(--mono);font-size:11px;letter-spacing:.6em;padding-left:.6em;opacity:.7}
+.phone .mark .w{font-weight:800;font-size:66px;line-height:.92;letter-spacing:.01em}
+.phone .mark .t{font-size:10px;letter-spacing:.4em;text-transform:uppercase;opacity:.6;margin-top:8px}
+.phone .modes{display:grid;gap:10px}
+.phone .mode{display:flex;justify-content:space-between;align-items:baseline;padding:16px 18px;border-radius:16px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.28);backdrop-filter:blur(6px)}
+.phone .mode .t{font-weight:800;font-size:26px;letter-spacing:.04em}.phone .mode .d{font-family:var(--mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;opacity:.6}
+.seg{display:flex;gap:6px}.seg button{font-family:var(--disp);font-weight:600;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);padding:7px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surf);cursor:pointer}
+.seg button.sel{color:var(--ink);background:var(--fg);border-color:var(--fg)}
+.cap{display:grid;gap:8px;max-width:320px;justify-self:center;width:100%}
+.cap p{font-size:14px;color:var(--mute)}
+.sw{display:flex;gap:6px;flex-wrap:wrap}.sw i{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;color:var(--dim);font-style:normal}
+.sw i::before{content:"";width:14px;height:14px;border-radius:4px;background:var(--c);border:1px solid rgba(255,255,255,.15)}
+.type{font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+/* the modes: three phones, static mockups in CSS */
+.mocks{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;align-items:start}
+.mock{display:grid;gap:14px}
+.mphone{width:min(100%,320px);max-width:100%;border-radius:34px;border:1px solid var(--line2);background:#121926;color:#e6ebf1;justify-self:center;padding:22px 16px 20px;display:grid;gap:12px;font-family:var(--body);position:relative;overflow:hidden;min-height:600px}
+.mphone .top{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8e98aa}
+.mphone .top b{font-family:var(--disp);font-weight:700;font-size:18px;letter-spacing:.06em;color:#e6ebf1}
+.card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:13px 14px;display:grid;gap:9px}
+.card.sel{border-color:#d6a24a;background:rgba(214,162,74,.09)}
+.card .h{display:flex;justify-content:space-between;align-items:baseline}
+.card .h b{font-family:var(--disp);font-weight:800;font-size:22px;letter-spacing:.05em}
+.card .h span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8e98aa}
+.card .what{font-size:13px;color:#c7cfdb}
+.track{display:grid;gap:3px}
+.track .tr{display:flex;gap:3px}
+.track .tr .s{border-radius:4px;display:grid;justify-items:center;padding:4px 2px 3px;min-width:0;overflow:hidden}
+.track .mv .s{background:rgba(255,255,255,.1)}
+.track .mv .s i{font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;color:#8e98aa;font-style:normal;white-space:nowrap}
+.track .mv .s u{text-decoration:none;font-family:var(--disp);font-weight:700;font-size:14px;line-height:1}
+.track .br .s{height:5px;padding:0}.track .br .in{background:#7fb8ff}.track .br .out{background:#d6a24a}.track .br .hold{background:#c9d2e0}.track .br .empty{background:#d6a24a;opacity:.55}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.16);color:#c7cfdb}
+.chip.on{background:#d6a24a;color:#121926;border-color:#d6a24a}
+.chip.more{color:#8e98aa;border-style:dashed}
+.steps{display:flex;justify-content:space-between;align-items:center;padding-top:4px}
+.steps .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8e98aa}
+.steps .st{display:flex;align-items:center;gap:6px}.steps .st b{width:30px;height:30px;border-radius:9px;border:1px solid rgba(255,255,255,.16);display:grid;place-items:center;font-size:16px;color:#c7cfdb}.steps .st u{text-decoration:none;font-family:var(--disp);font-weight:700;font-size:22px;min-width:34px;text-align:center}
+.start{margin-top:auto;border:1px solid rgba(255,255,255,.5);border-radius:14px;padding:12px;text-align:center;font-family:var(--disp);font-weight:800;font-size:30px;letter-spacing:.14em;background:rgba(255,255,255,.12)}
+.search{display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:10px 12px;font-family:var(--mono);font-size:12px;color:#8e98aa}
+.group{display:grid;gap:6px}
+.group .gh{display:flex;justify-content:space-between;align-items:baseline;padding:6px 2px 0}
+.group .gh b{font-family:var(--disp);font-weight:800;font-size:15px;letter-spacing:.08em;color:#d6a24a}
+.group .gh span{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#8e98aa}
+.lift{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.08);font-size:13.5px}
+.lift span{font-family:var(--mono);font-size:9.5px;color:#8e98aa;letter-spacing:.08em}
+.lift.on{border-color:#d6a24a;background:rgba(214,162,74,.1)}
+.shapes{display:flex;gap:6px}.shapes b{flex:1 1 0;text-align:center;font-family:var(--disp);font-weight:700;font-size:12px;letter-spacing:.06em;padding:9px 0;border-radius:10px;border:1px solid rgba(255,255,255,.16);color:#8e98aa}
+.shapes b.on{color:#121926;background:#e6ebf1;border-color:#e6ebf1}
+.preview{border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:12px 12px 10px;display:grid;gap:8px}
+.preview .pw{display:flex;justify-content:space-between;align-items:baseline}.preview .pw b{font-family:var(--disp);font-weight:800;font-size:28px;letter-spacing:.04em}.preview .pw span{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7fb8ff}
+.notes{display:grid;gap:10px;max-width:70ch}.notes ul{padding-left:18px;margin:0;display:grid;gap:6px;color:var(--mute);font-size:15px}.notes b{color:var(--fg);font-weight:500}
+.rec{border-left:3px solid var(--gold);padding:10px 16px;background:var(--surf);border-radius:0 10px 10px 0;max-width:70ch}
+.rec .qq{font-family:var(--disp);font-weight:600;font-size:20px}.rec p{color:var(--mute);font-size:15px;margin-top:4px}
+footer{padding-block:40px 0;color:var(--dim);font-size:13px;font-family:var(--mono)}
+</style>
+</head>
+<body>
+<header>
+  <span class="eyebrow">Wind Bender · auras and modes · mockups only, nothing here is in the app</span>
+  <h1>Wind Bender Auras</h1>
+  <p class="lede">Three worlds the app could live in, each running live: a mystical one, one where the wind is being bent, and a dark sky of clouds. Toggle each phone between its home screen and a set. Below them, three ways the four modes could be chosen, with what each mode is and which lifts belong to it.</p>
+  <nav class="tabs"><a href="#auras">Auras</a><a href="#modes">Modes</a><a href="#notes">Notes</a></nav>
+</header>
+<section id="auras">
+  <div><span class="eyebrow">01 · Auras</span><h2>Three worlds</h2></div>
+  <p class="lede">Same app, same words, same two notes. What changes is the world the breath moves through. Each phone runs Drive, 3 · 1 · 2, on a loop; switch it to Home to see the wordmark in that world.</p>
+  <div class="auras" id="auras-grid"></div>
+</section>
+
+<section id="modes">
+  <div><span class="eyebrow">02 · Modes</span><h2>Choosing a mode, three ways</h2></div>
+  <p class="lede">Today the doors show a name and a tempo bar. A lifter needs two more things: what the mode actually is, in plain words, and which lifts it belongs to, so the choice is never a guess. Three layouts, all with the same four shapes and the same lift lists.</p>
+  <div class="mocks">
+    <div class="mock">
+      <div class="mphone">
+        <div class="top"><span>Back</span><b>LIFT</b><span>&nbsp;</span></div>
+        <div class="card sel">
+          <div class="h"><b>DRIVE</b><span>rest 2:00</span></div>
+          <div class="what">Down slow with the air in. A beat at the bottom. Drive up on the breath out.</div>
+          <div class="track"><div class="tr mv"><div class="s" style="flex:3"><i>LOWER</i><u>3</u></div><div class="s" style="flex:1"><i>HOLD</i><u>1</u></div><div class="s" style="flex:2"><i>LIFT</i><u>2</u></div></div><div class="tr br"><div class="s in" style="flex:3"></div><div class="s hold" style="flex:1"></div><div class="s out" style="flex:2"></div></div></div>
+          <div class="chips"><span class="chip on">Squat</span><span class="chip">Bench</span><span class="chip">Overhead press</span><span class="chip">Leg press</span><span class="chip">Lunge</span><span class="chip">Dip</span></div>
+          <div class="steps"><span class="lbl">Reps</span><div class="st"><b>−</b><u>10</u><b>+</b></div><span class="lbl">Sets</span><div class="st"><b>−</b><u>4</u><b>+</b></div></div>
+        </div>
+        <div class="card"><div class="h"><b>SQUEEZE</b><span>1 · 2 · 3</span></div><div class="what">Pull on the breath out, hold the squeeze still breathing out, lower slow on the breath in.</div><div class="chips"><span class="chip">Rear delt fly</span><span class="chip">Row</span><span class="chip">Pulldown</span><span class="chip">Curl</span><span class="chip more">+ 6</span></div></div>
+        <div class="card"><div class="h"><b>STRETCH</b><span>3 · 2 · 2</span></div><div class="what">Down slow, sink into the stretch and keep it, lift on the breath out.</div><div class="chips"><span class="chip">Chest fly</span><span class="chip">Pullover</span><span class="chip">RDL</span><span class="chip more">+ 4</span></div></div>
+        <div class="card"><div class="h"><b>HEAVY</b><span>2 · 2 · 1 · 1</span></div><div class="what">Breathe in at the top, hold it through the whole rep, let it out stood up.</div><div class="chips"><span class="chip">Squat</span><span class="chip">Bench</span><span class="chip">Deadlift</span><span class="chip">≤ 5 reps</span></div></div>
+        <div class="start">START</div>
+      </div>
+      <div class="cap"><h3>A · Cards that explain themselves</h3><p>Each shape carries its what, its two-track bar and its lifts. The chosen card opens to reveal reps and sets; the others fold to one line and a few chips. Nothing to learn: read the card, tap it, start.</p></div>
+    </div>
+    <div class="mock">
+      <div class="mphone">
+        <div class="top"><span>Back</span><b>LIFT</b><span>&nbsp;</span></div>
+        <div class="search">⌕&nbsp; rear delt</div>
+        <div class="group"><div class="gh"><b>SQUEEZE</b><span>pause at the top · 1 · 2 · 3</span></div>
+          <div class="lift on">Rear delt fly<span>machine · cable</span></div><div class="lift">Cable row<span>seated · single arm</span></div><div class="lift">Lat pulldown<span></span></div><div class="lift">Curl<span>any</span></div><div class="lift">Lateral raise<span></span></div><div class="lift">Hip thrust<span></span></div></div>
+        <div class="group"><div class="gh"><b>DRIVE</b><span>pause at the bottom · 3 · 1 · 2</span></div>
+          <div class="lift">Squat<span>back · front · goblet</span></div><div class="lift">Bench press<span></span></div><div class="lift">Overhead press<span></span></div><div class="lift">Leg press<span></span></div></div>
+        <div class="group"><div class="gh"><b>STRETCH</b><span>long pause · 3 · 2 · 2</span></div>
+          <div class="lift">Chest fly<span></span></div><div class="lift">Pullover<span></span></div><div class="lift">Romanian deadlift<span></span></div></div>
+        <div class="group"><div class="gh"><b>HEAVY</b><span>one held breath · 2 · 2 · 1 · 1</span></div>
+          <div class="lift">Squat, bench, deadlift<span>≤ 5 reps</span></div></div>
+        <div class="start">REAR DELT FLY</div>
+      </div>
+      <div class="cap"><h3>B · Pick your lift</h3><p>People think in lifts, not shapes. Search or scroll a list grouped by shape; tapping a lift picks its shape for you and names the set. The run screen's meta line reads REAR DELT FLY · SQUEEZE, so the next time you are on that machine you never have to remember which mode it was.</p></div>
+    </div>
+    <div class="mock">
+      <div class="mphone">
+        <div class="top"><span>Back</span><b>LIFT</b><span>&nbsp;</span></div>
+        <div class="shapes"><b>DRIVE</b><b class="on">SQUEEZE</b><b>STRETCH</b><b>HEAVY</b></div>
+        <div class="preview" id="prev">
+          <div class="pw"><b id="prev-w">LIFT</b><span id="prev-s">breathe out</span></div>
+          <div class="track"><div class="tr mv"><div class="s" style="flex:1"><i>LIFT</i><u>1</u></div><div class="s" style="flex:2"><i>HOLD</i><u>2</u></div><div class="s" style="flex:3"><i>LOWER</i><u>3</u></div></div><div class="tr br" id="prev-br"><div class="s out" style="flex:3;position:relative;overflow:hidden"><b style="position:absolute;inset:0;background:#fff;opacity:.5;transform-origin:left;transform:scaleX(0)"></b></div><div class="s in" style="flex:3;position:relative;overflow:hidden"><b style="position:absolute;inset:0;background:#fff;opacity:.5;transform-origin:left;transform:scaleX(0)"></b></div></div></div>
+          <div class="what" style="font-size:13px;color:#c7cfdb">Pull on the breath out. Hold the squeeze, still breathing out. Lower slow on the breath in. Pauses at the top.</div>
+        </div>
+        <div class="chips"><span class="chip on">Rear delt fly</span><span class="chip">Cable row</span><span class="chip">Lat pulldown</span><span class="chip">Curl</span><span class="chip">Lateral raise</span><span class="chip">Calf raise</span><span class="chip">Hip thrust</span><span class="chip">Crunch</span><span class="chip">Face pull</span><span class="chip">Kickback</span></div>
+        <div class="steps"><span class="lbl">Reps</span><div class="st"><b>−</b><u>12</u><b>+</b></div><span class="lbl">Sets</span><div class="st"><b>−</b><u>3</u><b>+</b></div></div>
+        <div class="start">START</div>
+      </div>
+      <div class="cap"><h3>C · Shape first, with a live rep</h3><p>Four shapes in one row. The chosen one plays a rep continuously above its lifts, the word and breath line changing as it would on the run screen, so you see exactly what you are about to do before you tap Start. The lift chips name the set.</p></div>
+    </div>
+  </div>
+  <div class="rec"><div class="qq">Recommendation: B, with C's live rep at the top of it</div><p>Pick your lift is the flow that matches how the choice is actually made at the machine, and it removes the mode vocabulary from the decision entirely: you never choose Squeeze, you choose rear delt fly and Squeeze comes with it. Put C's playing rep above the list, following whichever lift is highlighted, and the what-line under it. A's chip rows become the lift list's groups. Reps and sets stay where they are, below.</p></div>
+</section>
+
+<section id="notes">
+  <div><span class="eyebrow">03 · Notes</span><h2>What each aura would change</h2></div>
+  <div class="notes"><ul>
+    <li><b>Mystic.</b> Cormorant Garamond for the wordmark and the cue, italic for the line under it, so LOWER reads like a word on an old page. Ground violet-black rising to plum; incense smoke in lavender, drawn into a gold ring that fills like a mandala as the lungs do; the ring pulses on a hold. The tone would suit a bowl pair. Quietest of the three; best for Breathe, maybe too soft for a gym.</li>
+    <li><b>Bender.</b> The move. Crescent slashes and speed lines converge in a spiral on the breath in and burst outward on the out, bone white with a cold cyan core, on ink; a vermilion seal for the rep count. A burst ring marks every turn of the breath, which is also what the eye needs mid-set. Loudest, fastest, most gym.</li>
+    <li><b>Dark Sky.</b> Not smoke: cloud masses, lit from behind by a moon that brightens as the lungs fill. Abstract, high contrast, edges lit and cores dark, churning fast; the clouds surge toward the moon on the in and roll away on the out, and stand still, lit, on a hold. The luminance change of the whole screen is the largest of the three, which is what peripheral vision reads.</li>
+    <li><b>Modes.</b> Whichever layout: every mode carries a what in plain words and its list of lifts, and the run screen names the lift. That is the whole UX change, and it costs nothing at the bar.</li>
+  </ul></div>
+</section>
+<footer>Mockups only. Wind Bender is at basedandbrawn.github.io/breath-pacer/wind.html; nothing on this page is in it yet.</footer>
+<style>
+/* each world sets its own type on the phone */
+.a-mystic{font-family:'Cormorant Garamond',Georgia,serif;color:#efe6f7}
+.a-mystic .cue{font-weight:600;letter-spacing:.06em;font-size:56px}.a-mystic .sub{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;text-transform:none;letter-spacing:.08em;font-size:17px;opacity:.85}
+.a-mystic .num{font-weight:500}.a-mystic .mark .w{font-weight:600;letter-spacing:.05em;font-size:60px}.a-mystic .mark .s{color:#c9a45c;opacity:.9}.a-mystic .mark .t{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;text-transform:none;letter-spacing:.14em;font-size:13px;opacity:.75}
+.a-mystic .mode{border-color:rgba(201,164,92,.35);border-radius:6px}.a-mystic .mode .t{font-weight:600;letter-spacing:.06em}.a-mystic .rail i b{color:#c9a45c}
+.a-bender{font-family:var(--disp);color:#ecebe4}
+.a-bender .cue{font-weight:800;transform:skewX(-9deg);letter-spacing:.02em;font-size:62px}.a-bender .num{color:#c8452e;font-weight:800}.a-bender .sub{color:#8fd3e6;opacity:.95}
+.a-bender .mark .w{font-weight:800;transform:skewX(-9deg);font-size:60px}.a-bender .mark .s{color:#8fd3e6}.a-bender .mode{border-radius:4px;border-color:rgba(236,235,228,.3)}.a-bender .rail i b{color:#8fd3e6}
+.a-bender .seal{position:absolute;right:20px;top:52px;width:26px;height:26px;border-radius:50%;background:#c8452e;display:grid;place-items:center;font-family:var(--mono);font-size:9px;color:#fff;letter-spacing:0}
+.a-sky{font-family:var(--disp);color:#f1f4f9}
+.a-sky .cue{font-weight:700;font-size:60px;text-shadow:0 2px 24px rgba(5,10,20,.8)}.a-sky .num{text-shadow:0 2px 24px rgba(5,10,20,.8)}.a-sky .sub{color:#c6d3e8}.a-sky .mark .w{font-weight:800;font-size:70px;text-shadow:0 2px 26px rgba(5,10,20,.9)}.a-sky .rail i b{color:#f1f4f9}
+</style>
+<script>
+(function(){
+"use strict";
+/* ============================ the breath: Drive, 3 · 1 · 2 ============================ */
+var SEQ=[["in",3],["hold",1],["out",2]];
+var B={idx:0,t0:performance.now()/1000,k:"in",frac:0,into:0,dur:3,fill:0,flow:0,still:false,pulse:0,gust:0};
+function easeIO(p){ return p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2; }
+function clock(t){ var cur=SEQ[B.idx], into=t-B.t0; while(into>=cur[1]){ B.t0+=cur[1]; B.idx=(B.idx+1)%SEQ.length; cur=SEQ[B.idx]; into=t-B.t0; }
+  B.k=cur[0]; B.dur=cur[1]; B.into=into; B.frac=into/cur[1]; var bell=Math.pow(Math.sin(B.frac*Math.PI),0.7)*Math.min(1.8,Math.max(1,2.2/cur[1]));
+  B.fill=B.k==="in"?easeIO(B.frac):B.k==="hold"?1:1-easeIO(B.frac); B.flow=B.k==="in"?bell:B.k==="out"?-bell:0; B.still=B.k==="hold";
+  B.pulse=B.still&&into>=1?Math.exp(-((into-Math.floor(into))/0.12)):0; B.gust=B.still?0:Math.exp(-into/0.3); }
+var WORD={"in":"LOWER",hold:"HOLD",out:"LIFT"}, SUB={"in":"breathe in",hold:"hold your breath",out:"breathe out"};
+function noise2(){ var perm=[], vals=[], i; for(i=0;i<256;i++){ perm[i]=i; vals[i]=Math.random(); } for(i=255;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), q=perm[i]; perm[i]=perm[j]; perm[j]=q; } for(i=0;i<256;i++) perm[i+256]=perm[i];
+  function h(x,y){ return vals[perm[(x&255)+perm[y&255]]]; }
+  return function(x,y){ var xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi, u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf); var a=h(xi,yi), b=h(xi+1,yi), c=h(xi,yi+1), d=h(xi+1,yi+1); return (a+(b-a)*u)*(1-v)+(c+(d-c)*u)*v; }; }
+function rgba(r,g,b,a){ return "rgba("+(r|0)+","+(g|0)+","+(b|0)+","+a.toFixed(3)+")"; }
+
+/* ============================ MYSTIC ============================ */
+function mystic(cv){
+  var c=cv.getContext("2d"), W=cv.width, H=cv.height, n=noise2(), S=[], P=[], i;
+  for(i=0;i<70;i++) S.push({x:Math.random()*W,y:Math.random()*H,k:Math.random()*6.3,s:.4+Math.random()*.9});
+  for(i=0;i<90;i++) P.push({x:W/2+(Math.random()-.5)*80,y:H*.9+Math.random()*H*.2,vx:0,vy:-10,r:8+Math.random()*12,l:Math.random()});
+  return function(dt,t,home){
+    var fill=home?.35+.15*Math.sin(t*.4):B.fill, flow=home?0:B.flow, still=!home&&B.still, pulse=home?0:B.pulse;
+    var g=c.createLinearGradient(0,0,0,H); g.addColorStop(0,"#0a0612"); g.addColorStop(1,rgba(22+18*fill,14+10*fill,42+24*fill,1)); c.fillStyle=g; c.fillRect(0,0,W,H);
+    var cx=W/2, cy=home?H*.62:H*.5, R=W*.33;
+    for(i=0;i<S.length;i++){ var s=S[i]; c.fillStyle=rgba(230,220,255,.15+.45*(.5+.5*Math.sin(t*1.3+s.k))); c.beginPath(); c.arc(s.x,s.y,s.s,0,6.283); c.fill(); }
+    var gl=c.createRadialGradient(cx,cy,0,cx,cy,R*1.6); gl.addColorStop(0,rgba(190,160,235,.10+.22*fill)); gl.addColorStop(1,rgba(190,160,235,0)); c.fillStyle=gl; c.fillRect(0,0,W,H);
+    c.globalCompositeOperation="lighter";
+    for(i=0;i<P.length;i++){ var p=P[i]; p.l+=dt*(still?.05:.11); if(p.l>1){ p.x=cx+(Math.random()-.5)*90; p.y=H+10; p.vx=0; p.vy=-10; p.r=8+Math.random()*12; p.l=0; }
+      var dx=p.x-cx, dy=p.y-cy, r=Math.hypot(dx,dy)+1;
+      p.vx+=((n(p.x*.012,t*.35+p.l)-.5)*40 + (flow>0?-dx/r*45*flow:flow<0?dx/r*30*-flow:0))*dt; p.vy+=(-9 + (n(p.y*.012+3,t*.35)-.5)*30 + (flow>0?-dy/r*45*flow:flow<0?dy/r*30*-flow:0))*dt;
+      var d=1-Math.min(1,(still?2.5:.7)*dt); p.vx*=d; p.vy*=d; p.x+=p.vx*dt; p.y+=p.vy*dt;
+      var al=(1-p.l)*(.05+.09*fill)*Math.min(1,p.l*6), rr=p.r*(1+p.l*1.5), q=c.createRadialGradient(p.x,p.y,0,p.x,p.y,rr); q.addColorStop(0,rgba(203,184,232,al)); q.addColorStop(1,rgba(203,184,232,0)); c.fillStyle=q; c.beginPath(); c.arc(p.x,p.y,rr,0,6.283); c.fill(); }
+    c.globalCompositeOperation="source-over";
+    /* the ring: a gold circle that fills like a mandala as the lungs do, and pulses on a hold */
+    c.lineWidth=1; c.strokeStyle=rgba(201,164,92,.28+.3*pulse); c.beginPath(); c.arc(cx,cy,R,0,6.283); c.stroke();
+    c.strokeStyle=rgba(201,164,92,.14); c.beginPath(); c.arc(cx,cy,R*.78,0,6.283); c.stroke();
+    var k; for(k=0;k<12;k++){ var a=k/12*6.283; c.beginPath(); c.moveTo(cx+Math.cos(a)*R*.78,cy+Math.sin(a)*R*.78); c.lineTo(cx+Math.cos(a)*R*.72,cy+Math.sin(a)*R*.72); c.stroke(); }
+    c.lineWidth=1.8; c.strokeStyle=rgba(214,180,110,.85); c.beginPath(); c.arc(cx,cy,R,-Math.PI/2,-Math.PI/2+fill*6.283); c.stroke();
+    if(fill>0.01){ var ex=cx+Math.cos(-Math.PI/2+fill*6.283)*R, ey=cy+Math.sin(-Math.PI/2+fill*6.283)*R; c.fillStyle=rgba(240,220,170,.9); c.beginPath(); c.arc(ex,ey,2.4,0,6.283); c.fill(); }
+  };
+}
+/* ============================ BENDER ============================ */
+function bender(cv){
+  var c=cv.getContext("2d"), W=cv.width, H=cv.height, n=noise2(), L=[], SP=[], i, R=Math.hypot(W,H)*.5;
+  for(i=0;i<44;i++) L.push({a:Math.random()*6.283,r:Math.random()*R,w:0,rv:0,h:[],wd:1+Math.random()*2.2,k:Math.random(),cy:Math.random()<.3});
+  for(i=0;i<26;i++) SP.push({a:Math.random()*6.283,r:R*(.5+Math.random()*.7),k:Math.random()});
+  return function(dt,t,home){
+    var flow=home?.25*Math.sin(t*.5):B.flow, still=!home&&B.still, gust=home?0:B.gust, into=home?9:B.into, fill=home?.35:B.fill;
+    var g=c.createRadialGradient(W/2,H*.46,0,W/2,H*.46,R); g.addColorStop(0,"#10151a"); g.addColorStop(1,"#070a0d"); c.fillStyle=g; c.fillRect(0,0,W,H);
+    var cx=W/2, cy=home?H*.6:H*.46;
+    c.lineCap="round";
+    /* speed lines: radial, long on the rush */
+    for(i=0;i<SP.length;i++){ var s=SP[i], len=(8+70*Math.abs(flow))*(0.6+0.4*Math.sin(t*3+s.k*9)), dir=flow>=0?-1:1, x0=cx+Math.cos(s.a)*s.r, y0=cy+Math.sin(s.a)*s.r*1.1;
+      c.strokeStyle=rgba(236,235,228,.06+.22*Math.abs(flow)); c.lineWidth=.8; c.beginPath(); c.moveTo(x0,y0); c.lineTo(x0+Math.cos(s.a)*len*dir,y0+Math.sin(s.a)*len*dir*1.1); c.stroke(); }
+    /* the slashes: crescents on a spiral, in toward the centre, out away, the spin reversing with the breath */
+    for(i=0;i<L.length;i++){ var l=L[i];
+      var rv = flow>0 ? -flow*(150+80*gust)*(1+l.k*.4) : flow<0 ? -flow*(120+80*gust)*(1+l.k*.4) : 0;
+      var w = flow*(1.6+l.k)*(1+gust) + (n(l.k*9,t*.3)-.5)*.6;
+      l.rv+=(rv-l.rv)*Math.min(1,dt*4); l.w+=(w-l.w)*Math.min(1,dt*4);
+      var dr=still?Math.exp(-dt*4):1; l.rv*=dr; l.w*=dr;
+      l.r+=l.rv*dt; l.a+=l.w*dt*(60/Math.max(20,l.r));
+      if(l.r<R*.04||l.r>R*1.35){ l.r = flow<0 ? R*.05 : R*(1.1+Math.random()*.2); l.a=Math.random()*6.283; l.h=[]; }
+      var x=cx+Math.cos(l.a)*l.r, y=cy+Math.sin(l.a)*l.r*1.1; l.h.unshift([x,y]); if(l.h.length>14) l.h.length=14;
+      var sp=Math.hypot(l.rv, l.w*l.r), al=Math.min(.95,.12+sp/260); if(l.h.length<2) continue;
+      for(var j=1;j<l.h.length;j++){ var f=1-j/l.h.length; c.strokeStyle=rgba(236,235,228,al*f); c.lineWidth=l.wd*f*(1+.6*fill); c.beginPath(); c.moveTo(l.h[j-1][0],l.h[j-1][1]); c.lineTo(l.h[j][0],l.h[j][1]); c.stroke();
+        if(l.cy&&j<5){ c.strokeStyle=rgba(143,211,230,al*f*.9); c.lineWidth=l.wd*f*.4; c.beginPath(); c.moveTo(l.h[j-1][0],l.h[j-1][1]); c.lineTo(l.h[j][0],l.h[j][1]); c.stroke(); } }
+    }
+    /* the burst: a ring thrown from the centre at every turn of the breath */
+    if(!home && into<0.9 && !still){ var rr=R*(1-Math.exp(-into*4))*1.2, ba=Math.exp(-into*3)*.7; c.strokeStyle=rgba(236,235,228,ba); c.lineWidth=2.2*(1-into); c.beginPath(); c.ellipse(cx,cy,rr,rr*1.1,0,0,6.283); c.stroke();
+      c.strokeStyle=rgba(143,211,230,ba*.8); c.lineWidth=.8; c.beginPath(); c.ellipse(cx,cy,rr*.86,rr*.95,0,0,6.283); c.stroke(); }
+  };
+}
+/* ============================ DARK SKY ============================ */
+function sky(cv){
+  var c=cv.getContext("2d"), W=cv.width, H=cv.height, lw=112, lh=Math.round(lw*H/W), off=document.createElement("canvas"); off.width=lw; off.height=lh;
+  var oc=off.getContext("2d"), img=oc.createImageData(lw,lh), d=img.data, n=noise2(), z=0, th=0;
+  function fbm(x,y){ return n(x,y)*.5+n(x*2.1+7,y*2.1+3)*.26+n(x*4.3+1,y*4.3+9)*.15+n(x*8.7+5,y*8.7+2)*.09; }
+  function ss(a,b,x){ var q=Math.max(0,Math.min(1,(x-a)/(b-a))); return q*q*(3-2*q); }
+  return function(dt,t,home){
+    var fill=home?.4+.15*Math.sin(t*.4):B.fill, flow=home?.18:B.flow, still=!home&&B.still, pulse=home?0:B.pulse;
+    z+=flow*.28*dt; z*=Math.exp(-dt*.25); th+=flow*.5*dt; if(home){ th+=.03*dt; }
+    var ez=Math.exp(z*.5), cs=Math.cos(th), sn=Math.sin(th), asp=W/H, cxu=.5, cyu=home?.62:.46, L0=(.14+.5*fill)*(1+.3*pulse), i=0, x, y;
+    for(y=0;y<lh;y++) for(x=0;x<lw;x++){
+      var px=(x/lw-cxu)*asp, py=(y/lh-cyu), rx=(px*cs-py*sn)*ez, ry=(px*sn+py*cs)*ez;
+      var q1=fbm(rx*2.2+t*.05, ry*2.2-t*.03), q2=fbm(rx*2.2+5.2, ry*2.2+1.3+t*.04), r1=fbm(rx*2.2+2.6*q1+.7+t*.06, ry*2.2+2.6*q2+.3), r2=fbm(rx*2.2+2.6*q1+8.1, ry*2.2+2.6*q2+2.8-t*.05), v=fbm(rx*3+2.2*r1, ry*3+2.2*r2);
+      var core=ss(.5,.66,v), edge=ss(.43,.52,v)*(1-core), dd=Math.hypot(px,py), Lm=L0*(1-.6*ss(0,1.0,dd)), moon=Math.exp(-dd*dd*30)*(.25+.45*fill)*(1-core*.95);
+      var rr=9+moon*230, gg=15+moon*236, bb=28+moon*255;
+      rr+=edge*Lm*175+core*(22+Lm*30); gg+=edge*Lm*192+core*(32+Lm*38); bb+=edge*Lm*220+core*(52+Lm*52);
+      d[i]=rr>255?255:rr; d[i+1]=gg>255?255:gg; d[i+2]=bb>255?255:bb; d[i+3]=255; i+=4; }
+    oc.putImageData(img,0,0); c.imageSmoothingEnabled=true; c.drawImage(off,0,0,W,H);
+  };
+}
+
+/* ============================ the phones ============================ */
+var AURAS=[
+ {id:"mystic", name:"Mystic", make:mystic, cls:"a-mystic", sw:[["#0a0612","violet black"],["#241640","plum, full"],["#cbb8e8","incense"],["#c9a45c","old gold"]], type:"Cormorant Garamond · IBM Plex Mono",
+  what:"Incense smoke drawn into a gold ring that fills like a mandala as the lungs do; the ring pulses on a hold. Stars behind. The breath out lets the smoke rise and go."},
+ {id:"bender", name:"Bender", make:bender, cls:"a-bender", sw:[["#0a0d10","ink"],["#ecebe4","bone"],["#8fd3e6","cold cyan"],["#c8452e","vermilion seal"]], type:"Barlow Condensed, slanted · IBM Plex Mono",
+  what:"The move. Crescent slashes and speed lines spiral in on the breath in and burst out on the out, the spin reversing each breath; a ring is thrown at every turn. Bone white with a cold core."},
+ {id:"sky", name:"Dark Sky", make:sky, cls:"a-sky", sw:[["#0b1322","night"],["#2a3a55","cloud core"],["#a9bad4","lit edge"],["#f1f4f9","moon"]], type:"Barlow Condensed · IBM Plex Mono",
+  what:"Clouds, not smoke: abstract masses lit from behind by a moon that brightens as the lungs fill, edges lit and cores dark, churning. They surge toward the moon on the in, roll away on the out, and stand lit on a hold."}
+];
+var grid=document.getElementById("auras-grid"), INST=[];
+AURAS.forEach(function(a){
+  var el=document.createElement("div"); el.className="aura";
+  el.innerHTML='<div class="phone '+a.cls+'"><canvas width="216" height="420"></canvas>'+
+    '<div class="ui run"><div class="meta">SET 1/4 · REP 3/10</div><div class="mid"><div class="cue">LOWER</div><div class="sub">breathe in</div><div class="num">3</div><div class="rail"><i><b></b></i><i><b></b></i><i><b></b></i></div></div><div></div>'+(a.id==="bender"?'<div class="seal">3</div>':'')+'</div>'+
+    '<div class="ui home" hidden><div class="mark"><div class="s">WIND</div><div class="w">BENDER</div><div class="t">breathe like you lift</div></div><div></div><div class="modes"><div class="mode"><span class="t">LIFT</span><span class="d">sets · reps · rest</span></div><div class="mode"><span class="t">BREATHE</span><span class="d">cycles</span></div></div></div></div>'+
+    '<div class="cap"><div class="seg"><button data-v="run" class="sel">Run</button><button data-v="home">Home</button></div><h3>'+a.name+'</h3><p>'+a.what+'</p><div class="sw">'+a.sw.map(function(s){ return '<i style="--c:'+s[0]+'">'+s[1]+'</i>'; }).join("")+'</div><div class="type">'+a.type+'</div></div>';
+  grid.appendChild(el);
+  var cv=el.querySelector("canvas"), run=el.querySelector(".ui.run"), home=el.querySelector(".ui.home"), o={a:a, frame:a.make(cv), home:false, run:run, homeEl:home, el:el,
+    cue:run.querySelector(".cue"), sub:run.querySelector(".sub"), num:run.querySelector(".num"), rail:run.querySelectorAll(".rail b"), seal:run.querySelector(".seal")};
+  el.querySelector(".seg").addEventListener("click", function(e){ var b=e.target.closest("[data-v]"); if(!b) return; o.home=b.getAttribute("data-v")==="home"; run.hidden=o.home; home.hidden=!o.home; var bs=this.querySelectorAll("button"); for(var i=0;i<bs.length;i++) bs[i].classList.toggle("sel",bs[i]===b); });
+  INST.push(o);
+});
+function paintRun(o){ o.cue.textContent=WORD[B.k]; o.sub.textContent=SUB[B.k]; o.num.textContent=Math.max(1,Math.ceil(B.dur-B.into)); for(var i=0;i<3;i++){ var f=i<B.idx?1:i===B.idx?B.frac:0; o.rail[i].style.transform="scaleX("+f.toFixed(3)+")"; } }
+/* mode C: the live rep above the lifts */
+var PW=document.getElementById("prev-w"), PS=document.getElementById("prev-s"), PB=document.querySelectorAll("#prev-br b"), CSEQ=[["LIFT","breathe out",1,0],["HOLD","keep breathing out",2,0],["LOWER","breathe in",3,1]], ct0=performance.now()/1000;
+function paintPrev(t){ var e=(t-ct0)%6, acc=0, i; for(i=0;i<3;i++){ if(e<acc+CSEQ[i][2]) break; acc+=CSEQ[i][2]; } var st=CSEQ[i]; PW.textContent=st[0]; PS.textContent=st[1]; PS.style.color=st[3]?"#7fb8ff":"#d6a24a";
+  var outF=Math.min(1,e/3), inF=e<3?0:(e-3)/3; PB[0].style.transform="scaleX("+outF.toFixed(3)+")"; PB[1].style.transform="scaleX("+inF.toFixed(3)+")"; }
+var lastT=0;
+function tick(){ requestAnimationFrame(tick); var t=performance.now()/1000, dt=lastT?Math.min(.05,t-lastT):1/60; lastT=t; clock(t); paintPrev(t);
+  for(var i=0;i<INST.length;i++){ var o=INST[i], r=o.el.getBoundingClientRect(); if(r.bottom<0||r.top>window.innerHeight) continue; o.frame(dt,t,o.home); if(!o.home) paintRun(o); } }
+requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
